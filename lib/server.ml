@@ -9,7 +9,8 @@ ZMQ.Socket.bind responder "tcp://*:5555";
 while true do
   let request = ZMQ.Socket.recv responder in
   Printf.printf "Received request: [%s]\n%!" request;
-  ZMQ.Socket.send responder "World"
+  ZMQ.Socket.send responder "World";
+  Actor.test ()
 done;
 
 ZMQ.Socket.close responder;
