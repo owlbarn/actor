@@ -4,9 +4,22 @@
 
 open Types
 
+
 let test () = print_endline "I am an actor."
 
-let create id = { id = id; last_seen = 0. }
+(** for manager  *)
+
+let create id = { id = id; status = Available; last_seen = Unix.time () }
+
+let add id = None
+
+let remove id = None
+
+let mem id = None
+
+let update id = None
+
+(** for nodes  *)
 
 let register id = None
 

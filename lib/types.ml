@@ -4,8 +4,11 @@
 
 module StrMap = Map.Make (String)
 
+type actor_status = Available | Unavailable
+
 type actor_rec = {
   id : string;
+  status : actor_status;
   last_seen : float;
 }
 
