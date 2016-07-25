@@ -1,9 +1,12 @@
 DEPS = str,unix,uint,ZMQ
 
-EXAMPLES = actor test_serialise
+EXAMPLES = test_serialise types manager actor client
 
 all:
-	ocamlfind ocamlc -package $(DEPS) -linkpkg -o actor actor.ml
+	ocamlfind ocamlc -package $(DEPS) -linkpkg -o types types.ml
+	ocamlfind ocamlc -package $(DEPS) -linkpkg -o actor types.cmo actor.ml
+	ocamlfind ocamlc -package $(DEPS) -linkpkg -o manager types.cmo actor.cmo manager.ml
+	ocamlfind ocamlc -package $(DEPS) -linkpkg -o client client.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o test_serialise actor.cmo test_serialise.ml
 
 clean:
