@@ -22,4 +22,6 @@ let run () =
   ZMQ.Socket.close responder;
   ZMQ.Context.terminate context
 
+let install_app x = None
+
 let _ = run ()

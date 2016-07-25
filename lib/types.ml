@@ -9,4 +9,12 @@ type actor_rec = {
   last_seen : float;
 }
 
-(* TODO: message format *)
+type message_rec = {
+  typ : int;
+  content : string;
+}
+
+type data_rec = {
+  id : string;
+  owner : string;
+}
