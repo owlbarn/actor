@@ -8,3 +8,5 @@ type actor_rec = {
   id : string;
   last_seen : float;
 }
+
+(* TODO: message format *)
