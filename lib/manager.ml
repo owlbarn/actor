@@ -6,6 +6,7 @@ open Types
 
 let addr = "tcp://*:5555"
 
+(* TODO: move this to the actor module maybe *)
 let actors = ref StrMap.empty
 
 let run () =
