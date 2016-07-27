@@ -7,7 +7,7 @@ open Types
 
 let test () = print_endline "I am an actor."
 
-(** for manager  *)
+(** fucntions for manager  *)
 
 let create id = { id = id; status = Available; last_seen = Unix.time () }
 
@@ -19,7 +19,7 @@ let mem id = None
 
 let update id = None
 
-(** for nodes  *)
+(** functions for nodes  *)
 
 let register id = None
 
