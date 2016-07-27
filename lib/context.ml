@@ -1,3 +1,8 @@
+(** [ Context ]
+  maintain a context for each applicatoin
+*)
+
+type t
 
 let _context = None
 

@@ -6,9 +6,6 @@ open Types
 
 let addr = "tcp://*:5555"
 
-(* TODO: move this to the actor module maybe *)
-let actors = ref StrMap.empty
-
 let run () =
   let context = ZMQ.Context.create () in
   let responder = ZMQ.Socket.create context ZMQ.Socket.rep in
@@ -16,8 +13,8 @@ let run () =
   while true do
     let s = ZMQ.Socket.recv responder in
     Printf.printf "[register]: %s\n%!" s;
-    if StrMap.mem s !actors then
-      actors := StrMap.add s (Actor.create s) !actors;
+    if Actor.mem s then
+      Actor.add s;
     ZMQ.Socket.send responder "confirmed"
   done;
   ZMQ.Socket.close responder;
