@@ -12,6 +12,15 @@ let _context = ref {
   id = "";
 }
 
+let master_fun () =
+  print_endline "master node"
+
+let worker_fun () =
+  while true do
+    print_endline "worker ...";
+    Unix.sleep 5
+  done
+
 let init id url =
   _context := { manager = url; id = id; };
   let context = ZMQ.Context.create () in
@@ -20,12 +29,11 @@ let init id url =
   ZMQ.Socket.send requester id;
   let role = ZMQ.Socket.recv requester in
   match role with
-    | "master" -> print_endline "master node"
-    | "worker" -> print_endline "worker node"
+    | "master" -> master_fun ()
+    | "worker" -> worker_fun ()
     | _ -> print_endline "unknown command";
   ZMQ.Socket.close requester;
   ZMQ.Context.terminate context
-
 
 let map f = None
 
