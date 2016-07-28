@@ -13,9 +13,11 @@ let run () =
   while true do
     let s = ZMQ.Socket.recv responder in
     Printf.printf "[register]: %s\n%!" s;
-    if Actor.mem s then
+    if Actor.mem s = false then (
       Actor.add s;
-    ZMQ.Socket.send responder "confirmed"
+      ZMQ.Socket.send responder "master" )
+    else
+      ZMQ.Socket.send responder "worker"
   done;
   ZMQ.Socket.close responder;
   ZMQ.Context.terminate context
