@@ -2,11 +2,16 @@
   maintain a context for each applicatoin
 *)
 
-type t
+type t = {
+  manager : string;
+}
 
-let _context = None
+let _context = ref {
+  manager = "";
+}
 
-let init x = None
+let init url =
+  _context := { manager = url }
 
 let map f = None
 
