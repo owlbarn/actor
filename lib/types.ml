@@ -21,3 +21,9 @@ type data_rec = {
   id : string;
   owner : string;
 }
+
+type service_rec = {
+  id : string;
+  master : string;
+  workers : string list;
+}
