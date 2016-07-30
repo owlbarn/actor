@@ -1,29 +1,18 @@
-(** [ Actor ]
-  defines basic functionality of an actor
+(** [ Service ]
+  defines basic functionality of services
 *)
 
 open Types
 
-let test () = print_endline "I am an actor."
+let _services = ref StrMap.empty
 
-let _actors = ref StrMap.empty
+let mem id = StrMap.mem id !_services
 
-(** fucntions for manager  *)
+let register id master =
+  let s = { id = id; master = master; workers = [] } in
+  _services := StrMap.add id s !_services
 
-let create id = { id = id; status = Available; last_seen = Unix.time () }
-
-let add id = _actors := StrMap.add id (create id) !_actors
-
-let remove id = None
-
-let mem id = StrMap.mem id !_actors
-
-let update id = None
-
-(** functions for nodes  *)
-
-let register id = None
-
-let register_data x = None
-
-let heartbeat x = None
+let add_worker id wid =
+  let service = StrMap.find id !_services in
+  let workers = List.append service.workers [ wid ] in
+  service.workers <- workers

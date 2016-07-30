@@ -6,6 +6,10 @@ module StrMap = Map.Make (String)
 
 type actor_status = Available | Unavailable
 
+type message_type =
+  | User_Reg
+  | Job_Reg
+
 type actor_rec = {
   id : string;
   status : actor_status;
@@ -25,5 +29,5 @@ type data_rec = {
 type service_rec = {
   id : string;
   master : string;
-  workers : string list;
+  mutable workers : string list;
 }
