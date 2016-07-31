@@ -8,7 +8,7 @@ all:
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o dfs types.cmo dfs.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o actor types.cmo actor.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o service types.cmo service.ml
-	ocamlfind ocamlc -package $(DEPS) -linkpkg -o manager types.cmo actor.cmo manager.ml
+	ocamlfind ocamlc -package $(DEPS) -linkpkg -o manager types.cmo actor.cmo service.cmo manager.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o client client.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o test_context types.cmo context.cmo test_context.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o test_serialise types.cmo actor.cmo test_serialise.ml

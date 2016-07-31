@@ -8,7 +8,7 @@ let _services = ref StrMap.empty
 
 let mem id = StrMap.mem id !_services
 
-let register id master =
+let add id master =
   let s = { id = id; master = master; workers = [] } in
   _services := StrMap.add id s !_services
 

@@ -8,6 +8,7 @@ type actor_status = Available | Unavailable
 
 type message_type =
   | User_Reg
+  | Data_Reg
   | Job_Reg
 
 type message_rec = {

@@ -13,12 +13,13 @@ let process r m =
       Actor.add m.str
     )
   | Job_Reg -> (
-    if Actor.mem m.str = false then (
-      Actor.add m.str;
+    if Service.mem m.str = false then (
+      Service.add m.str ""; (* FIXME: node id *)
       ZMQ.Socket.send r "master" )
     else
       ZMQ.Socket.send r "worker"
     )
+  | Data_Reg -> ()
 
 let run () =
   let context = ZMQ.Context.create () in
