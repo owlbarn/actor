@@ -10,15 +10,15 @@ type message_type =
   | User_Reg
   | Job_Reg
 
+type message_rec = {
+  typ : message_type;
+  str : string;
+}
+
 type actor_rec = {
   id : string;
   status : actor_status;
   last_seen : float;
-}
-
-type message_rec = {
-  typ : int;
-  content : string;
 }
 
 type data_rec = {
@@ -31,3 +31,10 @@ type service_rec = {
   master : string;
   mutable workers : string list;
 }
+
+let to_msg t s =
+  let m = { typ = t; str = s } in
+  Marshal.to_string m [ ]
+
+let of_msg s =
+  let m : message_rec = Marshal.from_string s 0 in m

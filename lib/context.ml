@@ -2,6 +2,8 @@
   maintain a context for each applicatoin
 *)
 
+open Types
+
 type t = {
   manager : string;
   id : string;
@@ -26,7 +28,7 @@ let init id url =
   let context = ZMQ.Context.create () in
   let requester = ZMQ.Socket.create context ZMQ.Socket.req in
   ZMQ.Socket.connect requester url;
-  ZMQ.Socket.send requester id;
+  ZMQ.Socket.send requester (to_msg Job_Reg id);
   let role = ZMQ.Socket.recv requester in
   match role with
     | "master" -> master_fun ()
