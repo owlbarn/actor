@@ -16,3 +16,5 @@ let add_worker id wid =
   let service = StrMap.find id !_services in
   let workers = List.append service.workers [ wid ] in
   service.workers <- workers
+
+let find id = StrMap.find id !_services

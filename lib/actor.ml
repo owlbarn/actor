@@ -10,9 +10,15 @@ let _actors = ref StrMap.empty
 
 (** fucntions for manager  *)
 
-let create id = { id = id; status = Available; last_seen = Unix.time () }
+let create id addr = {
+  id = id;
+  addr = addr;
+  status = Available;
+  last_seen = Unix.time ()
+  }
 
-let add id = _actors := StrMap.add id (create id) !_actors
+let add id addr = 
+  _actors := StrMap.add id (create id addr) !_actors
 
 let remove id = None
 

@@ -10,6 +10,8 @@ type message_type =
   | User_Reg
   | Data_Reg
   | Job_Reg
+  | Job_Master
+  | Job_Worker
   | Heartbeat
 
 type message_rec = {
@@ -20,6 +22,7 @@ type message_rec = {
 
 type actor_rec = {
   id : string;
+  addr : string;
   status : actor_status;
   last_seen : float;
 }
