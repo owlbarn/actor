@@ -11,7 +11,7 @@ all:
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o manager types.cmo actor.cmo service.cmo manager.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o client types.cmo client.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o test_context types.cmo context.cmo test_context.ml
-	ocamlfind ocamlc -package $(DEPS) -linkpkg -o test_serialise types.cmo actor.cmo test_serialise.ml
+	ocamlfind ocamlc -package $(DEPS) -linkpkg -o test_serialise test_serialise.ml
 
 clean:
 	rm -f *.cm*

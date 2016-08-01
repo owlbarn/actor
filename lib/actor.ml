@@ -4,8 +4,6 @@
 
 open Types
 
-let test () = print_endline "I am an actor."
-
 let _actors = ref StrMap.empty
 
 (** fucntions for manager  *)
@@ -17,7 +15,7 @@ let create id addr = {
   last_seen = Unix.time ()
   }
 
-let add id addr = 
+let add id addr =
   _actors := StrMap.add id (create id addr) !_actors
 
 let remove id = None

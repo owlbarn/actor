@@ -2,6 +2,8 @@
   test the serialisaton function
 *)
 
+let test () = print_endline "I am a test fun."
+
 let server () =
   let context = ZMQ.Context.create () in
   let responder = ZMQ.Socket.create context ZMQ.Socket.rep in
@@ -9,7 +11,7 @@ let server () =
   while true do
     let request = ZMQ.Socket.recv responder in
     Printf.printf "Received request: [%s]\n%!" request;
-    let s = Marshal.to_string Actor.test [ Marshal.Closures ] in
+    let s = Marshal.to_string test [ Marshal.Closures ] in
     ZMQ.Socket.send responder s;
   done;
   ZMQ.Socket.close responder;

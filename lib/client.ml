@@ -13,7 +13,7 @@ let run id =
   let context = ZMQ.Context.create () in
   let requester = ZMQ.Socket.create context ZMQ.Socket.req in
   ZMQ.Socket.connect requester manager_addr;
-  ZMQ.Socket.send requester (to_msg User_Reg id my_addr);
+  ZMQ.Socket.send requester (to_msg User_Reg [|id; my_addr|]);
   ignore (ZMQ.Socket.recv requester);
   ZMQ.Socket.close requester;
   (* set up local service *)

@@ -9,18 +9,20 @@ let addr = "tcp://*:5555"
 let process r m =
   match m.typ with
   | User_Reg -> (
-    if Actor.mem m.str = false then
-      Actor.add m.uid m.str;
-      Printf.printf "[manager]: user_reg %s\n%!" m.str;
+    let uid, addr = m.par.(0), m.par.(1) in
+    if Actor.mem uid = false then
+      Actor.add uid addr;
+      Printf.printf "[manager]: %s @ %s\n%!" uid addr;
       ZMQ.Socket.send r "ok"
     )
   | Job_Reg -> (
-    if Service.mem m.str = false then (
-      Service.add m.str m.uid;
-      ZMQ.Socket.send r (to_msg Job_Master "" "") )
+    let master, jid = m.par.(0), m.par.(1) in
+    if Service.mem jid = false then (
+      Service.add jid master;
+      ZMQ.Socket.send r (to_msg Job_Master [|""; ""|]) )
     else
-      let master_addr = (Service.find m.str).master in
-      ZMQ.Socket.send r (to_msg Job_Worker "" master_addr)
+      let master = (Service.find jid).master in
+      ZMQ.Socket.send r (to_msg Job_Worker [|master; ""|])
     )
   | Heartbeat -> (
     print_endline "[manager]: heartbeat from client";

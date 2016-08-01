@@ -33,7 +33,7 @@ let master_fun m =
   ZMQ.Socket.close rep
 
 let worker_fun m =
-  _context.master <- m.str;
+  _context.master <- m.par.(0);
   let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
   ZMQ.Socket.connect req _context.master;
   ZMQ.Socket.send req my_addr;
@@ -47,7 +47,7 @@ let worker_fun m =
     | Task -> (
       ZMQ.Socket.send rep "ok";
       print_endline ("map @ " ^ my_addr);
-      let f : float array -> float array = Marshal.from_string m.str 0 in
+      let f : 'a array -> 'a array = Marshal.from_string m.par.(0) 0 in
       let data = Array.init 5 (fun x -> Random.float 10.) in (* FIXME: test purpose *)
       Array.iter (fun x -> print_float x; print_string " ") data;
       print_endline "here";
@@ -65,7 +65,7 @@ let init jid url =
   _context.jid <- jid;
   let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
   ZMQ.Socket.connect req url;
-  ZMQ.Socket.send req (to_msg Job_Reg my_addr jid);
+  ZMQ.Socket.send req (to_msg Job_Reg [|my_addr; jid|]);
   let m = of_msg (ZMQ.Socket.recv req) in
   match m.typ with
     | Job_Master -> master_fun m
@@ -75,17 +75,28 @@ let init jid url =
   ZMQ.Context.terminate _ztx
 
 let map f x =
+  Printf.printf "map -> %i workers\n" (List.length _context.workers);
   List.iter (fun w ->
-    print_endline ("map -> " ^ w);
     let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
     ZMQ.Socket.connect req w;
-    let s = Marshal.to_string f [ Marshal.Closures ] in
-    ZMQ.Socket.send req (to_msg Task x s);
+    let g = Marshal.to_string f [ Marshal.Closures ] in
+    ZMQ.Socket.send req (to_msg Task [|g; x|]);
     ignore (ZMQ.Socket.recv req);
     ZMQ.Socket.close req;
     ) _context.workers
 
-let reduce f x = None
+let reduce f x =
+  Printf.printf "reduce -> %i workers\n" (List.length _context.workers);
+  List.iter (fun w ->
+    let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
+    ZMQ.Socket.connect req w;
+    let g = Marshal.to_string f [ Marshal.Closures ] in
+    ZMQ.Socket.send req (to_msg Task [|g; x|]);
+    ignore (ZMQ.Socket.recv req);
+    ZMQ.Socket.close req;
+    ) _context.workers
+  (* TODO: aggregate the results *)
+
 
 let collect f x = None
 

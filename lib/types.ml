@@ -18,8 +18,7 @@ type message_type =
 
 type message_rec = {
   typ : message_type;
-  uid : string;
-  str : string;
+  par : string array;
 }
 
 type actor_rec = {
@@ -40,8 +39,8 @@ type service_rec = {
   mutable workers : string list;
 }
 
-let to_msg t i s =
-  let m = { typ = t; uid = i; str = s } in
+let to_msg t p =
+  let m = { typ = t; par = p } in
   Marshal.to_string m [ ]
 
 let of_msg s =
