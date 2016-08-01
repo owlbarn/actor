@@ -24,7 +24,6 @@ let heartbeat id m_addr =
   ZMQ.Socket.close req
 
 let run id =
-  (* register to the manager *)
   register myid addr manager;
   (* set up local service *)
   let rep = ZMQ.Socket.create _ztx ZMQ.Socket.rep in
