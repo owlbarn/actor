@@ -4,27 +4,37 @@
 
 open Types
 
-let manager_addr = "tcp://127.0.0.1:5555"
+let manager = "tcp://127.0.0.1:5555"
+let addr = "tcp://127.0.0.1:" ^ (string_of_int (Random.int 5000 + 5000))
+let myid = "actor_" ^ (string_of_int (Random.int 9000 + 1000))
+let _ztx = ZMQ.Context.create ()
 
-let my_addr = "tcp://127.0.0.1:" ^ (string_of_int (Random.int 5000 + 5000))
+let register id u_addr m_addr =
+  let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
+  ZMQ.Socket.connect req m_addr;
+  ZMQ.Socket.send req (to_msg User_Reg [|id; u_addr|]);
+  ignore (ZMQ.Socket.recv req);
+  ZMQ.Socket.close req
+
+let heartbeat id m_addr =
+  let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
+  ZMQ.Socket.connect req m_addr;
+  ZMQ.Socket.send req (to_msg Heartbeat [|id|]);
+  ignore (ZMQ.Socket.recv req);
+  ZMQ.Socket.close req
 
 let run id =
   (* register to the manager *)
-  let context = ZMQ.Context.create () in
-  let requester = ZMQ.Socket.create context ZMQ.Socket.req in
-  ZMQ.Socket.connect requester manager_addr;
-  ZMQ.Socket.send requester (to_msg User_Reg [|id; my_addr|]);
-  ignore (ZMQ.Socket.recv requester);
-  ZMQ.Socket.close requester;
+  register myid addr manager;
   (* set up local service *)
-  let rep = ZMQ.Socket.create context ZMQ.Socket.rep in
-  ZMQ.Socket.bind rep my_addr;
+  let rep = ZMQ.Socket.create _ztx ZMQ.Socket.rep in
+  ZMQ.Socket.bind rep addr;
   while true do
     let m = ZMQ.Socket.recv rep in
     print_endline m
   done;
   ZMQ.Socket.close rep;
-  ZMQ.Context.terminate context
+  ZMQ.Context.terminate _ztx
 
 
-let () = run (Sys.argv.(1))
+let () = run myid

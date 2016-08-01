@@ -18,16 +18,9 @@ let create id addr = {
 let add id addr =
   _actors := StrMap.add id (create id addr) !_actors
 
-let remove id = None
+let remove id =
+  _actors := StrMap.remove id !_actors
 
 let mem id = StrMap.mem id !_actors
 
-let update id = None
-
 (** functions for nodes  *)
-
-let register id = None
-
-let register_data x = None
-
-let heartbeat x = None

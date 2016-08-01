@@ -5,6 +5,7 @@
 open Types
 
 let addr = "tcp://*:5555"
+let myid = "manager_" ^ (string_of_int (Random.int 5000))
 
 let process r m =
   match m.typ with
@@ -44,4 +45,4 @@ let run id =
 
 let install_app x = None
 
-let _ = run (Sys.argv.(1))
+let _ = run myid
