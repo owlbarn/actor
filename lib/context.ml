@@ -49,7 +49,12 @@ let worker_fun m =
       print_endline ("map @ " ^ my_addr);
       let f : float array -> float array = Marshal.from_string m.str 0 in
       let data = Array.init 5 (fun x -> Random.float 10.) in (* FIXME: test purpose *)
-      f data; ()
+      Array.iter (fun x -> print_float x; print_string " ") data;
+      print_endline "here";
+      let data = f data in
+      Array.iter (fun x -> print_float x; print_string " ") data;
+      print_endline "here";
+      ()
       )
     | Terminate -> ()
     | _ -> ()
