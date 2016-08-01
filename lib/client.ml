@@ -30,8 +30,10 @@ let run id =
   let rep = ZMQ.Socket.create _ztx ZMQ.Socket.rep in
   ZMQ.Socket.bind rep addr;
   while true do
-    let m = ZMQ.Socket.recv rep in
-    print_endline m
+    (* TODO: add more logic *)
+    let m = of_msg (ZMQ.Socket.recv rep) in
+    match m.typ with
+    | _ -> ()
   done;
   ZMQ.Socket.close rep;
   ZMQ.Context.terminate _ztx

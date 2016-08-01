@@ -20,7 +20,7 @@ let my_addr = "tcp://127.0.0.1:" ^ (string_of_int (Random.int 5000 + 5000))
 let _ztx = ZMQ.Context.create ()
 
 let master_fun m =
-  print_endline "[master] init the job";
+  print_endline "[master]: init the job";
   _context.master <- my_addr;
   let rep = ZMQ.Socket.create _ztx ZMQ.Socket.rep in
   ZMQ.Socket.bind rep my_addr;
@@ -46,11 +46,10 @@ let worker_fun m =
     match m.typ with
     | Task -> (
       ZMQ.Socket.send rep "ok";
-      print_endline ("map @ " ^ my_addr);
-      let f : 'a array -> 'a array = Marshal.from_string m.par.(0) 0 in
+      print_endline ("[master]: map @ " ^ my_addr);
+      let f : 'a array -> 'b array = Marshal.from_string m.par.(0) 0 in
       let data = Array.init 5 (fun x -> Random.float 10.) in (* FIXME: test purpose *)
       Array.iter (fun x -> print_float x; print_string " ") data;
-      print_endline "here";
       let data = f data in
       Array.iter (fun x -> print_float x; print_string " ") data;
       print_endline "here";
@@ -70,12 +69,12 @@ let init jid url =
   match m.typ with
     | Job_Master -> master_fun m
     | Job_Worker -> worker_fun m
-    | _ -> print_endline "unknown command";
+    | _ -> print_endline "[master]: unknown command";
   ZMQ.Socket.close req;
   ZMQ.Context.terminate _ztx
 
 let map f x =
-  Printf.printf "map -> %i workers\n" (List.length _context.workers);
+  Printf.printf "[master]: map -> %i workers\n" (List.length _context.workers);
   List.iter (fun w ->
     let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
     ZMQ.Socket.connect req w;
@@ -86,7 +85,7 @@ let map f x =
     ) _context.workers
 
 let reduce f x =
-  Printf.printf "reduce -> %i workers\n" (List.length _context.workers);
+  Printf.printf "[master]: reduce -> %i workers\n" (List.length _context.workers);
   List.iter (fun w ->
     let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
     ZMQ.Socket.connect req w;
