@@ -9,10 +9,12 @@ type actor_status = Available | Unavailable
 type message_type =
   | User_Reg
   | Data_Reg
+  | Heartbeat
   | Job_Reg
   | Job_Master
   | Job_Worker
-  | Heartbeat
+  | Task
+  | Terminate
 
 type message_rec = {
   typ : message_type;
