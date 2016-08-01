@@ -10,7 +10,9 @@ let process r m =
   match m.typ with
   | User_Reg -> (
     if Actor.mem m.str = false then
-      Actor.add m.str
+      Actor.add m.str;
+      Printf.printf "[manager]: user_reg %s\n%!" m.str;
+      ZMQ.Socket.send r "ok"
     )
   | Job_Reg -> (
     if Service.mem m.str = false then (
@@ -19,20 +21,23 @@ let process r m =
     else
       ZMQ.Socket.send r "worker"
     )
+  | Heartbeat -> (
+    print_endline "[manager]: heartbeat from client";
+    ZMQ.Socket.send r "ok"
+    )
   | Data_Reg -> ()
 
-let run () =
+let run id =
   let context = ZMQ.Context.create () in
   let responder = ZMQ.Socket.create context ZMQ.Socket.rep in
   ZMQ.Socket.bind responder addr;
   while true do
     let m = of_msg (ZMQ.Socket.recv responder) in
-    Printf.printf "[manager]: %s\n%!" m.str;
-    process responder m
+    process responder m;
   done;
   ZMQ.Socket.close responder;
   ZMQ.Context.terminate context
 
 let install_app x = None
 
-let _ = run ()
+let _ = run (Sys.argv.(1))

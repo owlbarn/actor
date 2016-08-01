@@ -10,9 +10,11 @@ type message_type =
   | User_Reg
   | Data_Reg
   | Job_Reg
+  | Heartbeat
 
 type message_rec = {
   typ : message_type;
+  uid : string;
   str : string;
 }
 
@@ -33,9 +35,13 @@ type service_rec = {
   mutable workers : string list;
 }
 
-let to_msg t s =
-  let m = { typ = t; str = s } in
+let to_msg t i s =
+  let m = { typ = t; uid = i; str = s } in
   Marshal.to_string m [ ]
 
 let of_msg s =
-  let m : message_rec = Marshal.from_string s 0 in m
+  let m : message_rec = Marshal.from_string s 0 in m;;
+
+(* initialise some states *)
+
+Random.self_init ();;

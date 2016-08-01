@@ -6,16 +6,16 @@ open Types
 
 type t = {
   manager : string;
-  id : string;
+  jid : string;
 }
 
 let _context = ref {
-  manager = "";
-  id = "";
+  manager = "tcp://*:6666";
+  jid = "";
 }
 
 let master_fun () =
-  print_endline "master node"
+  print_endline "[master] init the job"
 
 let worker_fun () =
   while true do
@@ -23,12 +23,12 @@ let worker_fun () =
     Unix.sleep 5
   done
 
-let init id url =
-  _context := { manager = url; id = id; };
+let init uid jid url =
+  _context := { manager = url; jid = jid; };
   let context = ZMQ.Context.create () in
   let requester = ZMQ.Socket.create context ZMQ.Socket.req in
   ZMQ.Socket.connect requester url;
-  ZMQ.Socket.send requester (to_msg Job_Reg id);
+  ZMQ.Socket.send requester (to_msg Job_Reg uid jid);
   let role = ZMQ.Socket.recv requester in
   match role with
     | "master" -> master_fun ()
