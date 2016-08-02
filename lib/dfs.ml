@@ -2,6 +2,8 @@
   is a distributed file system for actors
 *)
 
+(* TODO: this module needs some redesign ... *)
+
 open Types
 
 type t = {
