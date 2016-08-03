@@ -2,7 +2,9 @@
   is a distributed file system for actors
 *)
 
-(* TODO: this module needs some redesign ... *)
+(* TODO: this module needs some redesign ...
+  think about how to abstract distributed datasets, compare to rdd
+*)
 
 open Types
 
