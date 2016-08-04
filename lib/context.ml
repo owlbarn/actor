@@ -49,10 +49,11 @@ let worker_fun m =
       print_endline ("[master]: map @ " ^ my_addr);
       let f : 'a array -> 'b array = Marshal.from_string m.par.(0) 0 in
       let data = Array.init 5 (fun x -> Random.float 10.) in (* FIXME: test purpose *)
-      Array.iter (fun x -> print_float x; print_string " ") data;
+      Array.iter (fun x -> print_float x; print_string "\t") data;
+      print_endline " ===";
       let data = f data in
-      Array.iter (fun x -> print_float x; print_string " ") data;
-      print_endline "here";
+      Array.iter (fun x -> print_float x; print_string "\t") data;
+      print_endline " ===";
       ()
       )
     | Terminate -> ()
