@@ -46,9 +46,9 @@ let worker_fun m =
   while true do
     let m = of_msg (ZMQ.Socket.recv rep) in
     match m.typ with
-    | Task -> (
+    | MapTask -> (
+      print_endline ("[worker]: map @ " ^ my_addr);
       ZMQ.Socket.send rep "ok";
-      print_endline ("[master]: map @ " ^ my_addr);
       let f : 'a -> 'b = Marshal.from_string m.par.(0) 0 in
       let y = f (Dfs.find m.par.(1)) in
       (* Array.iter (fun x -> print_float x; print_string "\t") (Dfs.find m.par.(1));
@@ -56,6 +56,11 @@ let worker_fun m =
       Array.iter (fun x -> print_float x; print_string "\t") y;
       print_endline " ... "; *)
       Dfs.add (m.par.(2)) y
+      )
+    | CollectTask -> (
+      print_endline ("[worker]: collect @ " ^ my_addr);
+      let y = Marshal.to_string (Dfs.find m.par.(0)) [] in
+      ZMQ.Socket.send rep y
       )
     | Terminate -> ()
     | _ -> ()
@@ -82,7 +87,7 @@ let map f x =
     let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
     ZMQ.Socket.connect req w;
     let g = Marshal.to_string f [ Marshal.Closures ] in
-    ZMQ.Socket.send req (to_msg Task [|g; x; y|]);
+    ZMQ.Socket.send req (to_msg MapTask [|g; x; y|]);
     ignore (ZMQ.Socket.recv req);
     ZMQ.Socket.close req;
     ) _context.workers in y
@@ -93,13 +98,21 @@ let reduce f x =
     let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
     ZMQ.Socket.connect req w;
     let g = Marshal.to_string f [ Marshal.Closures ] in
-    ZMQ.Socket.send req (to_msg Task [|g; x|]);
+    ZMQ.Socket.send req (to_msg ReduceTask [|g; x|]);
     ignore (ZMQ.Socket.recv req);
     ZMQ.Socket.close req;
     ) _context.workers
   (* TODO: aggregate the results *)
 
-
-let collect f x = None
+let collect x =
+  Printf.printf "[master]: collect -> %i workers\n" (List.length _context.workers);
+  List.map (fun w ->
+    let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
+    ZMQ.Socket.connect req w;
+    ZMQ.Socket.send req (to_msg CollectTask [|x|]);
+    let y = ZMQ.Socket.recv req in
+    ZMQ.Socket.close req;
+    Marshal.from_string y 0
+  ) _context.workers
 
 let execute f x = None

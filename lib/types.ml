@@ -13,7 +13,9 @@ type message_type =
   | Job_Reg
   | Job_Master
   | Job_Worker
-  | Task
+  | MapTask
+  | ReduceTask
+  | CollectTask
   | Terminate
 
 type message_rec = {
