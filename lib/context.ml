@@ -52,7 +52,8 @@ let worker_fun m =
       Array.iter (fun x -> print_float x; print_string "\t") data;
       print_endline " ===";
       let data = f data in
-      Array.iter (fun x -> print_float x; print_string "\t") data;
+      (* Array.iter (fun x -> print_float x; print_string "\t") data; *)
+      Array.iter (fun x -> print_int x; print_string "\t") data;
       print_endline " ===";
       ()
       )

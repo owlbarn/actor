@@ -27,11 +27,4 @@ let mem did = StrMap.mem did !_data
 
 let remove did = StrMap.remove did !_data
 
-(* TODO: design a simple fs *)
-let list path =
-  let elements = Str.split (Str.regexp "/") path in
-  match elements with
-    | hd :: tl -> ()
-    | [] -> ()
-
 let size did = (StrMap.find did !_data).size
