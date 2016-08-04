@@ -51,10 +51,6 @@ let worker_fun m =
       ZMQ.Socket.send rep "ok";
       let f : 'a -> 'b = Marshal.from_string m.par.(0) 0 in
       let y = f (Dfs.find m.par.(1)) in
-      (* Array.iter (fun x -> print_float x; print_string "\t") (Dfs.find m.par.(1));
-      print_endline " ... ";
-      Array.iter (fun x -> print_float x; print_string "\t") y;
-      print_endline " ... "; *)
       Dfs.add (m.par.(2)) y
       )
     | CollectTask -> (
