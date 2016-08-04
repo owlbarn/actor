@@ -34,11 +34,13 @@ let master_fun m =
 
 let worker_fun m =
   _context.master <- m.par.(0);
+  (* connect to job master *)
   let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
   ZMQ.Socket.connect req _context.master;
   ZMQ.Socket.send req my_addr;
-  ignore (ZMQ.Socket.recv req);
-  (* set up worker service *)
+  ZMQ.Socket.close req;
+  (* TODO: connect to local actor *)
+  (* set up job worker *)
   let rep = ZMQ.Socket.create _ztx ZMQ.Socket.rep in
   ZMQ.Socket.bind rep my_addr;
   while true do
@@ -47,15 +49,13 @@ let worker_fun m =
     | Task -> (
       ZMQ.Socket.send rep "ok";
       print_endline ("[master]: map @ " ^ my_addr);
-      let f : 'a array -> 'b array = Marshal.from_string m.par.(0) 0 in
-      let data = Array.init 5 (fun x -> Random.float 10.) in (* FIXME: test purpose *)
-      Array.iter (fun x -> print_float x; print_string "\t") data;
-      print_endline " ===";
-      let data = f data in
-      (* Array.iter (fun x -> print_float x; print_string "\t") data; *)
-      Array.iter (fun x -> print_int x; print_string "\t") data;
-      print_endline " ===";
-      ()
+      let f : 'a -> 'b = Marshal.from_string m.par.(0) 0 in
+      let y = f (Dfs.find m.par.(1)) in
+      (* Array.iter (fun x -> print_float x; print_string "\t") (Dfs.find m.par.(1));
+      print_endline " ... ";
+      Array.iter (fun x -> print_float x; print_string "\t") y;
+      print_endline " ... "; *)
+      Dfs.add (m.par.(2)) y
       )
     | Terminate -> ()
     | _ -> ()
@@ -77,14 +77,15 @@ let init jid url =
 
 let map f x =
   Printf.printf "[master]: map -> %i workers\n" (List.length _context.workers);
-  List.iter (fun w ->
+  let y = Dfs.rand_id () in
+  let _ = List.iter (fun w ->
     let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
     ZMQ.Socket.connect req w;
     let g = Marshal.to_string f [ Marshal.Closures ] in
-    ZMQ.Socket.send req (to_msg Task [|g; x|]);
+    ZMQ.Socket.send req (to_msg Task [|g; x; y|]);
     ignore (ZMQ.Socket.recv req);
     ZMQ.Socket.close req;
-    ) _context.workers
+    ) _context.workers in y
 
 let reduce f x =
   Printf.printf "[master]: reduce -> %i workers\n" (List.length _context.workers);
