@@ -58,7 +58,11 @@ let worker_fun m =
       let y = Marshal.to_string (Dfs.find m.par.(0)) [] in
       ZMQ.Socket.send rep y
       )
-    | Terminate -> ()
+    | Terminate -> (
+      print_endline ("[worker]: terminate @ " ^ my_addr);
+      ZMQ.Socket.send rep "ok";
+      failwith "terminated"
+      )
     | _ -> ()
   done;
   ZMQ.Socket.close rep
@@ -109,6 +113,14 @@ let collect x =
     let y = ZMQ.Socket.recv req in
     ZMQ.Socket.close req;
     Marshal.from_string y 0
-  ) _context.workers
+    ) _context.workers
 
-let execute f x = None
+let terminate () =
+  Printf.printf "[master]: terminate -> %i workers\n" (List.length _context.workers);
+  List.iter (fun w ->
+    let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
+    ZMQ.Socket.connect req w;
+    ZMQ.Socket.send req (to_msg Terminate [||]);
+    ignore (ZMQ.Socket.recv req);
+    ZMQ.Socket.close req
+    ) _context.workers

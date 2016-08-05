@@ -11,6 +11,7 @@ let test () =
   let x = Context.map (fun v -> Array.map (fun x -> x +. 1.) v) "default" in
   List.iter (fun x -> print_float_array x) (Context.collect x);
   let x = Context.map (fun v -> Array.map (fun x -> x *. 2.) v) x in
-  List.iter (fun x -> print_float_array x) (Context.collect x)
+  List.iter (fun x -> print_float_array x) (Context.collect x);
+  Context.terminate ()
 
 let () = test ()
