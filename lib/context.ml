@@ -124,3 +124,11 @@ let terminate () =
     ignore (ZMQ.Socket.recv req);
     ZMQ.Socket.close req
     ) _context.workers
+
+let broadcast x = None
+
+let get_value x = None
+
+let count x = None
+
+let accumulator x = None
