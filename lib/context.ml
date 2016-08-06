@@ -125,6 +125,8 @@ let terminate () =
     ZMQ.Socket.close req
     ) _context.workers
 
+(* TODO: add more api *)
+
 let broadcast x = None
 
 let get_value x = None
