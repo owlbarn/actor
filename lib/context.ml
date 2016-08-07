@@ -104,6 +104,8 @@ let reduce f x =
     ) _context.workers
   (* TODO: aggregate the results *)
 
+let filter f x = None
+
 let collect x =
   Printf.printf "[master]: collect -> %i workers\n" (List.length _context.workers);
   List.map (fun w ->
