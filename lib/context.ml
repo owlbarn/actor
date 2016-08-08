@@ -105,6 +105,7 @@ let reduce f x =
   (* TODO: aggregate the results *)
 
 let filter f x = None
+(* TODO: implement *)
 
 let collect x =
   Printf.printf "[master]: collect -> %i workers\n" (List.length _context.workers);
