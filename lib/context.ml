@@ -47,24 +47,24 @@ let worker_fun m =
     let m = of_msg (ZMQ.Socket.recv rep) in
     match m.typ with
     | MapTask -> (
-      print_endline ("[worker]: map @ " ^ my_addr);
+      Utils.logger ("map @ " ^ my_addr);
       ZMQ.Socket.send rep "ok";
       let f : 'a -> 'b = Marshal.from_string m.par.(0) 0 in
       let y = f (Dfs.find m.par.(1)) in
       Dfs.add (m.par.(2)) y
       )
     | CollectTask -> (
-      print_endline ("[worker]: collect @ " ^ my_addr);
+      Utils.logger ("collect @ " ^ my_addr);
       let y = Marshal.to_string (Dfs.find m.par.(0)) [] in
       ZMQ.Socket.send rep y
       )
     | BroadcastTask -> (
-      print_endline ("[worker]: broadcast @ " ^ my_addr);
+      Utils.logger ("broadcast @ " ^ my_addr);
       ZMQ.Socket.send rep "ok";
       Dfs.add m.par.(1) (Marshal.from_string m.par.(0) 0);
       )
     | Terminate -> (
-      print_endline ("[worker]: terminate @ " ^ my_addr);
+      Utils.logger ("terminate @ " ^ my_addr);
       ZMQ.Socket.send rep "ok";
       failwith "terminated"
       )
@@ -81,7 +81,7 @@ let init jid url =
   match m.typ with
     | Job_Master -> master_fun m
     | Job_Worker -> worker_fun m
-    | _ -> print_endline "[master]: unknown command";
+    | _ -> Utils.logger "unknown command";
   ZMQ.Socket.close req;
   ZMQ.Context.terminate _ztx
 
