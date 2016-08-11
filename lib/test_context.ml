@@ -8,10 +8,14 @@ let print_float_array x =
 
 let test () =
   Context.init "job_1980" "tcp://localhost:5555";
-  let x = Context.map (fun v -> Array.map (fun x -> x +. 1.) v) "default" in
+  (* Test map *)
+  let x = Context.map (fun v -> Array.map (fun x -> x *. 2.) v) "default" in
   List.iter (fun x -> print_float_array x) (Context.collect x);
-  let x = Context.map (fun v -> Array.map (fun x -> x *. 2.) v) x in
+  (* Test broadcast *)
+  let y = Context.broadcast 3. in
+  let x = Context.map (fun v -> Array.map (fun x -> x +. (Context.get_value y)) v) x in
   List.iter (fun x -> print_float_array x) (Context.collect x);
+  (* Terminate *)
   Context.terminate ()
 
 let () = test ()

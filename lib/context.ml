@@ -58,6 +58,11 @@ let worker_fun m =
       let y = Marshal.to_string (Dfs.find m.par.(0)) [] in
       ZMQ.Socket.send rep y
       )
+    | BroadcastTask -> (
+      print_endline ("[worker]: broadcast @ " ^ my_addr);
+      ZMQ.Socket.send rep "ok";
+      Dfs.add m.par.(1) (Marshal.from_string m.par.(0) 0);
+      )
     | Terminate -> (
       print_endline ("[worker]: terminate @ " ^ my_addr);
       ZMQ.Socket.send rep "ok";
@@ -83,28 +88,14 @@ let init jid url =
 let map f x =
   Printf.printf "[master]: map -> %i workers\n" (List.length _context.workers);
   let y = Dfs.rand_id () in
-  let _ = List.iter (fun w ->
+  List.iter (fun w ->
     let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
     ZMQ.Socket.connect req w;
     let g = Marshal.to_string f [ Marshal.Closures ] in
     ZMQ.Socket.send req (to_msg MapTask [|g; x; y|]);
     ignore (ZMQ.Socket.recv req);
     ZMQ.Socket.close req;
-    ) _context.workers in y
-
-let reduce f x =
-  Printf.printf "[master]: reduce -> %i workers\n" (List.length _context.workers);
-  List.iter (fun w ->
-    let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
-    ZMQ.Socket.connect req w;
-    let g = Marshal.to_string f [ Marshal.Closures ] in
-    ZMQ.Socket.send req (to_msg ReduceTask [|g; x|]);
-    ignore (ZMQ.Socket.recv req);
-    ZMQ.Socket.close req;
-    ) _context.workers
-  (* TODO: aggregate the results *)
-
-let filter f x = None
+    ) _context.workers; y
 
 let collect x =
   Printf.printf "[master]: collect -> %i workers\n" (List.length _context.workers);
@@ -127,12 +118,15 @@ let terminate () =
     ZMQ.Socket.close req
     ) _context.workers
 
-(* TODO: add more api, maybe change to kv store *)
+let broadcast x =
+  Printf.printf "[master]: broadcast -> %i workers\n" (List.length _context.workers);
+  let y = Dfs.rand_id () in
+  List.iter (fun w ->
+    let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
+    ZMQ.Socket.connect req w;
+    ZMQ.Socket.send req (to_msg BroadcastTask [|Marshal.to_string x []; y|]);
+    ignore (ZMQ.Socket.recv req);
+    ZMQ.Socket.close req
+    ) _context.workers; y
 
-let broadcast x = None
-
-let get_value x = None
-
-let count x = None
-
-let accumulator x = None
+let get_value x = Dfs.find x
