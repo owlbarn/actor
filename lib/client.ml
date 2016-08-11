@@ -17,28 +17,27 @@ let register id u_addr m_addr =
   ZMQ.Socket.close req
 
 let heartbeat id m_addr =
-  print_endline "send heartbeat ...";
+  Utils.logger ("heartbeat -> " ^ m_addr);
   let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
   ZMQ.Socket.connect req m_addr;
   ZMQ.Socket.send req (to_msg Heartbeat [|id|]);
   ignore (ZMQ.Socket.recv req);
-  print_endline "end heartbeat ...";
   ZMQ.Socket.close req
 
-let run id addr =
-  register myid addr manager;
+let run id u_addr m_addr =
+  register myid u_addr m_addr;
   (* set up local service *)
   let rep = ZMQ.Socket.create _ztx ZMQ.Socket.rep in
-  ZMQ.Socket.set_receive_timeout rep 5000;
-  ZMQ.Socket.bind rep addr;
+  ZMQ.Socket.set_receive_timeout rep 10000;
+  ZMQ.Socket.bind rep u_addr;
   while true do
     try let m = of_msg (ZMQ.Socket.recv rep) in
       match m.typ with
       | _ -> ()
-    with exn -> heartbeat myid addr
+    with exn -> heartbeat id m_addr
   done;
   ZMQ.Socket.close rep;
   ZMQ.Context.terminate _ztx
 
 
-let () = run myid addr
+let () = run myid addr manager

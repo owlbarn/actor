@@ -13,7 +13,7 @@ let process r m =
     let uid, addr = m.par.(0), m.par.(1) in
     if Actor.mem uid = false then
       Actor.add uid addr;
-      Printf.printf "[manager]: %s @ %s\n%!" uid addr;
+      Utils.logger (uid ^ " @ " ^ addr);
       ZMQ.Socket.send r "ok"
     )
   | Job_Reg -> (
@@ -26,7 +26,7 @@ let process r m =
       ZMQ.Socket.send r (to_msg Job_Worker [|master; ""|])
     )
   | Heartbeat -> (
-    print_endline "[manager]: heartbeat from client";
+    Utils.logger ("heartbeat @ " ^ m.par.(0));
     ZMQ.Socket.send r "ok"
     )
   | Data_Reg -> ()
