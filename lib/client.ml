@@ -30,7 +30,7 @@ let start_app x =
   | 0 -> if Unix.fork () <> 0 then Unix.execv x [||]
   | p -> ()
 
-let deploy_app x = ()
+let deploy_app x = Utils.logger "error, cannot find app!"
 
 let run id u_addr m_addr =
   register myid u_addr m_addr;
