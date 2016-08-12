@@ -1,6 +1,6 @@
 DEPS = str,unix,uint,ZMQ
 
-EXAMPLES = test_serialise test_context types manager actor client context dfs service
+EXAMPLES = test_serialise test_context types utils manager actor client context dfs service
 
 all:
 	ocamlfind ocamlc -package $(DEPS) -o types types.ml
