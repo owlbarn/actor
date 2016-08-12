@@ -30,6 +30,8 @@ let start_app x =
   | 0 -> if Unix.fork () <> 0 then Unix.execv x [||]
   | p -> ()
 
+let deploy_app x = ()
+
 let run id u_addr m_addr =
   register myid u_addr m_addr;
   (* set up local service *)
@@ -45,8 +47,7 @@ let run id u_addr m_addr =
         ZMQ.Socket.send rep "";
         match Sys.file_exists app with
         | true ->  start_app app
-        | false -> print_endline "need to install"
-        (* TODO: install the app *)
+        | false -> deploy_app app
         )
       | _ -> ()
     with exn -> heartbeat id m_addr
