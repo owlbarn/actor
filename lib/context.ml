@@ -22,14 +22,24 @@ let _ztx = ZMQ.Context.create ()
 let master_fun m =
   Utils.logger "init the job";
   _context.master <- my_addr;
+  (* contact allocated actors to assign jobs *)
   let addrs = Marshal.from_string m.par.(0) 0 in
   List.iter (fun x ->
     let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in (
     ZMQ.Socket.connect req x;
-    ZMQ.Socket.send req (to_msg Job_Create [|my_addr; ""|]);
+    let app = Filename.basename Sys.argv.(0) in
+    ZMQ.Socket.send req (to_msg Job_Create [|my_addr; app|]);
     ignore (ZMQ.Socket.recv req);
     ZMQ.Socket.close req )
-  ) addrs
+  ) addrs;
+  (* wait until all the allocated actors register *)
+  let rep = ZMQ.Socket.create _ztx ZMQ.Socket.rep in
+  ZMQ.Socket.bind rep my_addr;
+  while (List.length _context.workers) < (List.length addrs) do
+    let m = ZMQ.Socket.recv rep in
+    _context.workers <- (m :: _context.workers);
+    ZMQ.Socket.send rep "";
+  done
 
 let worker_fun m =
   _context.master <- m.par.(0);
@@ -81,8 +91,7 @@ let init jid url =
     | Job_Master -> master_fun m
     | Job_Worker -> worker_fun m
     | _ -> Utils.logger "unknown command";
-  ZMQ.Socket.close req;
-  ZMQ.Context.terminate _ztx
+  ZMQ.Socket.close req
 
 let map f x =
   Printf.printf "[master]: map -> %i workers\n" (List.length _context.workers);

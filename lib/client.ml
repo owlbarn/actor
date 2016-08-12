@@ -24,6 +24,12 @@ let heartbeat id m_addr =
   ignore (ZMQ.Socket.recv req);
   ZMQ.Socket.close req
 
+let start_app x =
+  Utils.logger ("starting " ^ x);
+  match Unix.fork () with
+  | 0 -> if Unix.fork () <> 0 then Unix.execv x [||]
+  | p -> ()
+
 let run id u_addr m_addr =
   register myid u_addr m_addr;
   (* set up local service *)
@@ -34,15 +40,18 @@ let run id u_addr m_addr =
     try let m = of_msg (ZMQ.Socket.recv rep) in
       match m.typ with
       | Job_Create -> (
-        (* TODO: create new worker process ... *)
-        Utils.logger ("Job <- " ^ m.par.(0));
-        ZMQ.Socket.send rep ""
+        let app = m.par.(1) in
+        Utils.logger (app ^ " <- " ^ m.par.(0));
+        ZMQ.Socket.send rep "";
+        match Sys.file_exists app with
+        | true ->  start_app app
+        | false -> print_endline "need to install"
+        (* TODO: install the app *)
         )
       | _ -> ()
     with exn -> heartbeat id m_addr
   done;
   ZMQ.Socket.close rep;
   ZMQ.Context.terminate _ztx
-
 
 let () = run myid addr manager
