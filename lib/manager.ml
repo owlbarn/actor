@@ -27,12 +27,16 @@ let process r m =
     )
   | Heartbeat -> (
     Utils.logger ("heartbeat @ " ^ m.par.(0));
+    (* TODO: update actor information *)
     ZMQ.Socket.send r "ok"
+    )
+  | Actors -> (
+    (* TODO: send back actors *)
     )
   | Data_Reg -> ()
   | _ -> ()
 
-let run id =
+let run id addr =
   let _ztx = ZMQ.Context.create () in
   let rep = ZMQ.Socket.create _ztx ZMQ.Socket.rep in
   ZMQ.Socket.bind rep addr;
@@ -45,4 +49,4 @@ let run id =
 
 let install_app x = None
 
-let _ = run myid
+let _ = run myid addr
