@@ -24,6 +24,7 @@ let master_fun m =
   _context.master <- my_addr;
   let rep = ZMQ.Socket.create _ztx ZMQ.Socket.rep in
   ZMQ.Socket.bind rep my_addr;
+  (* TODO: retrieve actors from manager, then let actors start worker process *)
   for i = 0 to 1 do (* FIXME: only allow two workers *)
     let m = ZMQ.Socket.recv rep in
     _context.workers <- (m :: _context.workers);

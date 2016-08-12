@@ -14,6 +14,7 @@ type message_type =
   | Job_Reg
   | Job_Master
   | Job_Worker
+  | Job_Create
   | MapTask
   | CollectTask
   | BroadcastTask

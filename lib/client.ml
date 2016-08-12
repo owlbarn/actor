@@ -33,6 +33,9 @@ let run id u_addr m_addr =
   while true do
     try let m = of_msg (ZMQ.Socket.recv rep) in
       match m.typ with
+      | Job_Create -> (
+        (* TODO: create new worker process ... *)
+        )
       | _ -> ()
     with exn -> heartbeat id m_addr
   done;
