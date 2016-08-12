@@ -10,7 +10,6 @@ type message_type =
   | User_Reg
   | Data_Reg
   | Heartbeat
-  | Actors
   | Job_Reg
   | Job_Master
   | Job_Worker

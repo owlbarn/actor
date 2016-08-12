@@ -35,6 +35,8 @@ let run id u_addr m_addr =
       match m.typ with
       | Job_Create -> (
         (* TODO: create new worker process ... *)
+        Utils.logger ("Job <- " ^ m.par.(0));
+        ZMQ.Socket.send rep ""
         )
       | _ -> ()
     with exn -> heartbeat id m_addr

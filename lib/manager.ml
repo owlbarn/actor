@@ -20,7 +20,8 @@ let process r m =
     let master, jid = m.par.(0), m.par.(1) in
     if Service.mem jid = false then (
       Service.add jid master;
-      ZMQ.Socket.send r (to_msg Job_Master [|""; ""|]) )
+      let addrs = Marshal.to_string (Actor.addrs ()) [] in
+      ZMQ.Socket.send r (to_msg Job_Master [|addrs; ""|]) )
     else
       let master = (Service.find jid).master in
       ZMQ.Socket.send r (to_msg Job_Worker [|master; ""|])
@@ -29,9 +30,6 @@ let process r m =
     Utils.logger ("heartbeat @ " ^ m.par.(0));
     (* TODO: update actor information *)
     ZMQ.Socket.send r "ok"
-    )
-  | Actors -> (
-    (* TODO: send back actors *)
     )
   | Data_Reg -> ()
   | _ -> ()

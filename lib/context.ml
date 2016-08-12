@@ -20,18 +20,16 @@ let my_addr = "tcp://127.0.0.1:" ^ (string_of_int (Random.int 5000 + 5000))
 let _ztx = ZMQ.Context.create ()
 
 let master_fun m =
-  print_endline "[master]: init the job";
+  Utils.logger "init the job";
   _context.master <- my_addr;
-  let rep = ZMQ.Socket.create _ztx ZMQ.Socket.rep in
-  ZMQ.Socket.bind rep my_addr;
-  (* TODO: retrieve actors from manager, then let actors start worker process *)
-  for i = 0 to 1 do (* FIXME: only allow two workers *)
-    let m = ZMQ.Socket.recv rep in
-    _context.workers <- (m :: _context.workers);
-    print_endline m;
-    ZMQ.Socket.send rep "ok"
-  done;
-  ZMQ.Socket.close rep
+  let addrs = Marshal.from_string m.par.(0) 0 in
+  List.iter (fun x ->
+    let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in (
+    ZMQ.Socket.connect req x;
+    ZMQ.Socket.send req (to_msg Job_Create [|my_addr; ""|]);
+    ignore (ZMQ.Socket.recv req);
+    ZMQ.Socket.close req )
+  ) addrs
 
 let worker_fun m =
   _context.master <- m.par.(0);
