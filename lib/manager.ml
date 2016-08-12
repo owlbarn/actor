@@ -4,6 +4,28 @@
 
 open Types
 
+module Actors = struct
+
+  let _actors = ref StrMap.empty
+
+  let create id addr = {
+    id = id;
+    addr = addr;
+    last_seen = Unix.time ()
+  }
+
+  let add id addr = _actors := StrMap.add id (create id addr) !_actors
+
+  let remove id = _actors := StrMap.remove id !_actors
+
+  let mem id = StrMap.mem id !_actors
+
+  let to_list () = StrMap.fold (fun k v l -> l @ [v]) !_actors []
+
+  let addrs () = StrMap.fold (fun k v l -> l @ [v.addr]) !_actors []
+
+end
+
 let addr = "tcp://*:5555"
 let myid = "manager_" ^ (string_of_int (Random.int 5000))
 
@@ -11,8 +33,8 @@ let process r m =
   match m.typ with
   | User_Reg -> (
     let uid, addr = m.par.(0), m.par.(1) in
-    if Actor.mem uid = false then
-      Actor.add uid addr;
+    if Actors.mem uid = false then
+      Actors.add uid addr;
       Utils.logger (uid ^ " @ " ^ addr);
       ZMQ.Socket.send r "ok"
     )
@@ -20,7 +42,7 @@ let process r m =
     let master, jid = m.par.(0), m.par.(1) in
     if Service.mem jid = false then (
       Service.add jid master;
-      let addrs = Marshal.to_string (Actor.addrs ()) [] in
+      let addrs = Marshal.to_string (Actors.addrs ()) [] in
       ZMQ.Socket.send r (to_msg Job_Master [|addrs; ""|]) )
     else
       let master = (Service.find jid).master in

@@ -4,8 +4,6 @@
 
 module StrMap = Map.Make (String)
 
-type actor_status = Available | Unavailable
-
 type message_type =
   | User_Reg
   | Data_Reg
@@ -27,7 +25,6 @@ type message_rec = {
 type actor_rec = {
   id : string;
   addr : string;
-  status : actor_status;
   last_seen : float;
 }
 
