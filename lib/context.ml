@@ -37,7 +37,8 @@ let master_fun m =
     ZMQ.Socket.connect s m;
     _context.workers <- (s :: _context.workers);
     ZMQ.Socket.send rep "";
-  done
+  done;
+  ZMQ.Socket.close rep
 
 let worker_fun m =
   _context.master <- m.par.(0);
@@ -72,7 +73,7 @@ let worker_fun m =
       )
     | Terminate -> (
       Utils.logger ("terminate @ " ^ my_addr);
-      ZMQ.Socket.send rep "ok";
+      ZMQ.Socket.send rep "ok"; Unix.sleep 1; (* FIXME: sleep ... *)
       failwith "terminated"
       )
     | _ -> ()
@@ -95,7 +96,7 @@ let init jid url =
   ZMQ.Socket.close req
 
 let map f x =
-  Printf.printf "[master]: map -> %i workers\n" (List.length _context.workers);
+  Utils.logger ("map -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
   let y = Dfs.rand_id () in
   List.iter (fun req ->
     let g = Marshal.to_string f [ Marshal.Closures ] in
@@ -104,7 +105,7 @@ let map f x =
     ) _context.workers; y
 
 let collect x =
-  Printf.printf "[master]: collect -> %i workers\n" (List.length _context.workers);
+  Utils.logger ("collect -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
   List.map (fun req ->
     ZMQ.Socket.send req (to_msg CollectTask [|x|]);
     let y = ZMQ.Socket.recv req in
@@ -112,14 +113,14 @@ let collect x =
     ) _context.workers
 
 let terminate () =
-  Printf.printf "[master]: terminate -> %i workers\n" (List.length _context.workers);
+  Utils.logger ("terminate -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
   List.iter (fun req ->
     ZMQ.Socket.send req (to_msg Terminate [||]);
     ignore (ZMQ.Socket.recv req)
     ) _context.workers
 
 let broadcast x =
-  Printf.printf "[master]: broadcast -> %i workers\n" (List.length _context.workers);
+  Utils.logger ("broadcast -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
   let y = Dfs.rand_id () in
   List.iter (fun req ->
     ZMQ.Socket.send req (to_msg BroadcastTask [|Marshal.to_string x []; y|]);
