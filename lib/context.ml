@@ -28,7 +28,8 @@ let master_fun m =
     let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in (
     ZMQ.Socket.connect req x;
     let app = Filename.basename Sys.argv.(0) in
-    ZMQ.Socket.send req (to_msg Job_Create [|my_addr; app|]);
+    let arg = Marshal.to_string Sys.argv [] in
+    ZMQ.Socket.send req (to_msg Job_Create [|my_addr; app; arg|]);
     ignore (ZMQ.Socket.recv req);
     ZMQ.Socket.close req )
   ) addrs;
@@ -52,7 +53,7 @@ let worker_fun m =
   (* set up job worker *)
   let rep = ZMQ.Socket.create _ztx ZMQ.Socket.rep in
   ZMQ.Socket.bind rep my_addr;
-  while true do
+  try while true do
     let m = of_msg (ZMQ.Socket.recv rep) in
     match m.typ with
     | MapTask -> (
@@ -78,8 +79,11 @@ let worker_fun m =
       failwith "terminated"
       )
     | _ -> ()
-  done;
-  ZMQ.Socket.close rep
+  done with exn -> (
+    Utils.logger "task finished.";
+    ZMQ.Socket.close rep;
+    Pervasives.exit 0
+  )
 
 let init jid url =
   _context.jid <- jid;

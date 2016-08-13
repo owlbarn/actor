@@ -1,4 +1,4 @@
-(** []
+(** [ Actor ]
   connect to Manager, represent a working node/actor.
 *)
 
@@ -24,10 +24,10 @@ let heartbeat id m_addr =
   ignore (ZMQ.Socket.recv req);
   ZMQ.Socket.close req
 
-let start_app x =
-  Utils.logger ("starting " ^ x);
+let start_app app arg =
+  Utils.logger ("starting " ^ app);
   match Unix.fork () with
-  | 0 -> if Unix.fork () <> 0 then Unix.execv x [||]
+  | 0 -> if Unix.fork () <> 0 then Unix.execv app arg
   | p -> ()
 
 let deploy_app x = Utils.logger "error, cannot find app!"
@@ -43,10 +43,11 @@ let run id u_addr m_addr =
       match m.typ with
       | Job_Create -> (
         let app = m.par.(1) in
+        let arg = Marshal.from_string m.par.(2) 0 in
         Utils.logger (app ^ " <- " ^ m.par.(0));
         ZMQ.Socket.send rep "";
         match Sys.file_exists app with
-        | true ->  start_app app
+        | true ->  start_app app arg
         | false -> deploy_app app
         )
       | _ -> ()
