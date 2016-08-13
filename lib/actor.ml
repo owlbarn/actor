@@ -9,20 +9,15 @@ let addr = "tcp://127.0.0.1:" ^ (string_of_int (Random.int 10000 + 50000))
 let myid = "actor_" ^ (string_of_int (Random.int 9000 + 1000))
 let _ztx = ZMQ.Context.create ()
 
-let register id u_addr m_addr =
-  let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
-  ZMQ.Socket.connect req m_addr;
+let register req id u_addr m_addr =
+  Utils.logger ("register -> " ^ m_addr);
   ZMQ.Socket.send req (to_msg User_Reg [|id; u_addr|]);
-  ignore (ZMQ.Socket.recv req);
-  ZMQ.Socket.close req
+  ignore (ZMQ.Socket.recv req)
 
-let heartbeat id m_addr =
+let heartbeat req id m_addr =
   Utils.logger ("heartbeat -> " ^ m_addr);
-  let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
-  ZMQ.Socket.connect req m_addr;
   ZMQ.Socket.send req (to_msg Heartbeat [|id|]);
-  ignore (ZMQ.Socket.recv req);
-  ZMQ.Socket.close req
+  ignore (ZMQ.Socket.recv req)
 
 let start_app app arg =
   Utils.logger ("starting " ^ app);
@@ -33,7 +28,10 @@ let start_app app arg =
 let deploy_app x = Utils.logger "error, cannot find app!"
 
 let run id u_addr m_addr =
-  register myid u_addr m_addr;
+  (* set up connection to manager *)
+  let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
+  ZMQ.Socket.connect req m_addr;
+  register req myid u_addr m_addr;
   (* set up local service *)
   let rep = ZMQ.Socket.create _ztx ZMQ.Socket.rep in
   ZMQ.Socket.bind rep u_addr;
@@ -51,9 +49,10 @@ let run id u_addr m_addr =
         | false -> deploy_app app
         )
       | _ -> ()
-    with exn -> heartbeat id m_addr
+    with exn -> heartbeat req id m_addr
   done;
   ZMQ.Socket.close rep;
+  ZMQ.Socket.close req;
   ZMQ.Context.terminate _ztx
 
 let () = run myid addr manager
