@@ -5,7 +5,7 @@
 open Types
 
 let manager = "tcp://127.0.0.1:5555"
-let addr = "tcp://127.0.0.1:" ^ (string_of_int (Random.int 5000 + 5000))
+let addr = "tcp://127.0.0.1:" ^ (string_of_int (Random.int 10000 + 50000))
 let myid = "actor_" ^ (string_of_int (Random.int 9000 + 1000))
 let _ztx = ZMQ.Context.create ()
 
@@ -36,9 +36,9 @@ let run id u_addr m_addr =
   register myid u_addr m_addr;
   (* set up local service *)
   let rep = ZMQ.Socket.create _ztx ZMQ.Socket.rep in
-  ZMQ.Socket.set_receive_timeout rep 10000;
   ZMQ.Socket.bind rep u_addr;
   while true do
+    ZMQ.Socket.set_receive_timeout rep (300 * 1000);
     try let m = of_msg (ZMQ.Socket.recv rep) in
       match m.typ with
       | Job_Create -> (
