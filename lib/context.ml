@@ -7,15 +7,10 @@ open Types
 type t = {
   mutable jid : string;
   mutable master : string;
-  mutable workers : string list;
+  mutable workers : [ `Req ] ZMQ.Socket.t list;
 }
 
-let _context = {
-  jid = "";
-  master = "";
-  workers = [];
-}
-
+let _context = { jid = ""; master = ""; workers = []; }
 let my_addr = "tcp://127.0.0.1:" ^ (string_of_int (Random.int 5000 + 5000))
 let _ztx = ZMQ.Context.create ()
 
@@ -25,20 +20,22 @@ let master_fun m =
   (* contact allocated actors to assign jobs *)
   let addrs = Marshal.from_string m.par.(0) 0 in
   List.iter (fun x ->
-    let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in (
+    let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
     ZMQ.Socket.connect req x;
     let app = Filename.basename Sys.argv.(0) in
     let arg = Marshal.to_string Sys.argv [] in
     ZMQ.Socket.send req (to_msg Job_Create [|my_addr; app; arg|]);
     ignore (ZMQ.Socket.recv req);
-    ZMQ.Socket.close req )
+    ZMQ.Socket.close req
   ) addrs;
   (* wait until all the allocated actors register *)
   let rep = ZMQ.Socket.create _ztx ZMQ.Socket.rep in
   ZMQ.Socket.bind rep my_addr;
   while (List.length _context.workers) < (List.length addrs) do
     let m = ZMQ.Socket.recv rep in
-    _context.workers <- (m :: _context.workers);
+    let s = ZMQ.Socket.create _ztx ZMQ.Socket.req in
+    ZMQ.Socket.connect s m;
+    _context.workers <- (s :: _context.workers);
     ZMQ.Socket.send rep "";
   done
 
@@ -100,45 +97,33 @@ let init jid url =
 let map f x =
   Printf.printf "[master]: map -> %i workers\n" (List.length _context.workers);
   let y = Dfs.rand_id () in
-  List.iter (fun w ->
-    let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
-    ZMQ.Socket.connect req w;
+  List.iter (fun req ->
     let g = Marshal.to_string f [ Marshal.Closures ] in
     ZMQ.Socket.send req (to_msg MapTask [|g; x; y|]);
-    ignore (ZMQ.Socket.recv req);
-    ZMQ.Socket.close req;
+    ignore (ZMQ.Socket.recv req)
     ) _context.workers; y
 
 let collect x =
   Printf.printf "[master]: collect -> %i workers\n" (List.length _context.workers);
-  List.map (fun w ->
-    let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
-    ZMQ.Socket.connect req w;
+  List.map (fun req ->
     ZMQ.Socket.send req (to_msg CollectTask [|x|]);
     let y = ZMQ.Socket.recv req in
-    ZMQ.Socket.close req;
     Marshal.from_string y 0
     ) _context.workers
 
 let terminate () =
   Printf.printf "[master]: terminate -> %i workers\n" (List.length _context.workers);
-  List.iter (fun w ->
-    let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
-    ZMQ.Socket.connect req w;
+  List.iter (fun req ->
     ZMQ.Socket.send req (to_msg Terminate [||]);
-    ignore (ZMQ.Socket.recv req);
-    ZMQ.Socket.close req
+    ignore (ZMQ.Socket.recv req)
     ) _context.workers
 
 let broadcast x =
   Printf.printf "[master]: broadcast -> %i workers\n" (List.length _context.workers);
   let y = Dfs.rand_id () in
-  List.iter (fun w ->
-    let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
-    ZMQ.Socket.connect req w;
+  List.iter (fun req ->
     ZMQ.Socket.send req (to_msg BroadcastTask [|Marshal.to_string x []; y|]);
-    ignore (ZMQ.Socket.recv req);
-    ZMQ.Socket.close req
+    ignore (ZMQ.Socket.recv req)
     ) _context.workers; y
 
 let get_value x = Dfs.find x
