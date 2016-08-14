@@ -56,7 +56,7 @@ let worker_fun m =
     match m.typ with
     | MapTask -> (
       Utils.logger ("map @ " ^ my_addr);
-      ZMQ.Socket.send rep "ok";
+      ZMQ.Socket.send rep "";
       let f : 'a -> 'b = Marshal.from_string m.par.(0) 0 in
       let y = f (Dfs.find m.par.(1)) in
       Dfs.add (m.par.(2)) y
@@ -68,12 +68,12 @@ let worker_fun m =
       )
     | BroadcastTask -> (
       Utils.logger ("broadcast @ " ^ my_addr);
-      ZMQ.Socket.send rep "ok";
+      ZMQ.Socket.send rep "";
       Dfs.add m.par.(1) (Marshal.from_string m.par.(0) 0);
       )
     | Terminate -> (
       Utils.logger ("terminate @ " ^ my_addr);
-      ZMQ.Socket.send rep "ok"; Unix.sleep 1; (* FIXME: sleep ... *)
+      ZMQ.Socket.send rep ""; Unix.sleep 1; (* FIXME: sleep ... *)
       failwith "terminated"
       )
     | _ -> ()
