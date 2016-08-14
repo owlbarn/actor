@@ -14,9 +14,9 @@ let register req id u_addr m_addr =
   ZMQ.Socket.send req (to_msg User_Reg [|id; u_addr|]);
   ignore (ZMQ.Socket.recv req)
 
-let heartbeat req id m_addr =
+let heartbeat req id u_addr m_addr =
   Utils.logger ("heartbeat -> " ^ m_addr);
-  ZMQ.Socket.send req (to_msg Heartbeat [|id|]);
+  ZMQ.Socket.send req (to_msg Heartbeat [|id; u_addr|]);
   ignore (ZMQ.Socket.recv req)
 
 let start_app app arg =
@@ -36,7 +36,7 @@ let run id u_addr m_addr =
   let rep = ZMQ.Socket.create _ztx ZMQ.Socket.rep in
   ZMQ.Socket.bind rep u_addr;
   while true do
-    ZMQ.Socket.set_receive_timeout rep (300 * 1000);
+    ZMQ.Socket.set_receive_timeout rep (5 * 1000);
     try let m = of_msg (ZMQ.Socket.recv rep) in
       match m.typ with
       | Job_Create -> (
@@ -49,7 +49,10 @@ let run id u_addr m_addr =
         | false -> deploy_app app
         )
       | _ -> ()
-    with exn -> heartbeat req id m_addr
+    with
+      | Unix.Unix_error (_,_,_) -> heartbeat req id u_addr m_addr
+      | ZMQ.ZMQ_exception (_,s) -> Utils.logger ("error, " ^ s)
+      | exn -> Utils.logger "unknown error"
   done;
   ZMQ.Socket.close rep;
   ZMQ.Socket.close req;

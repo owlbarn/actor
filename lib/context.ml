@@ -73,6 +73,7 @@ let worker_fun m =
       )
     | Terminate -> (
       Utils.logger ("terminate @ " ^ my_addr);
+      List.iter (fun req -> ZMQ.Socket.close req) _context.workers;
       ZMQ.Socket.send rep "ok"; Unix.sleep 1; (* FIXME: sleep ... *)
       failwith "terminated"
       )

@@ -5,7 +5,6 @@
 open Types
 
 module Actors = struct
-
   let _actors = ref StrMap.empty
 
   let create id addr = {
@@ -15,15 +14,10 @@ module Actors = struct
   }
 
   let add id addr = _actors := StrMap.add id (create id addr) !_actors
-
   let remove id = _actors := StrMap.remove id !_actors
-
   let mem id = StrMap.mem id !_actors
-
   let to_list () = StrMap.fold (fun k v l -> l @ [v]) !_actors []
-
   let addrs () = StrMap.fold (fun k v l -> l @ [v.addr]) !_actors []
-
 end
 
 let addr = "tcp://*:5555"
@@ -34,8 +28,8 @@ let process r m =
   | User_Reg -> (
     let uid, addr = m.par.(0), m.par.(1) in
     if Actors.mem uid = false then
-      Actors.add uid addr;
       Utils.logger (uid ^ " @ " ^ addr);
+      Actors.add uid addr;
       ZMQ.Socket.send r "ok"
     )
   | Job_Reg -> (
@@ -50,7 +44,7 @@ let process r m =
     )
   | Heartbeat -> (
     Utils.logger ("heartbeat @ " ^ m.par.(0));
-    (* TODO: update actor information *)
+    Actors.add m.par.(0) m.par.(1);
     ZMQ.Socket.send r "ok"
     )
   | Data_Reg -> ()
