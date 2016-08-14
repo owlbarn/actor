@@ -23,7 +23,7 @@ let start_app app arg =
   Utils.logger ("starting " ^ app);
   match Unix.fork () with
   | 0 -> if Unix.fork () <> 0 then Unix.execv app arg
-  | p -> ()
+  | p -> ignore(Unix.wait ())
 
 let deploy_app x = Utils.logger "error, cannot find app!"
 
