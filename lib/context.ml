@@ -73,7 +73,6 @@ let worker_fun m =
       )
     | Terminate -> (
       Utils.logger ("terminate @ " ^ my_addr);
-      List.iter (fun req -> ZMQ.Socket.close req) _context.workers;
       ZMQ.Socket.send rep "ok"; Unix.sleep 1; (* FIXME: sleep ... *)
       failwith "terminated"
       )
@@ -117,7 +116,8 @@ let terminate () =
   Utils.logger ("terminate -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
   List.iter (fun req ->
     ZMQ.Socket.send req (to_msg Terminate [||]);
-    ignore (ZMQ.Socket.recv req)
+    ignore (ZMQ.Socket.recv req);
+    ZMQ.Socket.close req
     ) _context.workers
 
 let broadcast x =

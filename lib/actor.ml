@@ -20,9 +20,9 @@ let heartbeat req id u_addr m_addr =
   ignore (ZMQ.Socket.recv req)
 
 let start_app app arg =
-  Utils.logger ("starting " ^ app);
+  Utils.logger ("starting job " ^ app);
   match Unix.fork () with
-  | 0 -> if Unix.fork () <> 0 then Unix.execv app arg
+  | 0 -> if Unix.fork () = 0 then Unix.execv app arg else exit 0
   | p -> ignore(Unix.wait ())
 
 let deploy_app x = Utils.logger "error, cannot find app!"
@@ -36,7 +36,7 @@ let run id u_addr m_addr =
   let rep = ZMQ.Socket.create _ztx ZMQ.Socket.rep in
   ZMQ.Socket.bind rep u_addr;
   while true do
-    ZMQ.Socket.set_receive_timeout rep (5 * 1000);
+    ZMQ.Socket.set_receive_timeout rep (300 * 1000);
     try let m = of_msg (ZMQ.Socket.recv rep) in
       match m.typ with
       | Job_Create -> (
