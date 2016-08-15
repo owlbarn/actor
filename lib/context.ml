@@ -58,18 +58,18 @@ let worker_fun m =
       Utils.logger ("map @ " ^ my_addr);
       ZMQ.Socket.send rep "";
       let f : 'a -> 'b = Marshal.from_string m.par.(0) 0 in
-      let y = f (Dfs.find m.par.(1)) in
-      Dfs.add (m.par.(2)) y
+      let y = f (Memory.find m.par.(1)) in
+      Memory.add (m.par.(2)) y
       )
     | CollectTask -> (
       Utils.logger ("collect @ " ^ my_addr);
-      let y = Marshal.to_string (Dfs.find m.par.(0)) [] in
+      let y = Marshal.to_string (Memory.find m.par.(0)) [] in
       ZMQ.Socket.send rep y
       )
     | BroadcastTask -> (
       Utils.logger ("broadcast @ " ^ my_addr);
       ZMQ.Socket.send rep "";
-      Dfs.add m.par.(1) (Marshal.from_string m.par.(0) 0);
+      Memory.add m.par.(1) (Marshal.from_string m.par.(0) 0);
       )
     | Terminate -> (
       Utils.logger ("terminate @ " ^ my_addr);
@@ -97,7 +97,7 @@ let init jid url =
 
 let map f x =
   Utils.logger ("map -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
-  let y = Dfs.rand_id () in
+  let y = Memory.rand_id () in
   List.iter (fun req ->
     let g = Marshal.to_string f [ Marshal.Closures ] in
     ZMQ.Socket.send req (to_msg MapTask [|g; x; y|]);
@@ -122,10 +122,10 @@ let terminate () =
 
 let broadcast x =
   Utils.logger ("broadcast -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
-  let y = Dfs.rand_id () in
+  let y = Memory.rand_id () in
   List.iter (fun req ->
     ZMQ.Socket.send req (to_msg BroadcastTask [|Marshal.to_string x []; y|]);
     ignore (ZMQ.Socket.recv req)
     ) _context.workers; y
 
-let get_value x = Dfs.find x
+let get_value x = Memory.find x
