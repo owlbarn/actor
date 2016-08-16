@@ -1,10 +1,11 @@
-DEPS = str,unix,uint,ZMQ
+DEPS = str,unix,uint,ZMQ,ocamlgraph
 
 EXAMPLES = test_serialise test_context types utils manager actor client context memory service
 
 all:
 	ocamlfind ocamlc -package $(DEPS) -o types types.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o utils utils.ml
+	ocamlfind ocamlc -package $(DEPS) -linkpkg -o dag dag.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o memory types.cmo memory.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o context types.cmo utils.cmo memory.cmo context.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o actor types.cmo utils.cmo actor.ml
