@@ -104,7 +104,13 @@ let map f x =
     ignore (ZMQ.Socket.recv req)
     ) _context.workers; y
 
+let reduce f x = None
+
+let filter f x = None
+
 let union x y = None
+
+let join x y = None
 
 let collect x =
   Utils.logger ("collect -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
