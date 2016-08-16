@@ -104,6 +104,8 @@ let map f x =
     ignore (ZMQ.Socket.recv req)
     ) _context.workers; y
 
+let union x y = None
+
 let collect x =
   Utils.logger ("collect -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
   List.map (fun req ->
