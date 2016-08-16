@@ -2,17 +2,14 @@
   maintains a directed acyclic graph of computation.
 *)
 
-type t = {
-  data_id : string;
-  finshed : bool;
-  parents : (string * string) list;
-}
+type color = Red | Green | Blue
 
 module V = struct
-  type t = string
-  let compare = Pervasives.compare
-  let hash = Hashtbl.hash
-  let equal = (=)
+  type t = { data_id : string; color : color; }
+  let hash x = Hashtbl.hash x.data_id
+  let equal x y = x.data_id = y.data_id
+  let compare x y = Pervasives.compare x.data_id y.data_id
+
 end
 
 module E = struct
@@ -23,4 +20,4 @@ end
 
 module Graph = Graph.Imperative.Graph.ConcreteLabeled(V)(E)
 
-let _graph : t array = [||]
+let _graph = None
