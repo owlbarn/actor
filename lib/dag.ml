@@ -9,7 +9,6 @@ module V = struct
   let hash x = Hashtbl.hash x.data_id
   let equal x y = x.data_id = y.data_id
   let compare x y = Pervasives.compare x.data_id y.data_id
-
 end
 
 module E = struct
@@ -18,6 +17,6 @@ module E = struct
   let default = 0.0
 end
 
-module Graph = Graph.Imperative.Graph.ConcreteLabeled(V)(E)
+module Digraph = Graph.Imperative.Digraph.ConcreteLabeled(V)(E)
 
 let _graph = None
