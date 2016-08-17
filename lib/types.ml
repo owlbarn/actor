@@ -4,6 +4,8 @@
 
 module StrMap = Map.Make (String)
 
+type color = Red | Green | Blue | Yellow
+
 type message_type =
   | User_Reg
   | Data_Reg

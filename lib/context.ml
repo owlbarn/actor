@@ -98,6 +98,7 @@ let init jid url =
 let map f x =
   Utils.logger ("map -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
   let y = Memory.rand_id () in
+  Dag.add_edge "" x y Red;
   List.iter (fun req ->
     let g = Marshal.to_string f [ Marshal.Closures ] in
     ZMQ.Socket.send req (to_msg MapTask [|g; x; y|]);
@@ -114,6 +115,8 @@ let join x y = None
 
 let collect x =
   Utils.logger ("collect -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
+  let y = Memory.rand_id () in
+  Dag.add_edge "" x y Blue;
   List.map (fun req ->
     ZMQ.Socket.send req (to_msg CollectTask [|x|]);
     let y = ZMQ.Socket.recv req in

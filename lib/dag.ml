@@ -2,7 +2,8 @@
   maintains a directed acyclic graph of computation.
 *)
 
-type color = Red | Green | Blue | Yellow
+open Types
+
 type vertex = { data : string; color : color; }
 
 module V = struct
@@ -18,7 +19,6 @@ module E = struct
 end
 
 module Digraph = Graph.Imperative.Digraph.ConcreteLabeled (V) (E)
-
 module TopoOrd = Graph.Topological.Make_stable (Digraph)
 
 let _graph = ref (Digraph.create ())
@@ -72,7 +72,9 @@ let print_stages x =
     ) l; print_endline ""
   ) x
 
-let () =
+let print_tasks () = TopoOrd.iter (fun v -> print_vertex v) !_graph
+
+let test () =
   add_edge "" "1" "2" Red;
   add_edge "" "1" "4" Red;
   add_edge "" "1" "6" Red;

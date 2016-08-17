@@ -7,11 +7,11 @@ all:
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o utils utils.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o dag dag.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o memory types.cmo memory.ml
-	ocamlfind ocamlc -package $(DEPS) -linkpkg -o context types.cmo utils.cmo memory.cmo context.ml
+	ocamlfind ocamlc -package $(DEPS) -linkpkg -o context types.cmo dag.cmo utils.cmo memory.cmo context.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o actor types.cmo utils.cmo actor.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o service types.cmo service.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o manager types.cmo utils.cmo service.cmo manager.ml
-	ocamlfind ocamlc -package $(DEPS) -linkpkg -o test_context types.cmo utils.cmo memory.cmo context.cmo test_context.ml
+	ocamlfind ocamlc -package $(DEPS) -linkpkg -o test_context types.cmo dag.cmo utils.cmo memory.cmo context.cmo test_context.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o test_serialise test_serialise.ml
 
 clean:
