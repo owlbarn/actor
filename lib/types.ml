@@ -15,6 +15,7 @@ type message_type =
   | Job_Worker
   | Job_Create
   | MapTask
+  | UnionTask
   | PipelinedTask
   | CollectTask
   | BroadcastTask

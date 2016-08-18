@@ -22,9 +22,15 @@ let process_pipeline s =
       Utils.logger ("map @ " ^ my_addr);
       let f : 'a -> 'b = Marshal.from_string m.par.(0) 0 in
       let y = f (Memory.find m.par.(1)) in
-      Memory.add (m.par.(2)) y
+      Memory.add m.par.(2) y
       )
-    | _ -> print_endline "other ops ..."
+    | UnionTask -> (
+      Utils.logger ("union @ " ^ my_addr);
+      let x = Memory.find m.par.(0) in
+      let y = Memory.find m.par.(1) in
+      Memory.add m.par.(2) (Array.append x y) (* FIXME: change to list *)
+      )
+    | _ -> Utils.logger "unknow task types"
   ) s
 
 let master_fun m =
@@ -67,13 +73,6 @@ let worker_fun m =
   try while true do
     let m = of_msg (ZMQ.Socket.recv rep) in
     match m.typ with
-    | MapTask -> (
-      Utils.logger ("map @ " ^ my_addr);
-      ZMQ.Socket.send rep "";
-      let f : 'a -> 'b = Marshal.from_string m.par.(0) 0 in
-      let y = f (Memory.find m.par.(1)) in
-      Memory.add (m.par.(2)) y
-      )
     | CollectTask -> (
       Utils.logger ("collect @ " ^ my_addr);
       let y = Marshal.to_string (Memory.find m.par.(0)) [] in
@@ -127,17 +126,17 @@ let map f x =
   Utils.logger ("map -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
   let y = Memory.rand_id () in
   let g = Marshal.to_string f [ Marshal.Closures ] in
-  (*List.iter (fun req ->
-    ZMQ.Socket.send req (to_msg MapTask [|g; x; y|]);
-    ignore (ZMQ.Socket.recv req)
-    ) _context.workers; *)
   Dag.add_edge (to_msg MapTask [|g; x; y|]) x y Red; y
 
 let reduce f x = None
 
 let filter f x = None
 
-let union x y = None
+let union x y =
+  Utils.logger ("union -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
+  let z = Memory.rand_id () in
+  Dag.add_edge (to_msg UnionTask [|x; y; z|]) x z Red;
+  Dag.add_edge (to_msg UnionTask [|x; y; z|]) y z Red; z
 
 let join x y = None
 
