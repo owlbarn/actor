@@ -14,6 +14,11 @@ let _context = { jid = ""; master = ""; workers = []; }
 let my_addr = "tcp://127.0.0.1:" ^ (string_of_int (Random.int 5000 + 5000))
 let _ztx = ZMQ.Context.create ()
 
+let process_pipeline s =
+  Array.iter (fun s ->
+    print_endline "done"
+  ) s
+
 let master_fun m =
   Utils.logger "init the job";
   _context.master <- my_addr;
@@ -71,6 +76,11 @@ let worker_fun m =
       ZMQ.Socket.send rep "";
       Memory.add m.par.(1) (Marshal.from_string m.par.(0) 0);
       )
+    | PipelinedTask -> (
+      Utils.logger ("pipelined @ " ^ my_addr);
+      process_pipeline m.par;
+      ZMQ.Socket.send rep ""
+      )
     | Terminate -> (
       Utils.logger ("terminate @ " ^ my_addr);
       ZMQ.Socket.send rep ""; Unix.sleep 1; (* FIXME: sleep ... *)
@@ -95,15 +105,25 @@ let init jid url =
     | _ -> Utils.logger "unknown command";
   ZMQ.Socket.close req
 
+let run_job () =
+  List.iter (fun s ->
+    Dag.print_stages [s];
+    Dag.mark_stage_done s;
+    List.iter (fun req ->
+      ZMQ.Socket.send req (to_msg PipelinedTask (Array.of_list s));
+      ignore (ZMQ.Socket.recv req)
+    ) _context.workers;
+  ) (Dag.stages ())
+
 let map f x =
   Utils.logger ("map -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
   let y = Memory.rand_id () in
-  Dag.add_edge "" x y Red;
+  let g = Marshal.to_string f [ Marshal.Closures ] in
   List.iter (fun req ->
-    let g = Marshal.to_string f [ Marshal.Closures ] in
     ZMQ.Socket.send req (to_msg MapTask [|g; x; y|]);
     ignore (ZMQ.Socket.recv req)
-    ) _context.workers; y
+    ) _context.workers;
+    Dag.add_edge (to_msg MapTask [|g; x; y|]) x y Red; y
 
 let reduce f x = None
 
@@ -116,7 +136,7 @@ let join x y = None
 let collect x =
   Utils.logger ("collect -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
   let y = Memory.rand_id () in
-  Dag.add_edge "" x y Blue;
+  run_job ();
   List.map (fun req ->
     ZMQ.Socket.send req (to_msg CollectTask [|x|]);
     let y = ZMQ.Socket.recv req in
@@ -140,5 +160,3 @@ let broadcast x =
     ) _context.workers; y
 
 let get_value x = Memory.find x
-
-let run_job x = None

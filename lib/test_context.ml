@@ -15,8 +15,6 @@ let test () =
   let y = Context.broadcast 3. in
   let x = Context.map (fun v -> Array.map (fun x -> x +. (Context.get_value y)) v) x in
   List.iter (fun x -> print_float_array x) (Context.collect x);
-  (* Test Dag module *)
-  Dag.print_tasks ();
   (* Terminate *)
   Context.terminate ()
 

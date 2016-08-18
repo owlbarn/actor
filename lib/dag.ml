@@ -67,6 +67,7 @@ let print_stages x =
 
 let print_tasks () = TopoOrd.iter (fun v -> print_vertex v) !_graph
 
+(*
 let test () =
   add_edge "" "1" "2" Red;
   add_edge "" "1" "4" Red;
@@ -81,3 +82,6 @@ let test () =
   print_stages (stages ());
   mark_stage_done (List.nth (stages ()) 0);
   TopoOrd.iter (fun v -> print_vertex v) !_graph
+
+let _ = test ()
+*)
