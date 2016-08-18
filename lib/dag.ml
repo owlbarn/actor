@@ -51,6 +51,8 @@ let mark_stage_done s =
     _vlabel := StrMap.add k { c = Green; f = v.f } !_vlabel
   ) s
 
+(* FIXME: the following functions are for debugging *)
+
 let print_vertex v =
   let x = StrMap.find v !_vlabel in
   match x.c with
@@ -68,22 +70,3 @@ let print_stages x =
   ) x
 
 let print_tasks () = TopoOrd.iter (fun v -> print_vertex v) !_graph
-
-(*
-let test () =
-  add_edge "" "1" "2" Red;
-  add_edge "" "1" "4" Red;
-  add_edge "" "1" "6" Red;
-  add_edge "" "2" "3" Blue;
-  add_edge "" "4" "3" Blue;
-  add_edge "" "3" "5" Blue;
-  add_edge "" "4" "7" Red;
-  add_edge "" "6" "8" Blue;
-  add_edge "" "7" "8" Blue;
-  TopoOrd.iter (fun v -> print_vertex v) !_graph;
-  print_stages (stages ());
-  mark_stage_done (List.nth (stages ()) 0);
-  TopoOrd.iter (fun v -> print_vertex v) !_graph
-
-let _ = test ()
-*)

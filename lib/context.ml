@@ -21,14 +21,20 @@ let process_pipeline s =
     | MapTask -> (
       Utils.logger ("map @ " ^ my_addr);
       let f : 'a -> 'b = Marshal.from_string m.par.(0) 0 in
-      let y = f (Memory.find m.par.(1)) in
+      let y = List.map f (Memory.find m.par.(1)) in
+      Memory.add m.par.(2) y
+      )
+    | FilterTask -> (
+      Utils.logger ("map @ " ^ my_addr);
+      let f : 'a -> bool = Marshal.from_string m.par.(0) 0 in
+      let y = List.filter f (Memory.find m.par.(1)) in
       Memory.add m.par.(2) y
       )
     | UnionTask -> (
       Utils.logger ("union @ " ^ my_addr);
       let x = Memory.find m.par.(0) in
       let y = Memory.find m.par.(1) in
-      Memory.add m.par.(2) (Array.append x y) (* FIXME: change to list *)
+      Memory.add m.par.(2) (x @ y) (* FIXME: change to list *)
       )
     | _ -> Utils.logger "unknow task types"
   ) s
@@ -130,7 +136,11 @@ let map f x =
 
 let reduce f x = None
 
-let filter f x = None
+let filter f x =
+  Utils.logger ("filter -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
+  let y = Memory.rand_id () in
+  let g = Marshal.to_string f [ Marshal.Closures ] in
+  Dag.add_edge (to_msg FilterTask [|g; x; y|]) x y Red; y
 
 let union x y =
   Utils.logger ("union -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
