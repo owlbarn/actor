@@ -114,7 +114,7 @@ let init jid url =
 
 let run_job () =
   List.iter (fun s ->
-    let s' = List.map (fun x -> (Dag.get_vlabel x).f) s in
+    let s' = List.map (fun x -> Dag.get_vlabel_f x) s in
     List.iter (fun req ->
       ZMQ.Socket.send req (to_msg PipelinedTask (Array.of_list s'));
       ignore (ZMQ.Socket.recv req)

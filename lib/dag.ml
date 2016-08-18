@@ -27,7 +27,7 @@ let _graph = ref (Digraph.create ())
 
 let _vlabel : vlabel StrMap.t ref = ref StrMap.empty
 
-let get_vlabel x = StrMap.find x !_vlabel
+let get_vlabel_f x = (StrMap.find x !_vlabel).f
 
 let add_edge f u v c =
   if (StrMap.mem u !_vlabel) = false then
@@ -39,7 +39,7 @@ let stages () =
   let r, s = ref [], ref [] in
   let _ = TopoOrd.iter (fun v ->
     match (StrMap.find v !_vlabel).c with
-    | Blue -> ( s := !s @ [v]; r := !r @ [!s]; s := [] )
+    | Blue -> s := !s @ [v]; r := !r @ [!s]; s := []
     | Red -> s := !s @ [v]
     | Green -> ()
   ) !_graph in
