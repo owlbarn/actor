@@ -22,6 +22,7 @@ let test () =
   List.iter (fun x -> print_float_list x) (Context.collect x2);
   List.iter (fun x -> print_float_list x) (Context.collect x3);
   List.iter (fun x -> print_float_list x) (Context.collect x4);
+  print_endline ("total elements: " ^ (string_of_int (Context.count x4)));
   (* Terminate *)
   Context.terminate ()
 

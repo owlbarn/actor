@@ -19,6 +19,7 @@ type message_type =
   | UnionTask
   | PipelinedTask
   | CollectTask
+  | CountTask
   | BroadcastTask
   | Terminate
 

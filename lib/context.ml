@@ -79,6 +79,11 @@ let worker_fun m =
   try while true do
     let m = of_msg (ZMQ.Socket.recv rep) in
     match m.typ with
+    | CountTask -> (
+      Utils.logger ("count @ " ^ my_addr);
+      let y = Marshal.to_string (List.length (Memory.find m.par.(0))) [] in
+      ZMQ.Socket.send rep y
+      )
     | CollectTask -> (
       Utils.logger ("collect @ " ^ my_addr);
       let y = Marshal.to_string (Memory.find m.par.(0)) [] in
@@ -158,6 +163,16 @@ let collect x =
     let y = ZMQ.Socket.recv req in
     Marshal.from_string y 0
     ) _context.workers
+
+let count x =
+  Utils.logger ("count -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
+  run_job ();
+  let l = List.map (fun req ->
+    ZMQ.Socket.send req (to_msg CountTask [|x|]);
+    let y = ZMQ.Socket.recv req in
+    Marshal.from_string y 0
+  ) _context.workers in
+  List.fold_left (+) 0 l
 
 let terminate () =
   Utils.logger ("terminate -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
