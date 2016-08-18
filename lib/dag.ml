@@ -6,19 +6,22 @@ open Types
 
 type vertex = { data : string; color : color; }
 
-module V = struct
-  type t = vertex
-  let hash x = Hashtbl.hash x.data
-  let equal x y = x.data = y.data
-  let compare x y = Pervasives.compare x.data y.data
-end
-module E = struct
-  type t = string
-  let compare = Pervasives.compare
-  let default = ""
+module Digraph = struct
+  module V' = struct
+    type t = vertex
+    let hash x = Hashtbl.hash x.data
+    let equal x y = x.data = y.data
+    let compare x y = Pervasives.compare x.data y.data
+  end
+  module E' = struct
+    type t = string
+    let compare = Pervasives.compare
+    let default = ""
+  end
+  include Graph.Imperative.Digraph.ConcreteLabeled (V') (E')
 end
 
-module Digraph = Graph.Imperative.Digraph.ConcreteLabeled (V) (E)
+(* module Digraph = Graph.Imperative.Digraph.ConcreteLabeled (V) (E) *)
 module TopoOrd = Graph.Topological.Make_stable (Digraph)
 
 let _graph = ref (Digraph.create ())
@@ -88,3 +91,5 @@ let test () =
   print_stages (stages ());
   mark_stage_done (List.nth (stages ()) 0);
   TopoOrd.iter (fun v -> print_vertex v) !_graph
+
+let _ = test ()
