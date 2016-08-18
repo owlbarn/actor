@@ -16,7 +16,15 @@ let _ztx = ZMQ.Context.create ()
 
 let process_pipeline s =
   Array.iter (fun s ->
-    print_endline "done"
+    let m = of_msg s in
+    match m.typ with
+    | MapTask -> (
+      Utils.logger ("map @ " ^ my_addr);
+      let f : 'a -> 'b = Marshal.from_string m.par.(0) 0 in
+      let y = f (Memory.find m.par.(1)) in
+      Memory.add (m.par.(2)) y
+      )
+    | _ -> print_endline "other ops ..."
   ) s
 
 let master_fun m =
@@ -107,23 +115,23 @@ let init jid url =
 
 let run_job () =
   List.iter (fun s ->
-    Dag.print_stages [s];
-    Dag.mark_stage_done s;
+    let s' = List.map (fun x -> (Dag.get_vlabel x).f) s in
     List.iter (fun req ->
-      ZMQ.Socket.send req (to_msg PipelinedTask (Array.of_list s));
+      ZMQ.Socket.send req (to_msg PipelinedTask (Array.of_list s'));
       ignore (ZMQ.Socket.recv req)
     ) _context.workers;
+    Dag.mark_stage_done s;
   ) (Dag.stages ())
 
 let map f x =
   Utils.logger ("map -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
   let y = Memory.rand_id () in
   let g = Marshal.to_string f [ Marshal.Closures ] in
-  List.iter (fun req ->
+  (*List.iter (fun req ->
     ZMQ.Socket.send req (to_msg MapTask [|g; x; y|]);
     ignore (ZMQ.Socket.recv req)
-    ) _context.workers;
-    Dag.add_edge (to_msg MapTask [|g; x; y|]) x y Red; y
+    ) _context.workers; *)
+  Dag.add_edge (to_msg MapTask [|g; x; y|]) x y Red; y
 
 let reduce f x = None
 
@@ -135,7 +143,6 @@ let join x y = None
 
 let collect x =
   Utils.logger ("collect -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
-  let y = Memory.rand_id () in
   run_job ();
   List.map (fun req ->
     ZMQ.Socket.send req (to_msg CollectTask [|x|]);

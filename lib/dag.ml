@@ -4,7 +4,7 @@
 
 open Types
 
-type vlabel = { color : color; f : string }
+type vlabel = { c : color; f : string }
 
 module Digraph = struct
   module V' = struct
@@ -27,16 +27,18 @@ let _graph = ref (Digraph.create ())
 
 let _vlabel : vlabel StrMap.t ref = ref StrMap.empty
 
+let get_vlabel x = StrMap.find x !_vlabel
+
 let add_edge f u v c =
   if (StrMap.mem u !_vlabel) = false then
-    _vlabel := StrMap.add u { color = Green; f = "" } !_vlabel;
-  _vlabel := StrMap.add v { color = c; f = f } !_vlabel;
+    _vlabel := StrMap.add u { c = Green; f = "" } !_vlabel;
+  _vlabel := StrMap.add v { c = c; f = f } !_vlabel;
   Digraph.add_edge !_graph u v
 
 let stages () =
   let r, s = ref [], ref [] in
   let _ = TopoOrd.iter (fun v ->
-    match (StrMap.find v !_vlabel).color with
+    match (StrMap.find v !_vlabel).c with
     | Blue -> ( s := !s @ [v]; r := !r @ [!s]; s := [] )
     | Red -> s := !s @ [v]
     | Green -> ()
@@ -46,12 +48,12 @@ let stages () =
 let mark_stage_done s =
   List.iter (fun k ->
     let v = StrMap.find k !_vlabel in
-    _vlabel := StrMap.add k { color = Green; f = v.f } !_vlabel
+    _vlabel := StrMap.add k { c = Green; f = v.f } !_vlabel
   ) s
 
 let print_vertex v =
   let x = StrMap.find v !_vlabel in
-  match x.color with
+  match x.c with
   | Red -> Printf.printf "(%s, Red); " v
   | Green -> Printf.printf "(%s, Green); " v
   | Blue -> Printf.printf "(%s, Blue); " v
