@@ -14,11 +14,11 @@ module Digraph = struct
     let compare = Pervasives.compare
   end
   module E' = struct
-    type t = string
+    type t = int
     let compare = Pervasives.compare
-    let default = ""
+    let default = 0
   end
-  include Graph.Imperative.Digraph.ConcreteLabeled (V') ( )
+  include Graph.Imperative.Digraph.ConcreteLabeled (V') (E')
 end
 
 module TopoOrd = Graph.Topological.Make_stable (Digraph)
@@ -37,13 +37,11 @@ let stages () =
   let r, s = ref [], ref [] in
   let _ = TopoOrd.iter (fun v ->
     match (StrMap.find v !_vlabel).color with
-    | Blue -> (
-      s := !s @ [v];
-      r := !r @ [!s];
-      s := [] )
+    | Blue -> ( s := !s @ [v]; r := !r @ [!s]; s := [] )
     | Red -> s := !s @ [v]
     | Green -> ()
-  ) !_graph in !r
+  ) !_graph in
+  if List.length !s = 0 then !r else !r @ [!s]
 
 let mark_stage_done s =
   List.iter (fun k ->
@@ -83,5 +81,3 @@ let test () =
   print_stages (stages ());
   mark_stage_done (List.nth (stages ()) 0);
   TopoOrd.iter (fun v -> print_vertex v) !_graph
-
-let _ = test ()
