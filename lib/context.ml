@@ -143,8 +143,8 @@ let run_job () =
     let s' = List.map (fun x -> Dag.get_vlabel_f x) s in
     List.iter (fun req ->
       ZMQ.Socket.send req (to_msg PipelinedTask (Array.of_list s'));
-      ignore (ZMQ.Socket.recv req)
     ) _context.workers;
+    barrier _context.workers;
     Dag.mark_stage_done s;
   ) (Dag.stages ())
 
@@ -192,14 +192,6 @@ let terminate () =
     ZMQ.Socket.send req (to_msg Terminate [||])
   ) _context.workers;
   barrier _context.workers
-
-let _broadcast x =
-  Utils.logger ("broadcast -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
-  let y = Memory.rand_id () in
-  List.iter (fun req ->
-    ZMQ.Socket.send req (to_msg BroadcastTask [|Marshal.to_string x []; y|]);
-    ignore (ZMQ.Socket.recv req)
-    ) _context.workers; y
 
 let broadcast x =
   Utils.logger ("broadcast -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
