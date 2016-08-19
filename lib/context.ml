@@ -142,9 +142,7 @@ let init jid url =
 let run_job () =
   List.iter (fun s ->
     let s' = List.map (fun x -> Dag.get_vlabel_f x) s in
-    List.iter (fun req ->
-      ZMQ.Socket.send req (to_msg Pipeline (Array.of_list s'));
-    ) _context.workers;
+    _broadcast_all Pipeline (Array.of_list s');
     barrier _context.workers;
     Dag.mark_stage_done s;
   ) (Dag.stages ())
