@@ -94,22 +94,22 @@ let worker_fun m =
   try while true do
     let m = of_msg (ZMQ.Socket.recv rep) in
     match m.typ with
-    | CountTask -> (
+    | Count -> (
       Utils.logger ("count @ " ^ my_addr);
       let y = Marshal.to_string (List.length (Memory.find m.par.(0))) [] in
       ZMQ.Socket.send rep y
       )
-    | CollectTask -> (
+    | Collect -> (
       Utils.logger ("collect @ " ^ my_addr);
       let y = Marshal.to_string (Memory.find m.par.(0)) [] in
       ZMQ.Socket.send rep y
       )
-    | BroadcastTask -> (
+    | Broadcast -> (
       Utils.logger ("broadcast @ " ^ my_addr);
       Memory.add m.par.(1) (Marshal.from_string m.par.(0) 0);
       ZMQ.Socket.send rep (Marshal.to_string OK []);
       )
-    | PipelinedTask -> (
+    | Pipeline -> (
       Utils.logger ("pipelined @ " ^ my_addr);
       process_pipeline m.par;
       ZMQ.Socket.send rep (Marshal.to_string OK []);
@@ -143,7 +143,7 @@ let run_job () =
   List.iter (fun s ->
     let s' = List.map (fun x -> Dag.get_vlabel_f x) s in
     List.iter (fun req ->
-      ZMQ.Socket.send req (to_msg PipelinedTask (Array.of_list s'));
+      ZMQ.Socket.send req (to_msg Pipeline (Array.of_list s'));
     ) _context.workers;
     barrier _context.workers;
     Dag.mark_stage_done s;
@@ -174,13 +174,13 @@ let join x y = None
 let collect x =
   Utils.logger ("collect " ^ x ^ "\n");
   run_job ();
-  _broadcast_all CollectTask [|x|];
+  _broadcast_all Collect [|x|];
   barrier _context.workers
 
 let count x =
   Utils.logger ("count " ^ x ^ "\n");
   run_job ();
-  _broadcast_all CountTask [|x|];
+  _broadcast_all Count [|x|];
   barrier _context.workers |> List.fold_left (+) 0
 
 let terminate () =
@@ -191,7 +191,7 @@ let terminate () =
 let broadcast x =
   Utils.logger ("broadcast -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
   let y = Memory.rand_id () in
-  _broadcast_all BroadcastTask [|Marshal.to_string x []; y|];
+  _broadcast_all Broadcast [|Marshal.to_string x []; y|];
   barrier _context.workers; y
 
 let get_value x = Memory.find x

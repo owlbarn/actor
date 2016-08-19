@@ -10,9 +10,8 @@ type message_type =
   | OK | Heartbeat
   | User_Reg | Data_Reg
   | Job_Reg | Job_Master | Job_Worker | Job_Create
-  | MapTask | FilterTask | UnionTask | PipelinedTask
-  | CollectTask | CountTask | BroadcastTask
-  | Terminate
+  | MapTask | FilterTask | UnionTask
+  | Pipeline | Collect | Count | Broadcast | Terminate
 
 type message_rec = {
   typ : message_type;
