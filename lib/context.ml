@@ -38,26 +38,22 @@ let process_pipeline s =
     | MapTask -> (
       Utils.logger ("map @ " ^ my_addr);
       let f : 'a -> 'b = Marshal.from_string m.par.(0) 0 in
-      let y = List.map f (Memory.find m.par.(1)) in
-      Memory.add m.par.(2) y
+      List.map f (Memory.find m.par.(1)) |> Memory.add m.par.(2)
       )
     | FilterTask -> (
       Utils.logger ("filter @ " ^ my_addr);
       let f : 'a -> bool = Marshal.from_string m.par.(0) 0 in
-      let y = List.filter f (Memory.find m.par.(1)) in
-      Memory.add m.par.(2) y
+      List.filter f (Memory.find m.par.(1)) |> Memory.add m.par.(2)
       )
     | UnionTask -> (
       Utils.logger ("union @ " ^ my_addr);
-      let x = Memory.find m.par.(0) in
-      let y = Memory.find m.par.(1) in
-      Memory.add m.par.(2) (x @ y) (* FIXME: change to list *)
+      (Memory.find m.par.(0)) @ (Memory.find m.par.(1))
+      |> Memory.add m.par.(2)
       )
     | _ -> Utils.logger "unknow task types"
   ) s
 
 let master_fun m =
-  Utils.logger "init the job";
   _context.master <- my_addr;
   (* contact allocated actors to assign jobs *)
   let addrs = Marshal.from_string m.par.(0) 0 in
@@ -153,8 +149,6 @@ let map f x =
   let g = Marshal.to_string f [ Marshal.Closures ] in
   Dag.add_edge (to_msg MapTask [|g; x; y|]) x y Red; y
 
-let reduce f x = None
-
 let filter f x =
   Utils.logger ("filter " ^ x ^ "\n");
   let y = Memory.rand_id () in
@@ -166,6 +160,10 @@ let union x y =
   let z = Memory.rand_id () in
   Dag.add_edge (to_msg UnionTask [|x; y; z|]) x z Red;
   Dag.add_edge (to_msg UnionTask [|x; y; z|]) y z Red; z
+
+let shuffle x = None
+
+let reduce f x = None
 
 let join x y = None
 
