@@ -51,7 +51,7 @@ let barrier l =
         r := !r @ [ Marshal.from_string z 0 ]
       | Some _ | None -> ()
     ) l poll_set
-  done; !r with exn -> !r
+  done; !r with exn -> print_endline "debug"; !r
 
 let master_fun m =
   Utils.logger "init the job";
@@ -105,17 +105,18 @@ let worker_fun m =
       )
     | BroadcastTask -> (
       Utils.logger ("broadcast @ " ^ my_addr);
-      ZMQ.Socket.send rep "";
       Memory.add m.par.(1) (Marshal.from_string m.par.(0) 0);
+      ZMQ.Socket.send rep (Marshal.to_string OK []);
       )
     | PipelinedTask -> (
       Utils.logger ("pipelined @ " ^ my_addr);
       process_pipeline m.par;
-      ZMQ.Socket.send rep ""
+      ZMQ.Socket.send rep (Marshal.to_string OK []);
       )
     | Terminate -> (
       Utils.logger ("terminate @ " ^ my_addr);
-      ZMQ.Socket.send rep ""; Unix.sleep 1; (* FIXME: sleep ... *)
+      ZMQ.Socket.send rep (Marshal.to_string OK []);
+      Unix.sleep 1; (* FIXME: sleep ... *)
       failwith "terminated"
       )
     | _ -> ()
@@ -169,15 +170,6 @@ let union x y =
 
 let join x y = None
 
-let _collect x =
-  Utils.logger ("collect -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
-  run_job ();
-  List.map (fun req ->
-    ZMQ.Socket.send req (to_msg CollectTask [|x|]);
-    let y = ZMQ.Socket.recv req in
-    Marshal.from_string y 0
-    ) _context.workers
-
 let collect x =
   Utils.logger ("collect " ^ x ^ "\n");
   run_job ();
@@ -194,14 +186,6 @@ let count x =
   ) _context.workers;
   barrier _context.workers |> List.fold_left (+) 0
 
-let _terminate () =
-  Utils.logger ("terminate -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
-  List.iter (fun req ->
-    ZMQ.Socket.send req (to_msg Terminate [||]);
-    ignore (ZMQ.Socket.recv req);
-    ZMQ.Socket.close req
-  ) _context.workers
-
 let terminate () =
   Utils.logger ("terminate -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
   List.iter (fun req ->
@@ -209,12 +193,20 @@ let terminate () =
   ) _context.workers;
   barrier _context.workers
 
-let broadcast x =
+let _broadcast x =
   Utils.logger ("broadcast -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
   let y = Memory.rand_id () in
   List.iter (fun req ->
     ZMQ.Socket.send req (to_msg BroadcastTask [|Marshal.to_string x []; y|]);
     ignore (ZMQ.Socket.recv req)
     ) _context.workers; y
+
+let broadcast x =
+  Utils.logger ("broadcast -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
+  let y = Memory.rand_id () in
+  List.iter (fun req ->
+    ZMQ.Socket.send req (to_msg BroadcastTask [|Marshal.to_string x []; y|])
+  ) _context.workers;
+  barrier _context.workers; y
 
 let get_value x = Memory.find x
