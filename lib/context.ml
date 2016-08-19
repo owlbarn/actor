@@ -111,6 +111,9 @@ let worker_fun m =
       Memory.add m.par.(1) (Marshal.from_string m.par.(0) 0);
       ZMQ.Socket.send rep (Marshal.to_string OK []);
       )
+    | Fold -> (
+      Utils.logger ("fold @ " ^ my_addr);
+      )
     | Pipeline -> (
       Utils.logger ("pipelined @ " ^ my_addr);
       process_pipeline m.par;
@@ -161,6 +164,12 @@ let count x =
   _broadcast_all Count [|x|];
   barrier _context.w_sock |> List.fold_left (+) 0
 
+let fold f x a =
+  Utils.logger ("fold " ^ x ^ "\n");
+  run_job ();
+  _broadcast_all Fold [|x|];
+  barrier _context.w_sock |> List.fold_left f a
+
 let terminate () =
   Utils.logger ("terminate job " ^ _context.jid ^ "\n");
   _broadcast_all Terminate [||];
@@ -197,7 +206,3 @@ let shuffle x =
   let y = Memory.rand_id () in
   let z = Marshal.to_string _context.w_info [] in
   Dag.add_edge (to_msg ShuffleTask [|x; y; z|]) x y Blue; y
-
-let reduce f x = None
-
-let join x y = None
