@@ -53,6 +53,7 @@ let process_pipeline s =
       )
     | ShuffleTask -> (
       Utils.logger ("shuffle @ " ^ my_addr);
+      (* TODO: tricky at the moment *)
       )
     | _ -> Utils.logger "unknow task types"
   ) s

@@ -7,11 +7,11 @@ module StrMap = Map.Make (String)
 type color = Red | Green | Blue
 
 type message_type =
-  | OK | Heartbeat
+  | OK | Fail | Heartbeat
   | User_Reg | Data_Reg
   | Job_Reg | Job_Master | Job_Worker | Job_Create
   | MapTask | FilterTask | UnionTask | ShuffleTask
-  | Pipeline | Collect | Count | Broadcast | Terminate
+  | Pipeline | Collect | Count | Broadcast | Append | Terminate
 
 type message_rec = {
   typ : message_type;
