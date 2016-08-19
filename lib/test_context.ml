@@ -22,7 +22,9 @@ let test () =
   let x6 = Context.shuffle x5 in *)
   (* collect data *)
   List.iter (fun x -> print_float_list x) (Context.collect x3);
-  print_endline ("total elements: " ^ (string_of_int (Context.count x4)));
+  string_of_int (Context.count x4);
+  Context.fold (+.) 0. x3;
+  Context.fold max 0. x3;
   (* Terminate *)
   Context.terminate ()
 

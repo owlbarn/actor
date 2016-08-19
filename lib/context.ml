@@ -109,15 +109,19 @@ let worker_fun m =
     | Broadcast -> (
       Utils.logger ("broadcast @ " ^ my_addr);
       Memory.add m.par.(1) (Marshal.from_string m.par.(0) 0);
-      ZMQ.Socket.send rep (Marshal.to_string OK []);
+      ZMQ.Socket.send rep (Marshal.to_string OK [])
       )
     | Fold -> (
       Utils.logger ("fold @ " ^ my_addr);
+      let f : 'a -> 'b -> 'a = Marshal.from_string m.par.(0) 0 in
+      let y = match Memory.find m.par.(1) with
+      | hd :: tl -> Some (List.fold_left f hd tl) | [] -> None
+      in ZMQ.Socket.send rep (Marshal.to_string y []);
       )
     | Pipeline -> (
       Utils.logger ("pipelined @ " ^ my_addr);
       process_pipeline m.par;
-      ZMQ.Socket.send rep (Marshal.to_string OK []);
+      ZMQ.Socket.send rep (Marshal.to_string OK [])
       )
     | Terminate -> (
       Utils.logger ("terminate @ " ^ my_addr);
@@ -164,11 +168,15 @@ let count x =
   _broadcast_all Count [|x|];
   barrier _context.w_sock |> List.fold_left (+) 0
 
-let fold f x a =
+let fold f a x =
   Utils.logger ("fold " ^ x ^ "\n");
   run_job ();
-  _broadcast_all Fold [|x|];
-  barrier _context.w_sock |> List.fold_left f a
+  let g = Marshal.to_string f [ Marshal.Closures ] in
+  _broadcast_all Fold [|g; x|];
+  barrier _context.w_sock
+  |> List.filter (function Some x -> true | None -> false)
+  |> List.map (function Some x -> x | None -> failwith "")
+  |> List.fold_left f a
 
 let terminate () =
   Utils.logger ("terminate job " ^ _context.jid ^ "\n");
