@@ -30,7 +30,7 @@ let process r m =
     if Actors.mem uid = false then
       Utils.logger (uid ^ " @ " ^ addr);
       Actors.add uid addr;
-      ZMQ.Socket.send r "ok"
+      ZMQ.Socket.send r (Marshal.to_string OK []);
     )
   | Job_Reg -> (
     let master, jid = m.par.(0), m.par.(1) in
@@ -45,7 +45,7 @@ let process r m =
   | Heartbeat -> (
     Utils.logger ("heartbeat @ " ^ m.par.(0));
     Actors.add m.par.(0) m.par.(1);
-    ZMQ.Socket.send r "ok"
+    ZMQ.Socket.send r (Marshal.to_string OK []);
     )
   | Data_Reg -> ()
   | _ -> ()

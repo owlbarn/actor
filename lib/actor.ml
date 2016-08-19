@@ -43,7 +43,7 @@ let run id u_addr m_addr =
         let app = m.par.(1) in
         let arg = Marshal.from_string m.par.(2) 0 in
         Utils.logger (app ^ " <- " ^ m.par.(0));
-        ZMQ.Socket.send rep "";
+        ZMQ.Socket.send rep (Marshal.to_string OK []);
         match Sys.file_exists app with
         | true ->  start_app app arg
         | false -> deploy_app app

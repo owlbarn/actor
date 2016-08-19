@@ -53,7 +53,7 @@ let barrier l =
     ) l poll_set
   done; !r with exn -> print_endline "debug"; !r
 
-let master_fun m =
+let _master_fun m =
   Utils.logger "init the job";
   _context.master <- my_addr;
   (* contact allocated actors to assign jobs *)
@@ -78,6 +78,30 @@ let master_fun m =
     ZMQ.Socket.send rep "";
   done;
   ZMQ.Socket.close rep
+
+let master_fun m =
+  Utils.logger "init the job";
+  _context.master <- my_addr;
+  (* contact allocated actors to assign jobs *)
+  let addrs = Marshal.from_string m.par.(0) 0 in
+  let l = List.map (fun x ->
+    let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
+    ZMQ.Socket.connect req x;
+    let app = Filename.basename Sys.argv.(0) in
+    let arg = Marshal.to_string Sys.argv [] in
+    ZMQ.Socket.send req (to_msg Job_Create [|my_addr; app; arg|]); req
+  ) addrs in
+  barrier l; List.iter ZMQ.Socket.close l;
+  (* wait until all the allocated actors register *)
+  let rep = ZMQ.Socket.create _ztx ZMQ.Socket.rep in
+  ZMQ.Socket.bind rep my_addr;
+  while (List.length _context.workers) < (List.length addrs) do
+    let m = ZMQ.Socket.recv rep in
+    let s = ZMQ.Socket.create _ztx ZMQ.Socket.req in
+    ZMQ.Socket.connect s m;
+    _context.workers <- (s :: _context.workers);
+    ZMQ.Socket.send rep "";
+  done; ZMQ.Socket.close rep
 
 let worker_fun m =
   _context.master <- m.par.(0);
