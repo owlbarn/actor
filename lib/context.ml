@@ -14,6 +14,23 @@ let _context = { jid = ""; master = ""; workers = []; }
 let my_addr = "tcp://127.0.0.1:" ^ (string_of_int (Random.int 5000 + 5000))
 let _ztx = ZMQ.Context.create ()
 
+let _broadcast_all t s =
+  List.iter (fun req -> ZMQ.Socket.send req (to_msg t s)) _context.workers
+
+let barrier l =
+  let set = List.map (fun x -> x, ZMQ.Poll.In) l |> Array.of_list |> ZMQ.Poll.mask_of in
+  let r = ref [] in
+  try while (List.length !r) < (List.length l) do
+    let poll_set = ZMQ.Poll.poll set |> Array.to_list in
+    List.iter2 (fun x y ->
+      match y with
+      | Some ZMQ.Poll.In ->
+        let z = ZMQ.Socket.recv x in
+        r := !r @ [ Marshal.from_string z 0 ]
+      | Some _ | None -> ()
+    ) l poll_set
+  done; !r with exn -> print_endline "error in barrier"; !r
+
 let process_pipeline s =
   Array.iter (fun s ->
     let m = of_msg s in
@@ -38,23 +55,6 @@ let process_pipeline s =
       )
     | _ -> Utils.logger "unknow task types"
   ) s
-
-let _broadcast_all t s =
-  List.iter (fun req -> ZMQ.Socket.send req (to_msg t s)) _context.workers
-
-let barrier l =
-  let set = List.map (fun x -> x, ZMQ.Poll.In) l |> Array.of_list |> ZMQ.Poll.mask_of in
-  let r = ref [] in
-  try while (List.length !r) < (List.length l) do
-    let poll_set = ZMQ.Poll.poll set |> Array.to_list in
-    List.iter2 (fun x y ->
-      match y with
-      | Some ZMQ.Poll.In ->
-        let z = ZMQ.Socket.recv x in
-        r := !r @ [ Marshal.from_string z 0 ]
-      | Some _ | None -> ()
-    ) l poll_set
-  done; !r with exn -> print_endline "error in barrier"; !r
 
 let master_fun m =
   Utils.logger "init the job";
