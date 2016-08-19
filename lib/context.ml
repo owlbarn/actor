@@ -25,7 +25,7 @@ let process_pipeline s =
       Memory.add m.par.(2) y
       )
     | FilterTask -> (
-      Utils.logger ("map @ " ^ my_addr);
+      Utils.logger ("filter @ " ^ my_addr);
       let f : 'a -> bool = Marshal.from_string m.par.(0) 0 in
       let y = List.filter f (Memory.find m.par.(1)) in
       Memory.add m.par.(2) y
@@ -39,6 +39,9 @@ let process_pipeline s =
     | _ -> Utils.logger "unknow task types"
   ) s
 
+let _broadcast_all t s =
+  List.iter (fun req -> ZMQ.Socket.send req (to_msg t s)) _context.workers
+
 let barrier l =
   let set = List.map (fun x -> x, ZMQ.Poll.In) l |> Array.of_list |> ZMQ.Poll.mask_of in
   let r = ref [] in
@@ -51,33 +54,7 @@ let barrier l =
         r := !r @ [ Marshal.from_string z 0 ]
       | Some _ | None -> ()
     ) l poll_set
-  done; !r with exn -> print_endline "debug"; !r
-
-let _master_fun m =
-  Utils.logger "init the job";
-  _context.master <- my_addr;
-  (* contact allocated actors to assign jobs *)
-  let addrs = Marshal.from_string m.par.(0) 0 in
-  List.iter (fun x ->
-    let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
-    ZMQ.Socket.connect req x;
-    let app = Filename.basename Sys.argv.(0) in
-    let arg = Marshal.to_string Sys.argv [] in
-    ZMQ.Socket.send req (to_msg Job_Create [|my_addr; app; arg|]);
-    ignore (ZMQ.Socket.recv req);
-    ZMQ.Socket.close req
-  ) addrs;
-  (* wait until all the allocated actors register *)
-  let rep = ZMQ.Socket.create _ztx ZMQ.Socket.rep in
-  ZMQ.Socket.bind rep my_addr;
-  while (List.length _context.workers) < (List.length addrs) do
-    let m = ZMQ.Socket.recv rep in
-    let s = ZMQ.Socket.create _ztx ZMQ.Socket.req in
-    ZMQ.Socket.connect s m;
-    _context.workers <- (s :: _context.workers);
-    ZMQ.Socket.send rep "";
-  done;
-  ZMQ.Socket.close rep
+  done; !r with exn -> print_endline "error in barrier"; !r
 
 let master_fun m =
   Utils.logger "init the job";
@@ -173,21 +150,21 @@ let run_job () =
   ) (Dag.stages ())
 
 let map f x =
-  Utils.logger ("map -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
   let y = Memory.rand_id () in
+  Utils.logger ("map " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
   Dag.add_edge (to_msg MapTask [|g; x; y|]) x y Red; y
 
 let reduce f x = None
 
 let filter f x =
-  Utils.logger ("filter -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
+  Utils.logger ("filter " ^ x ^ "\n");
   let y = Memory.rand_id () in
   let g = Marshal.to_string f [ Marshal.Closures ] in
   Dag.add_edge (to_msg FilterTask [|g; x; y|]) x y Red; y
 
 let union x y =
-  Utils.logger ("union -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
+  Utils.logger ("union " ^ x ^ " and " ^ y ^ "\n");
   let z = Memory.rand_id () in
   Dag.add_edge (to_msg UnionTask [|x; y; z|]) x z Red;
   Dag.add_edge (to_msg UnionTask [|x; y; z|]) y z Red; z
@@ -197,32 +174,24 @@ let join x y = None
 let collect x =
   Utils.logger ("collect " ^ x ^ "\n");
   run_job ();
-  List.map (fun req ->
-    ZMQ.Socket.send req (to_msg CollectTask [|x|])
-  ) _context.workers;
+  _broadcast_all CollectTask [|x|];
   barrier _context.workers
 
 let count x =
-  Utils.logger ("count -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
+  Utils.logger ("count " ^ x ^ "\n");
   run_job ();
-  List.map (fun req ->
-    ZMQ.Socket.send req (to_msg CountTask [|x|]);
-  ) _context.workers;
+  _broadcast_all CountTask [|x|];
   barrier _context.workers |> List.fold_left (+) 0
 
 let terminate () =
-  Utils.logger ("terminate -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
-  List.iter (fun req ->
-    ZMQ.Socket.send req (to_msg Terminate [||])
-  ) _context.workers;
+  Utils.logger ("terminate job " ^ _context.jid ^ "\n");
+  _broadcast_all Terminate [||];
   barrier _context.workers
 
 let broadcast x =
   Utils.logger ("broadcast -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
   let y = Memory.rand_id () in
-  List.iter (fun req ->
-    ZMQ.Socket.send req (to_msg BroadcastTask [|Marshal.to_string x []; y|])
-  ) _context.workers;
+  _broadcast_all BroadcastTask [|Marshal.to_string x []; y|];
   barrier _context.workers; y
 
 let get_value x = Memory.find x
