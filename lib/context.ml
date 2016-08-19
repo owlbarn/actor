@@ -39,6 +39,20 @@ let process_pipeline s =
     | _ -> Utils.logger "unknow task types"
   ) s
 
+let barrier l =
+  let set = List.map (fun x -> x, ZMQ.Poll.In) l |> Array.of_list |> ZMQ.Poll.mask_of in
+  let r = ref [] in
+  try while (List.length !r) < (List.length l) do
+    let poll_set = ZMQ.Poll.poll set |> Array.to_list in
+    List.iter2 (fun x y ->
+      match y with
+      | Some ZMQ.Poll.In ->
+        let z = ZMQ.Socket.recv x in
+        r := !r @ [ Marshal.from_string z 0 ]
+      | Some _ | None -> ()
+    ) l poll_set
+  done; !r with exn -> !r
+
 let master_fun m =
   Utils.logger "init the job";
   _context.master <- my_addr;
@@ -155,7 +169,7 @@ let union x y =
 
 let join x y = None
 
-let collect x =
+let _collect x =
   Utils.logger ("collect -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
   run_job ();
   List.map (fun req ->
@@ -164,23 +178,36 @@ let collect x =
     Marshal.from_string y 0
     ) _context.workers
 
+let collect x =
+  Utils.logger ("collect " ^ x ^ "\n");
+  run_job ();
+  List.map (fun req ->
+    ZMQ.Socket.send req (to_msg CollectTask [|x|])
+  ) _context.workers;
+  barrier _context.workers
+
 let count x =
   Utils.logger ("count -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
   run_job ();
-  let l = List.map (fun req ->
+  List.map (fun req ->
     ZMQ.Socket.send req (to_msg CountTask [|x|]);
-    let y = ZMQ.Socket.recv req in
-    Marshal.from_string y 0
-  ) _context.workers in
-  List.fold_left (+) 0 l
+  ) _context.workers;
+  barrier _context.workers |> List.fold_left (+) 0
 
-let terminate () =
+let _terminate () =
   Utils.logger ("terminate -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
   List.iter (fun req ->
     ZMQ.Socket.send req (to_msg Terminate [||]);
     ignore (ZMQ.Socket.recv req);
     ZMQ.Socket.close req
-    ) _context.workers
+  ) _context.workers
+
+let terminate () =
+  Utils.logger ("terminate -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");
+  List.iter (fun req ->
+    ZMQ.Socket.send req (to_msg Terminate [||])
+  ) _context.workers;
+  barrier _context.workers
 
 let broadcast x =
   Utils.logger ("broadcast -> " ^ string_of_int (List.length _context.workers) ^ " workers\n");

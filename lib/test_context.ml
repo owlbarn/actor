@@ -26,4 +26,4 @@ let test () =
   (* Terminate *)
   Context.terminate ()
 
-let () = test ()
+let _ = test ()
