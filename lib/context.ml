@@ -7,11 +7,11 @@ open Types
 type t = {
   mutable jid : string;
   mutable master : string;
-  mutable w_addr : string list;
+  mutable w_info : string list;
   mutable w_sock : [ `Req ] ZMQ.Socket.t list;
 }
 
-let _context = { jid = ""; master = ""; w_addr = []; w_sock = []; }
+let _context = { jid = ""; master = ""; w_info = []; w_sock = []; }
 let my_addr = "tcp://127.0.0.1:" ^ (string_of_int (Random.int 5000 + 5000))
 let _ztx = ZMQ.Context.create ()
 
@@ -73,6 +73,7 @@ let master_fun m =
     let m = ZMQ.Socket.recv rep in
     let s = ZMQ.Socket.create _ztx ZMQ.Socket.req in
     ZMQ.Socket.connect s m;
+    _context.w_info <- (m :: _context.w_info);
     _context.w_sock <- (s :: _context.w_sock);
     ZMQ.Socket.send rep "";
   done; ZMQ.Socket.close rep
