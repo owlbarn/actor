@@ -144,30 +144,6 @@ let run_job () =
     Dag.mark_stage_done s;
   ) (Dag.stages ())
 
-let map f x =
-  let y = Memory.rand_id () in
-  Utils.logger ("map " ^ x ^ " -> " ^ y ^ "\n");
-  let g = Marshal.to_string f [ Marshal.Closures ] in
-  Dag.add_edge (to_msg MapTask [|g; x; y|]) x y Red; y
-
-let filter f x =
-  Utils.logger ("filter " ^ x ^ "\n");
-  let y = Memory.rand_id () in
-  let g = Marshal.to_string f [ Marshal.Closures ] in
-  Dag.add_edge (to_msg FilterTask [|g; x; y|]) x y Red; y
-
-let union x y =
-  Utils.logger ("union " ^ x ^ " and " ^ y ^ "\n");
-  let z = Memory.rand_id () in
-  Dag.add_edge (to_msg UnionTask [|x; y; z|]) x z Red;
-  Dag.add_edge (to_msg UnionTask [|x; y; z|]) y z Red; z
-
-let shuffle x = None
-
-let reduce f x = None
-
-let join x y = None
-
 let collect x =
   Utils.logger ("collect " ^ x ^ "\n");
   run_job ();
@@ -192,3 +168,27 @@ let broadcast x =
   barrier _context.w_sock; y
 
 let get_value x = Memory.find x
+
+let map f x =
+  let y = Memory.rand_id () in
+  Utils.logger ("map " ^ x ^ " -> " ^ y ^ "\n");
+  let g = Marshal.to_string f [ Marshal.Closures ] in
+  Dag.add_edge (to_msg MapTask [|g; x; y|]) x y Red; y
+
+let filter f x =
+  Utils.logger ("filter " ^ x ^ "\n");
+  let y = Memory.rand_id () in
+  let g = Marshal.to_string f [ Marshal.Closures ] in
+  Dag.add_edge (to_msg FilterTask [|g; x; y|]) x y Red; y
+
+let union x y =
+  Utils.logger ("union " ^ x ^ " and " ^ y ^ "\n");
+  let z = Memory.rand_id () in
+  Dag.add_edge (to_msg UnionTask [|x; y; z|]) x z Red;
+  Dag.add_edge (to_msg UnionTask [|x; y; z|]) y z Red; z
+
+let shuffle x = None
+
+let reduce f x = None
+
+let join x y = None
