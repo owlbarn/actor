@@ -17,11 +17,11 @@ let test () =
   let x3 = Context.union x1 x2 in
   (* Test filter *)
   let x4 = Context.filter ((>) 10.) x3 in
+  (* Test shuffle *)
+  let x5 = Context.map (fun x -> if x > 10. then ('a',x) else ('b',x)) x3 in
+  let x6 = Context.shuffle x5 in
   (* collect data *)
-  List.iter (fun x -> print_float_list x) (Context.collect x1);
-  List.iter (fun x -> print_float_list x) (Context.collect x2);
   List.iter (fun x -> print_float_list x) (Context.collect x3);
-  List.iter (fun x -> print_float_list x) (Context.collect x4);
   print_endline ("total elements: " ^ (string_of_int (Context.count x4)));
   (* Terminate *)
   Context.terminate ()

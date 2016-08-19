@@ -51,6 +51,9 @@ let process_pipeline s =
       (Memory.find m.par.(0)) @ (Memory.find m.par.(1))
       |> Memory.add m.par.(2)
       )
+    | ShuffleTask -> (
+      Utils.logger ("shuffle @ " ^ my_addr);
+      )
     | _ -> Utils.logger "unknow task types"
   ) s
 
@@ -188,7 +191,11 @@ let union x y =
   Dag.add_edge (to_msg UnionTask [|x; y; z|]) x z Red;
   Dag.add_edge (to_msg UnionTask [|x; y; z|]) y z Red; z
 
-let shuffle x = None
+let shuffle x =
+  Utils.logger ("shuffle " ^ x ^ "\n");
+  let y = Memory.rand_id () in
+  let z = Marshal.to_string _context.w_info [] in
+  Dag.add_edge (to_msg ShuffleTask [|x; y; z|]) x y Blue; y
 
 let reduce f x = None
 

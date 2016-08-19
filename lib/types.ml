@@ -10,7 +10,7 @@ type message_type =
   | OK | Heartbeat
   | User_Reg | Data_Reg
   | Job_Reg | Job_Master | Job_Worker | Job_Create
-  | MapTask | FilterTask | UnionTask
+  | MapTask | FilterTask | UnionTask | ShuffleTask
   | Pipeline | Collect | Count | Broadcast | Terminate
 
 type message_rec = {
