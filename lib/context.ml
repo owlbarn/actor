@@ -64,13 +64,13 @@ let master_fun m =
   _context.master <- my_addr;
   (* contact allocated actors to assign jobs *)
   let addrs = Marshal.from_string m.par.(0) 0 in
-  let l = List.map (fun x ->
+  List.map (fun x ->
     let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
     ZMQ.Socket.connect req x;
     let app = Filename.basename Sys.argv.(0) in
     let arg = Marshal.to_string Sys.argv [] in
     ZMQ.Socket.send req (to_msg Job_Create [|my_addr; app; arg|]); req
-  ) addrs in List.iter ZMQ.Socket.close l;
+  ) addrs |> List.iter ZMQ.Socket.close;
   (* wait until all the allocated actors register *)
   while (List.length _context.w_sock) < (List.length addrs) do
     let i, m = recv _router in
