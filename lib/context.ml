@@ -8,14 +8,21 @@ type t = {
   mutable jid : string;
   mutable master : string;
   mutable w_info : string list;
-  mutable w_sock : [ `Push ] ZMQ.Socket.t list;
+  mutable w_sock : [ `Dealer ] ZMQ.Socket.t list;
 }
 
+(* FIXME: global varibles ...*)
 let _context = { jid = ""; master = ""; w_info = []; w_sock = []; }
 let my_addr = "tcp://127.0.0.1:" ^ (string_of_int (Random.int 5000 + 5000))
 let _ztx = ZMQ.Context.create ()
-let _pull = ZMQ.Socket.create _ztx ZMQ.Socket.pull
+let _router : [ `Router ] ZMQ.Socket.t = ZMQ.Socket.create _ztx ZMQ.Socket.router
+let _ = ZMQ.Socket.bind _router my_addr
 
+let recv s =
+  let m = ZMQ.Socket.recv_all s in
+  (List.nth m 0, List.nth m 1)
+
+let send s i m = ZMQ.Socket.send_all s [i; m]
 
 let _broadcast_all t s =
   List.iter (fun x -> ZMQ.Socket.send x (to_msg t s)) _context.w_sock
@@ -34,7 +41,12 @@ let _barrier l =
     ) l poll_set
   done; !r with exn -> print_endline "error in barrier"; !r
 
-let barrier l = []
+let barrier l =
+  let r = ref [] in
+  while (List.length !r) < (List.length l) do
+    let i, m = recv _router in
+    r := !r @ [ Marshal.from_string m 0]
+  done; !r
 
 let process_pipeline s =
   Array.iter (fun s ->
@@ -72,69 +84,65 @@ let master_fun m =
     let app = Filename.basename Sys.argv.(0) in
     let arg = Marshal.to_string Sys.argv [] in
     ZMQ.Socket.send req (to_msg Job_Create [|my_addr; app; arg|]); req
-  ) addrs in
-  barrier l; List.iter ZMQ.Socket.close l;
+  ) addrs in List.iter ZMQ.Socket.close l;
   (* wait until all the allocated actors register *)
   while (List.length _context.w_sock) < (List.length addrs) do
-    let m = ZMQ.Socket.recv _pull in
-    let s = ZMQ.Socket.create _ztx ZMQ.Socket.push in
+    let i, m = recv _router in
+    let s = ZMQ.Socket.create _ztx ZMQ.Socket.dealer in
     ZMQ.Socket.connect s m;
     _context.w_info <- (m :: _context.w_info);
     _context.w_sock <- (s :: _context.w_sock);
-    ZMQ.Socket.send rep "";
   done
 
 let worker_fun m =
   _context.master <- m.par.(0);
   (* connect to job master *)
-  let push = ZMQ.Socket.create _ztx ZMQ.Socket.push in
-  ZMQ.Socket.connect push _context.master;
-  ZMQ.Socket.send push my_addr;
+  let master = ZMQ.Socket.create _ztx ZMQ.Socket.dealer in
+  ZMQ.Socket.connect master _context.master;
+  ZMQ.Socket.send master my_addr;
   (* TODO: connect to local actor *)
   (* set up job worker *)
-  let pull = ZMQ.Socket.create _ztx ZMQ.Socket.pull in
-  ZMQ.Socket.bind pull my_addr;
   try while true do
-    let m = of_msg (ZMQ.Socket.recv pull) in
+    let i, m' = recv _router in
+    let m = of_msg m' in
     match m.typ with
     | Count -> (
       Utils.logger ("count @ " ^ my_addr);
-      let y = Marshal.to_string (List.length (Memory.find m.par.(0))) [] in ()
-      (* ZMQ.Socket.send rep y *)
+      let y = Marshal.to_string (List.length (Memory.find m.par.(0))) [] in
+      ZMQ.Socket.send master y
       )
     | Collect -> (
       Utils.logger ("collect @ " ^ my_addr);
-      let y = Marshal.to_string (Memory.find m.par.(0)) [] in ()
-      (* ZMQ.Socket.send rep y *)
+      let y = Marshal.to_string (Memory.find m.par.(0)) [] in
+      ZMQ.Socket.send master y
       )
     | Broadcast -> (
       Utils.logger ("broadcast @ " ^ my_addr);
       Memory.add m.par.(1) (Marshal.from_string m.par.(0) 0);
-      (* ZMQ.Socket.send rep (Marshal.to_string OK []) *)
+      ZMQ.Socket.send master (Marshal.to_string OK [])
       )
     | Fold -> (
       Utils.logger ("fold @ " ^ my_addr);
       let f : 'a -> 'b -> 'a = Marshal.from_string m.par.(0) 0 in
       let y = match Memory.find m.par.(1) with
       | hd :: tl -> Some (List.fold_left f hd tl) | [] -> None
-      in ()
-      (* in ZMQ.Socket.send rep (Marshal.to_string y []); *)
+      in ZMQ.Socket.send master (Marshal.to_string y []);
       )
     | Pipeline -> (
       Utils.logger ("pipelined @ " ^ my_addr);
       process_pipeline m.par;
-      (* ZMQ.Socket.send rep (Marshal.to_string OK []) *)
+      ZMQ.Socket.send master (Marshal.to_string OK [])
       )
     | Terminate -> (
       Utils.logger ("terminate @ " ^ my_addr);
-      (* ZMQ.Socket.send rep (Marshal.to_string OK []); *)
+      ZMQ.Socket.send master (Marshal.to_string OK []);
       Unix.sleep 1; (* FIXME: sleep ... *)
       failwith "terminated"
       )
     | _ -> ()
   done with exn -> (
     Utils.logger "task finished.";
-    List.iter ZMQ.Socket.close [pull; push];
+    (*List.iter ZMQ.Socket.close [router; dealer];*)
     Pervasives.exit 0
   )
 
