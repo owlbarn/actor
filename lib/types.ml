@@ -2,7 +2,11 @@
   includes the types shared by different modules.
 *)
 
-module StrMap = Map.Make (String)
+module StrMap = struct
+  include Map.Make (String)
+  let keys x = List.map fst (bindings x)
+  let values x = List.map snd (bindings x)
+end
 
 type color = Red | Green | Blue
 

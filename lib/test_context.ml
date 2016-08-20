@@ -22,7 +22,7 @@ let test () =
   let x6 = Context.shuffle x5 in *)
   (* collect data *)
   List.iter (fun x -> print_float_list x) (Context.collect x3);
-  string_of_int (Context.count x4);
+  Printf.printf "num of x4 is %s\n" (Context.count x4 |> string_of_int);
   Printf.printf "sum of x3 is %.2f\n" (Context.fold (+.) 0. x3);
   Printf.printf "max of x3 is %.2f\n" (Context.fold max 0. x3);
   (* Terminate *)
