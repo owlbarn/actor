@@ -9,14 +9,15 @@ type t = {
   mutable master : string;
   mutable w_info : string list;
   mutable w_sock : [ `Dealer ] ZMQ.Socket.t list;
+  mutable worker : [ `Dealer ] ZMQ.Socket.t StrMap.t;
 }
 
 (* FIXME: global varibles ...*)
-let _context = { jid = ""; master = ""; w_info = []; w_sock = []; }
-let my_addr = "tcp://127.0.0.1:" ^ (string_of_int (Random.int 10000 + 50000))
+let _context = { jid = ""; master = ""; w_info = []; w_sock = []; worker = StrMap.empty }
+let _addr = "tcp://127.0.0.1:" ^ (string_of_int (Random.int 10000 + 50000))
 let _ztx = ZMQ.Context.create ()
 let _router : [ `Router ] ZMQ.Socket.t = ZMQ.Socket.create _ztx ZMQ.Socket.router
-let _ = ZMQ.Socket.bind _router my_addr
+let _ = ZMQ.Socket.bind _router _addr
 
 let recv s =
   let m = ZMQ.Socket.recv_all s in
@@ -39,29 +40,29 @@ let process_pipeline s =
     let m = of_msg s in
     match m.typ with
     | MapTask -> (
-      Utils.logger ("map @ " ^ my_addr);
+      Utils.logger ("map @ " ^ _addr);
       let f : 'a -> 'b = Marshal.from_string m.par.(0) 0 in
       List.map f (Memory.find m.par.(1)) |> Memory.add m.par.(2)
       )
     | FilterTask -> (
-      Utils.logger ("filter @ " ^ my_addr);
+      Utils.logger ("filter @ " ^ _addr);
       let f : 'a -> bool = Marshal.from_string m.par.(0) 0 in
       List.filter f (Memory.find m.par.(1)) |> Memory.add m.par.(2)
       )
     | UnionTask -> (
-      Utils.logger ("union @ " ^ my_addr);
+      Utils.logger ("union @ " ^ _addr);
       (Memory.find m.par.(0)) @ (Memory.find m.par.(1))
       |> Memory.add m.par.(2)
       )
     | ShuffleTask -> (
-      Utils.logger ("shuffle @ " ^ my_addr);
+      Utils.logger ("shuffle @ " ^ _addr);
       (* TODO: tricky at the moment *)
       )
     | _ -> Utils.logger "unknow task types"
   ) s
 
 let master_fun m =
-  _context.master <- my_addr;
+  _context.master <- _addr;
   (* contact allocated actors to assign jobs *)
   let addrs = Marshal.from_string m.par.(0) 0 in
   List.map (fun x ->
@@ -69,7 +70,7 @@ let master_fun m =
     ZMQ.Socket.connect req x;
     let app = Filename.basename Sys.argv.(0) in
     let arg = Marshal.to_string Sys.argv [] in
-    ZMQ.Socket.send req (to_msg Job_Create [|my_addr; app; arg|]); req
+    ZMQ.Socket.send req (to_msg Job_Create [|_addr; app; arg|]); req
   ) addrs |> List.iter ZMQ.Socket.close;
   (* wait until all the allocated actors register *)
   while (List.length _context.w_sock) < (List.length addrs) do
@@ -84,43 +85,43 @@ let worker_fun m =
   _context.master <- m.par.(0);
   (* connect to job master *)
   let master = ZMQ.Socket.create _ztx ZMQ.Socket.dealer in
-  ZMQ.Socket.set_identity master my_addr;
+  ZMQ.Socket.set_identity master _addr;
   ZMQ.Socket.connect master _context.master;
-  ZMQ.Socket.send master my_addr;
+  ZMQ.Socket.send master _addr;
   (* set up local loop of a job worker *)
   try while true do
     let i, m' = recv _router in
     let m = of_msg m' in
     match m.typ with
     | Count -> (
-      Utils.logger ("count @ " ^ my_addr);
+      Utils.logger ("count @ " ^ _addr);
       let y = Marshal.to_string (List.length (Memory.find m.par.(0))) [] in
       ZMQ.Socket.send master y
       )
     | Collect -> (
-      Utils.logger ("collect @ " ^ my_addr);
+      Utils.logger ("collect @ " ^ _addr);
       let y = Marshal.to_string (Memory.find m.par.(0)) [] in
       ZMQ.Socket.send master y
       )
     | Broadcast -> (
-      Utils.logger ("broadcast @ " ^ my_addr);
+      Utils.logger ("broadcast @ " ^ _addr);
       Memory.add m.par.(1) (Marshal.from_string m.par.(0) 0);
       ZMQ.Socket.send master (Marshal.to_string OK [])
       )
     | Fold -> (
-      Utils.logger ("fold @ " ^ my_addr);
+      Utils.logger ("fold @ " ^ _addr);
       let f : 'a -> 'b -> 'a = Marshal.from_string m.par.(0) 0 in
       let y = match Memory.find m.par.(1) with
       | hd :: tl -> Some (List.fold_left f hd tl) | [] -> None
       in ZMQ.Socket.send master (Marshal.to_string y []);
       )
     | Pipeline -> (
-      Utils.logger ("pipelined @ " ^ my_addr);
+      Utils.logger ("pipelined @ " ^ _addr);
       process_pipeline m.par;
       ZMQ.Socket.send master (Marshal.to_string OK [])
       )
     | Terminate -> (
-      Utils.logger ("terminate @ " ^ my_addr);
+      Utils.logger ("terminate @ " ^ _addr);
       ZMQ.Socket.send master (Marshal.to_string OK []);
       Unix.sleep 1; (* FIXME: sleep ... *)
       failwith "terminated"
@@ -136,7 +137,7 @@ let init jid url =
   _context.jid <- jid;
   let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
   ZMQ.Socket.connect req url;
-  ZMQ.Socket.send req (to_msg Job_Reg [|my_addr; jid|]);
+  ZMQ.Socket.send req (to_msg Job_Reg [|_addr; jid|]);
   let m = of_msg (ZMQ.Socket.recv req) in
   match m.typ with
     | Job_Master -> master_fun m
