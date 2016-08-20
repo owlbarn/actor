@@ -54,7 +54,17 @@ let process_pipeline s =
       )
     | ShuffleTask -> (
       Utils.logger ("shuffle @ " ^ _addr);
-      (* TODO: tricky at the moment *)
+      let x, y, z = m.par.(0), m.par.(1), m.par.(2) in
+      let x = (Memory.find x) in
+      List.iter (fun k ->
+        let s = ZMQ.Socket.(create _ztx dealer) in
+        ZMQ.Socket.(set_identity s _addr; connect s k);
+        send s _addr ("hello");
+      ) (Marshal.from_string z 0); print_endline "hereeeee......";
+      try while true do
+        let i, m' = recv _router in
+        print_endline (i ^ " +++ aaa....." ^ m')
+      done with exn -> print_endline "abcdef....";
       )
     | _ -> Utils.logger "unknow task types"
   ) s
@@ -78,7 +88,7 @@ let master_fun m =
     _context.worker <- (StrMap.add m s _context.worker);
   done
 
-let worker_fun m =
+let _worker_fun m =
   _context.master <- m.par.(0);
   (* connect to job master *)
   let master = ZMQ.Socket.create _ztx ZMQ.Socket.dealer in
@@ -90,6 +100,9 @@ let worker_fun m =
     let i, m' = recv _router in
     let m = of_msg m' in
     match m.typ with
+    | OK -> (
+      print_endline ("OK <- " ^ i ^ " : " ^ m.par.(0));
+      )
     | Count -> (
       Utils.logger ("count @ " ^ _addr);
       let y = Marshal.to_string (List.length (Memory.find m.par.(0))) [] in
@@ -127,8 +140,58 @@ let worker_fun m =
   done with exn -> (
     Utils.logger "task finished.";
     ZMQ.Socket.(close master; close _router);
-    Pervasives.exit 0
-  )
+    Pervasives.exit 0 )
+
+let worker_fun m =
+  _context.master <- m.par.(0);
+  (* connect to job master *)
+  let master = ZMQ.Socket.create _ztx ZMQ.Socket.dealer in
+  ZMQ.Socket.set_identity master _addr;
+  ZMQ.Socket.connect master _context.master;
+  ZMQ.Socket.send master _addr;
+  (* set up local loop of a job worker *)
+  while true do
+    let i, m' = recv _router in
+    let m = of_msg m' in
+    match m.typ with
+    | OK -> (
+      print_endline ("OK <- " ^ i ^ " : " ^ m.par.(0));
+      )
+    | Count -> (
+      Utils.logger ("count @ " ^ _addr);
+      let y = Marshal.to_string (List.length (Memory.find m.par.(0))) [] in
+      ZMQ.Socket.send master y
+      )
+    | Collect -> (
+      Utils.logger ("collect @ " ^ _addr);
+      let y = Marshal.to_string (Memory.find m.par.(0)) [] in
+      ZMQ.Socket.send master y
+      )
+    | Broadcast -> (
+      Utils.logger ("broadcast @ " ^ _addr);
+      Memory.add m.par.(1) (Marshal.from_string m.par.(0) 0);
+      ZMQ.Socket.send master (Marshal.to_string OK [])
+      )
+    | Fold -> (
+      Utils.logger ("fold @ " ^ _addr);
+      let f : 'a -> 'b -> 'a = Marshal.from_string m.par.(0) 0 in
+      let y = match Memory.find m.par.(1) with
+      | hd :: tl -> Some (List.fold_left f hd tl) | [] -> None
+      in ZMQ.Socket.send master (Marshal.to_string y []);
+      )
+    | Pipeline -> (
+      Utils.logger ("pipelined @ " ^ _addr);
+      process_pipeline m.par;
+      ZMQ.Socket.send master (Marshal.to_string OK [])
+      )
+    | Terminate -> (
+      Utils.logger ("terminate @ " ^ _addr);
+      ZMQ.Socket.send master (Marshal.to_string OK []);
+      Unix.sleep 1; (* FIXME: sleep ... *)
+      failwith "terminated"
+      )
+    | _ -> ()
+  done
 
 let init jid url =
   _context.jid <- jid;
