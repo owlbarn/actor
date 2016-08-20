@@ -7,16 +7,14 @@ open Types
 type t = {
   mutable jid : string;
   mutable master : string;
-  mutable w_info : string list;
-  mutable w_sock : [ `Dealer ] ZMQ.Socket.t list;
-  mutable worker : [ `Dealer ] ZMQ.Socket.t StrMap.t;
+  mutable worker : [`Dealer] ZMQ.Socket.t StrMap.t;
 }
 
 (* FIXME: global varibles ...*)
-let _context = { jid = ""; master = ""; w_info = []; w_sock = []; worker = StrMap.empty }
+let _context = { jid = ""; master = ""; worker = StrMap.empty }
 let _addr = "tcp://127.0.0.1:" ^ (string_of_int (Random.int 10000 + 50000))
 let _ztx = ZMQ.Context.create ()
-let _router : [ `Router ] ZMQ.Socket.t = ZMQ.Socket.create _ztx ZMQ.Socket.router
+let _router : [`Router] ZMQ.Socket.t = ZMQ.Socket.create _ztx ZMQ.Socket.router
 let _ = ZMQ.Socket.bind _router _addr
 
 let recv s =
@@ -26,11 +24,11 @@ let recv s =
 let send s i m = ZMQ.Socket.send_all s [i; m]
 
 let _broadcast_all t s =
-  List.iter (fun x -> ZMQ.Socket.send x (to_msg t s)) _context.w_sock
+  StrMap.iter (fun k v -> ZMQ.Socket.send v (to_msg t s)) _context.worker
 
-let barrier l =
+let barrier x =
   let r = ref [] in
-  while (List.length !r) < (List.length l) do
+  while (List.length !r) < (StrMap.cardinal x) do
     let i, m = recv _router in
     r := !r @ [ Marshal.from_string m 0]
   done; !r
@@ -73,12 +71,11 @@ let master_fun m =
     ZMQ.Socket.send req (to_msg Job_Create [|_addr; app; arg|]); req
   ) addrs |> List.iter ZMQ.Socket.close;
   (* wait until all the allocated actors register *)
-  while (List.length _context.w_sock) < (List.length addrs) do
+  while (StrMap.cardinal _context.worker) < (List.length addrs) do
     let i, m = recv _router in
     let s = ZMQ.Socket.create _ztx ZMQ.Socket.dealer in
     ZMQ.Socket.connect s m;
-    _context.w_info <- (m :: _context.w_info);
-    _context.w_sock <- (s :: _context.w_sock);
+    _context.worker <- (StrMap.add m s _context.worker);
   done
 
 let worker_fun m =
@@ -149,7 +146,7 @@ let run_job () =
   List.iter (fun s ->
     let s' = List.map (fun x -> Dag.get_vlabel_f x) s in
     _broadcast_all Pipeline (Array.of_list s');
-    barrier _context.w_sock;
+    barrier _context.worker;
     Dag.mark_stage_done s;
   ) (Dag.stages ())
 
@@ -157,20 +154,20 @@ let collect x =
   Utils.logger ("collect " ^ x ^ "\n");
   run_job ();
   _broadcast_all Collect [|x|];
-  barrier _context.w_sock
+  barrier _context.worker
 
 let count x =
   Utils.logger ("count " ^ x ^ "\n");
   run_job ();
   _broadcast_all Count [|x|];
-  barrier _context.w_sock |> List.fold_left (+) 0
+  barrier _context.worker |> List.fold_left (+) 0
 
 let fold f a x =
   Utils.logger ("fold " ^ x ^ "\n");
   run_job ();
   let g = Marshal.to_string f [ Marshal.Closures ] in
   _broadcast_all Fold [|g; x|];
-  barrier _context.w_sock
+  barrier _context.worker
   |> List.filter (function Some x -> true | None -> false)
   |> List.map (function Some x -> x | None -> failwith "")
   |> List.fold_left f a
@@ -178,13 +175,13 @@ let fold f a x =
 let terminate () =
   Utils.logger ("terminate job " ^ _context.jid ^ "\n");
   _broadcast_all Terminate [||];
-  barrier _context.w_sock
+  barrier _context.worker
 
 let broadcast x =
-  Utils.logger ("broadcast -> " ^ string_of_int (List.length _context.w_sock) ^ " workers\n");
+  Utils.logger ("broadcast -> " ^ string_of_int (StrMap.cardinal _context.worker) ^ " workers\n");
   let y = Memory.rand_id () in
   _broadcast_all Broadcast [|Marshal.to_string x []; y|];
-  barrier _context.w_sock; y
+  barrier _context.worker; y
 
 let get_value x = Memory.find x
 
@@ -206,8 +203,8 @@ let union x y =
   Dag.add_edge (to_msg UnionTask [|x; y; z|]) x z Red;
   Dag.add_edge (to_msg UnionTask [|x; y; z|]) y z Red; z
 
-let shuffle x =
-  Utils.logger ("shuffle " ^ x ^ "\n");
+let shuffle x = None
+  (*Utils.logger ("shuffle " ^ x ^ "\n");
   let y = Memory.rand_id () in
   let z = Marshal.to_string _context.w_info [] in
-  Dag.add_edge (to_msg ShuffleTask [|x; y; z|]) x y Blue; y
+  Dag.add_edge (to_msg ShuffleTask [|x; y; z|]) x y Blue; y *)
