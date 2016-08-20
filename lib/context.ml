@@ -13,7 +13,7 @@ type t = {
 
 (* FIXME: global varibles ...*)
 let _context = { jid = ""; master = ""; w_info = []; w_sock = []; }
-let my_addr = "tcp://127.0.0.1:" ^ (string_of_int (Random.int 5000 + 5000))
+let my_addr = "tcp://127.0.0.1:" ^ (string_of_int (Random.int 10000 + 50000))
 let _ztx = ZMQ.Context.create ()
 let _router : [ `Router ] ZMQ.Socket.t = ZMQ.Socket.create _ztx ZMQ.Socket.router
 let _ = ZMQ.Socket.bind _router my_addr
@@ -26,20 +26,6 @@ let send s i m = ZMQ.Socket.send_all s [i; m]
 
 let _broadcast_all t s =
   List.iter (fun x -> ZMQ.Socket.send x (to_msg t s)) _context.w_sock
-
-let _barrier l =
-  let set = List.map (fun x -> x, ZMQ.Poll.In) l |> Array.of_list |> ZMQ.Poll.mask_of in
-  let r = ref [] in
-  try while (List.length !r) < (List.length l) do
-    let poll_set = ZMQ.Poll.poll set |> Array.to_list in
-    List.iter2 (fun x y ->
-      match y with
-      | Some ZMQ.Poll.In ->
-        let z = ZMQ.Socket.recv x in
-        r := !r @ [ Marshal.from_string z 0 ]
-      | Some _ | None -> ()
-    ) l poll_set
-  done; !r with exn -> print_endline "error in barrier"; !r
 
 let barrier l =
   let r = ref [] in
@@ -98,10 +84,10 @@ let worker_fun m =
   _context.master <- m.par.(0);
   (* connect to job master *)
   let master = ZMQ.Socket.create _ztx ZMQ.Socket.dealer in
+  ZMQ.Socket.set_identity master my_addr;
   ZMQ.Socket.connect master _context.master;
   ZMQ.Socket.send master my_addr;
-  (* TODO: connect to local actor *)
-  (* set up job worker *)
+  (* set up local loop of a job worker *)
   try while true do
     let i, m' = recv _router in
     let m = of_msg m' in
@@ -142,7 +128,7 @@ let worker_fun m =
     | _ -> ()
   done with exn -> (
     Utils.logger "task finished.";
-    (*List.iter ZMQ.Socket.close [router; dealer];*)
+    ZMQ.Socket.(close master; close _router);
     Pervasives.exit 0
   )
 

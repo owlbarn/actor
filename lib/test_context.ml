@@ -23,8 +23,8 @@ let test () =
   (* collect data *)
   List.iter (fun x -> print_float_list x) (Context.collect x3);
   string_of_int (Context.count x4);
-  Context.fold (+.) 0. x3;
-  Context.fold max 0. x3;
+  Printf.printf "sum of x3 is %.2f\n" (Context.fold (+.) 0. x3);
+  Printf.printf "max of x3 is %.2f\n" (Context.fold max 0. x3);
   (* Terminate *)
   Context.terminate ()
 
