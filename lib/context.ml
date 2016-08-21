@@ -24,7 +24,7 @@ let recv s =
 let _broadcast_all t s =
   StrMap.iter (fun k v -> ZMQ.Socket.send v (to_msg t s)) _context.worker
 
-let barrier x =
+let bsp_barrier x =
   (* TODO: refactor with List.fold ... *)
   let r = ref [] in
   while (List.length !r) < (StrMap.cardinal x) do
@@ -165,7 +165,7 @@ let run_job () =
   List.iter (fun s ->
     let s' = List.map (fun x -> Dag.get_vlabel_f x) s in
     _broadcast_all Pipeline (Array.of_list s');
-    barrier _context.worker;
+    bsp_barrier _context.worker;
     Dag.mark_stage_done s;
   ) (Dag.stages ())
 
@@ -173,20 +173,20 @@ let collect x =
   Utils.logger ("collect " ^ x ^ "\n");
   run_job ();
   _broadcast_all Collect [|x|];
-  barrier _context.worker
+  bsp_barrier _context.worker
 
 let count x =
   Utils.logger ("count " ^ x ^ "\n");
   run_job ();
   _broadcast_all Count [|x|];
-  barrier _context.worker |> List.fold_left (+) 0
+  bsp_barrier _context.worker |> List.fold_left (+) 0
 
 let fold f a x =
   Utils.logger ("fold " ^ x ^ "\n");
   run_job ();
   let g = Marshal.to_string f [ Marshal.Closures ] in
   _broadcast_all Fold [|g; x|];
-  barrier _context.worker
+  bsp_barrier _context.worker
   |> List.filter (function Some x -> true | None -> false)
   |> List.map (function Some x -> x | None -> failwith "")
   |> List.fold_left f a
@@ -194,13 +194,13 @@ let fold f a x =
 let terminate () =
   Utils.logger ("terminate #" ^ _context.jid ^ "\n");
   _broadcast_all Terminate [||];
-  barrier _context.worker
+  bsp_barrier _context.worker
 
 let broadcast x =
   Utils.logger ("broadcast -> " ^ string_of_int (StrMap.cardinal _context.worker) ^ " workers\n");
   let y = Memory.rand_id () in
   _broadcast_all Broadcast [|Marshal.to_string x []; y|];
-  barrier _context.worker; y
+  bsp_barrier _context.worker; y
 
 let get_value x = Memory.find x
 
