@@ -6,6 +6,11 @@ let print_float_list x =
   List.iter (fun y -> Printf.printf "%.2f\t" y) x;
   print_endline ""
 
+let print_kv_list x =
+  List.iter (fun l ->
+    if (List.length l) > 0 then List.iter (fun (k,v) -> Printf.printf "(%c,%.2f)\t" k v) l;
+    print_endline "" ) x
+
 let test () =
   Context.init Sys.argv.(1) "tcp://localhost:5555";
   (* Test map *)
@@ -20,20 +25,14 @@ let test () =
   (* Test shuffle *)
   let x5 = Context.map (fun x -> if x > 10. then ('a',x) else ('b',x)) x3 in
   let x6 = Context.shuffle x5 in
-  List.iter (fun l ->
-    if (List.length l) > 0 then List.iter (fun (k,v) -> Printf.printf "(%c,%.2f)\t" k v) l;
-    print_endline "";
-  ) (Context.collect x5);
-  print_endline "after shuffling ....";
-  List.iter (fun l ->
-    if (List.length l) > 0 then List.iter (fun (k,v) -> Printf.printf "(%c,%.2f) " k v) l;
-    Printf.printf "\n%i\n" (List.length l);
-  ) (Context.collect x6);
+  print_kv_list (Context.collect x5);
   (* collect data *)
   List.iter (fun x -> print_float_list x) (Context.collect x3);
   Printf.printf "num of x4 is %s\n" (Context.count x4 |> string_of_int);
   Printf.printf "sum of x3 is %.2f\n" (Context.fold (+.) 0. x3);
   Printf.printf "max of x3 is %.2f\n" (Context.fold max 0. x3);
+  (* test reduce *)
+  
   (* Terminate *)
   Context.terminate ()
 

@@ -218,3 +218,5 @@ let shuffle x =
   let y = Memory.rand_id () in
   let z = Marshal.to_string (StrMap.keys _context.worker) [] in
   Dag.add_edge (to_msg ShuffleTask [|x; y; z|]) x y Blue; y
+
+let reduce f x = None

@@ -24,5 +24,5 @@ let size id = Obj.size (StrMap.find id !_data)
 (* FIXME: debug purpose *)
 
 let _ =
-  let d = Array.init 5 (fun x -> Random.float 10.) in
+  let d = Array.init 50000 (fun x -> Random.float 10.) in
   add "default" (Array.to_list d)
