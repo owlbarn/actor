@@ -21,8 +21,6 @@ let recv s =
   let m = ZMQ.Socket.recv_all s in
   (List.nth m 0, List.nth m 1)
 
-let send s i m = ZMQ.Socket.send_all s [i; m]
-
 let _broadcast_all t s =
   StrMap.iter (fun k v -> ZMQ.Socket.send v (to_msg t s)) _context.worker
 
@@ -54,17 +52,17 @@ let process_pipeline s =
       )
     | ShuffleTask -> (
       Utils.logger ("shuffle @ " ^ _addr);
-      let x, y, z = m.par.(0), m.par.(1), m.par.(2) in
-      let x = (Memory.find x) in
+      let x = Memory.find m.par.(0) in
+      let z = Marshal.from_string m.par.(2) 0 in
       List.iter (fun k ->
         let s = ZMQ.Socket.(create _ztx dealer) in
         ZMQ.Socket.(set_identity s _addr; connect s k);
-        send s _addr ("hello");
-      ) (Marshal.from_string z 0); print_endline "hereeeee......";
-      try while true do
-        let i, m' = recv _router in
-        print_endline (i ^ " +++ aaa....." ^ m')
-      done with exn -> print_endline "abcdef....";
+        ZMQ.Socket.send_all s [(to_msg OK [|"hello"|])] ) z;
+      let r = ref [] in
+      while (List.length !r) < (List.length z) do
+        let i, m = recv _router in
+        r := !r @ [ Marshal.from_string m 0]
+      done;
       )
     | _ -> Utils.logger "unknow task types"
   ) s
