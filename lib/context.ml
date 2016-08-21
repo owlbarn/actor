@@ -57,6 +57,7 @@ let process_pipeline s =
       List.iter (fun k ->
         let s = ZMQ.Socket.(create _ztx dealer) in
         ZMQ.Socket.(set_identity s _addr; connect s k);
+        (* TODO: group by keys ... *)
         ZMQ.Socket.send_all s [(to_msg OK [|"hello"|])] ) z;
       let r = ref [] in
       while (List.length !r) < (List.length z) do
