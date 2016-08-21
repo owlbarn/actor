@@ -12,8 +12,7 @@ let rand_id () = string_of_int (Random.int 536870912)
 
 let mem id = StrMap.mem id !_data
 
-let add id d =
-  _data := StrMap.add id (Obj.repr d) !_data
+let add id d = _data := StrMap.add id (Obj.repr d) !_data
 
 let remove id = StrMap.remove id !_data
 
