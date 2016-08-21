@@ -66,7 +66,8 @@ let process_pipeline s =
         r := !r @ [ of_msg m ]
       done;
       List.iter ZMQ.Socket.close l;
-      List.map (fun m -> Marshal.from_string m.par.(0) 0) !r |> List.flatten |> Memory.add y
+      List.map (fun m -> Marshal.from_string m.par.(0) 0 |> Utils.flatten_kvg) !r |> List.flatten |> Memory.add y;
+      (* Memory.find y |> List.iter (fun (k,v) -> print_char k; print_string " "; print_float v) *)
       )
     | _ -> Utils.logger "unknow task types"
   ) s
