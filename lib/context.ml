@@ -58,18 +58,11 @@ let process_pipeline s =
         let v = Utils.choose_load x (List.length z) i in
         let s = ZMQ.Socket.(create _ztx dealer) in
         ZMQ.Socket.(set_identity s _addr; connect s k);
-        ZMQ.Socket.send_all s [(to_msg OK [|Marshal.to_string v []|])]; s) z in
-      (*List.fold_left (fun x _ -> (recv _router |> snd |> of_msg) :: x) [] l
+        ZMQ.Socket.send_all s [to_msg OK [|Marshal.to_string v []|]]; s) z in
+      List.fold_left (fun x _ -> (recv _router |> snd |> of_msg) :: x) [] l
       |> List.map (fun m -> Marshal.from_string m.par.(0) 0 |> Utils.flatten_kvg)
       |> List.flatten |> Memory.add m.par.(1);
-      List.iter ZMQ.Socket.close l; *)
-      let r = ref [] in
-      while (List.length !r) < (List.length z) do
-        let i, m = recv _router in
-        r := !r @ [ of_msg m ]
-      done;
       List.iter ZMQ.Socket.close l;
-      List.map (fun m -> Marshal.from_string m.par.(0) 0 |> Utils.flatten_kvg) !r |> List.flatten |> Memory.add m.par.(1)
       )
     | _ -> Utils.logger "unknow task types"
   ) s
