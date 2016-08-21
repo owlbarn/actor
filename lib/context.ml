@@ -183,7 +183,7 @@ let fold f a x =
   |> List.fold_left f a
 
 let terminate () =
-  Utils.logger ("terminate job " ^ _context.jid ^ "\n");
+  Utils.logger ("terminate #" ^ _context.jid ^ "\n");
   _broadcast_all Terminate [||];
   barrier _context.worker
 
@@ -202,21 +202,25 @@ let map f x =
   Dag.add_edge (to_msg MapTask [|g; x; y|]) x y Red; y
 
 let filter f x =
-  Utils.logger ("filter " ^ x ^ "\n");
   let y = Memory.rand_id () in
+  Utils.logger ("filter " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
   Dag.add_edge (to_msg FilterTask [|g; x; y|]) x y Red; y
 
 let union x y =
-  Utils.logger ("union " ^ x ^ " and " ^ y ^ "\n");
   let z = Memory.rand_id () in
+  Utils.logger ("union " ^ x ^ " & " ^ y ^ " -> " ^ z ^ "\n");
   Dag.add_edge (to_msg UnionTask [|x; y; z|]) x z Red;
   Dag.add_edge (to_msg UnionTask [|x; y; z|]) y z Red; z
 
 let shuffle x =
-  Utils.logger ("shuffle " ^ x ^ "\n");
   let y = Memory.rand_id () in
+  Utils.logger ("shuffle " ^ x ^ " -> " ^ y ^ "\n");
   let z = Marshal.to_string (StrMap.keys _context.worker) [] in
   Dag.add_edge (to_msg ShuffleTask [|x; y; z|]) x y Blue; y
 
-let reduce f x = None
+let reduce f x =
+  let y = Memory.rand_id () in
+  Utils.logger ("reduce " ^ x ^ " -> " ^ y ^ "\n");
+  let g = Marshal.to_string f [ Marshal.Closures ] in
+  Dag.add_edge (to_msg ReduceTask [|g; x; y|]) x y Red; y

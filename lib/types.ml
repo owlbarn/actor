@@ -14,7 +14,7 @@ type message_type =
   | OK | Fail | Heartbeat
   | User_Reg | Data_Reg
   | Job_Reg | Job_Master | Job_Worker | Job_Create
-  | MapTask | FilterTask | UnionTask | ShuffleTask
+  | MapTask | FilterTask | UnionTask | ShuffleTask | ReduceTask
   | Pipeline | Collect | Count | Broadcast | Fold | Terminate
 
 type message_rec = {
