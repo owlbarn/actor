@@ -6,19 +6,19 @@ open Types
 
 type t = Obj.t
 
-let _data = ref StrMap.empty
+let _data = Hashtbl.create 1024
 
 let rand_id () = string_of_int (Random.int 536870912)
 
-let mem id = StrMap.mem id !_data
+let mem id = Hashtbl.mem _data id
 
-let add id d = _data := StrMap.add id (Obj.repr d) !_data
+let add id d = Hashtbl.add _data id (Obj.repr d)
 
-let remove id = StrMap.remove id !_data
+let remove id = Hashtbl.remove _data id
 
-let find id = Obj.obj (StrMap.find id !_data)
+let find id = Obj.obj (Hashtbl.find _data id)
 
-let size id = Obj.size (StrMap.find id !_data)
+let size id = Obj.size (find id)
 
 (* FIXME: debug purpose *)
 
