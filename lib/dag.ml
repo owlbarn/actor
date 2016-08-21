@@ -39,8 +39,8 @@ let stages () =
   let r, s = ref [], ref [] in
   let _ = TopoOrd.iter (fun v ->
     match (Hashtbl.find _vlabel v).c with
-    | Blue -> s := !s @ [v]; r := !r @ [!s]; s := []
-    | Red -> s := !s @ [v]
+    | Blue  -> s := !s @ [v]; r := !r @ [!s]; s := []
+    | Red   -> s := !s @ [v]
     | Green -> ()
   ) !_graph in
   if List.length !s = 0 then !r else !r @ [!s]
@@ -56,9 +56,9 @@ let mark_stage_done s =
 let print_vertex v =
   let x = Hashtbl.find _vlabel v in
   match x.c with
-  | Red -> Printf.printf "(%s, Red); " v
+  | Red   -> Printf.printf "(%s, Red); " v
   | Green -> Printf.printf "(%s, Green); " v
-  | Blue -> Printf.printf "(%s, Blue); " v
+  | Blue  -> Printf.printf "(%s, Blue); " v
 
 let print_stages x =
   print_endline "";
