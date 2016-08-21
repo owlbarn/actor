@@ -25,6 +25,7 @@ let _broadcast_all t s =
   StrMap.iter (fun k v -> ZMQ.Socket.send v (to_msg t s)) _context.worker
 
 let barrier x =
+  (* TODO: refactor with List.fold ... *)
   let r = ref [] in
   while (List.length !r) < (StrMap.cardinal x) do
     let i, m = recv _router in
@@ -49,6 +50,14 @@ let process_pipeline s =
       Utils.logger ("union @ " ^ _addr);
       (Memory.find m.par.(0)) @ (Memory.find m.par.(1))
       |> Memory.add m.par.(2)
+      )
+    | ReduceTask -> (
+      Utils.logger ("reduce @ " ^ _addr);
+      let f : 'a -> 'a -> 'a = Marshal.from_string m.par.(0) 0 in
+      Memory.find m.par.(1) |> Utils.group_by_key |> List.map (fun (k,l) ->
+        match l with hd :: tl -> (k, List.fold_left f hd tl)
+        | [] -> failwith "error in reduce"
+      ) |> Memory.add m.par.(2)
       )
     | ShuffleTask -> (
       Utils.logger ("shuffle @ " ^ _addr);
