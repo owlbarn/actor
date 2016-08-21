@@ -52,19 +52,21 @@ let process_pipeline s =
       )
     | ShuffleTask -> (
       Utils.logger ("shuffle @ " ^ _addr);
-      let x = Memory.find m.par.(0) in
+      let x = Memory.find m.par.(0) |> Utils.group_by_key in
+      let y = m.par.(1) in
       let z = Marshal.from_string m.par.(2) 0 in
-      let l = List.map (fun k ->
+      let l = List.mapi (fun i k ->
+        let v = Utils.choose_load x (List.length z) i in
         let s = ZMQ.Socket.(create _ztx dealer) in
         ZMQ.Socket.(set_identity s _addr; connect s k);
-        (* TODO: group by keys ... *)
-        ZMQ.Socket.send_all s [(to_msg OK [|"hello"|])]; s) z in
+        ZMQ.Socket.send_all s [(to_msg OK [|Marshal.to_string v []|])]; s) z in
       let r = ref [] in
       while (List.length !r) < (List.length z) do
         let i, m = recv _router in
-        r := !r @ [ Marshal.from_string m 0]
+        r := !r @ [ of_msg m ]
       done;
-      List.iter ZMQ.Socket.close l
+      List.iter ZMQ.Socket.close l;
+      List.map (fun m -> Marshal.from_string m.par.(0) 0) !r |> List.flatten |> Memory.add y
       )
     | _ -> Utils.logger "unknow task types"
   ) s
