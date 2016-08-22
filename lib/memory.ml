@@ -6,7 +6,7 @@ open Types
 
 type t = Obj.t
 
-let _data = Hashtbl.create 1024
+let _data = Hashtbl.create 1048576
 
 let rand_id () = string_of_int (Random.int 536870912)
 

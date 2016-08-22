@@ -234,5 +234,7 @@ let reduce f x =
   let g = Marshal.to_string f [ Marshal.Closures ] in
   Dag.add_edge (to_msg ReduceTask [|g; x; y|]) x y Red; y
 
-let join x y = None
-(* TODO: need to use shuffle and map *)
+let join x y = (* TODO: not finished ... *)
+  let z = Memory.rand_id () in
+  Utils.logger ("join " ^ x ^ " & " ^ y ^ " -> " ^ z ^ "\n");
+  let x', y' = shuffle x, shuffle y in ()

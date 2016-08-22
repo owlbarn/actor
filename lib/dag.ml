@@ -25,7 +25,7 @@ module TopoOrd = Graph.Topological.Make_stable (Digraph)
 
 let _graph = ref (Digraph.create ())
 
-let _vlabel = Hashtbl.create 1024
+let _vlabel = Hashtbl.create 1048576
 
 let get_vlabel_f x = (Hashtbl.find _vlabel x).f
 
