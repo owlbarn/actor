@@ -13,6 +13,7 @@ all:
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o manager types.cmo utils.cmo service.cmo manager.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o test_context types.cmo dag.cmo utils.cmo memory.cmo context.cmo test_context.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o test_serialise test_serialise.ml
+	ocamlfind ocamlc -package $(DEPS) -linkpkg -o test_kmeans types.cmo dag.cmo utils.cmo memory.cmo context.cmo test_kmeans.ml
 
 clean:
 	rm -f *.cm*
