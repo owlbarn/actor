@@ -233,3 +233,6 @@ let reduce f x =
   Utils.logger ("reduce " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
   Dag.add_edge (to_msg ReduceTask [|g; x; y|]) x y Red; y
+
+let join x y = None
+(* TODO: need to use shuffle and map *)
