@@ -45,6 +45,24 @@ let stages () =
   ) !_graph in
   if List.length !s = 0 then !r else !r @ [!s]
 
+let rec _stages_lazy v =
+  let l = ref [v] in
+  List.iter (fun u ->
+    match (Hashtbl.find _vlabel u).c with
+    | Blue | Red -> l := (_stages_lazy u) @ !l
+    | Green -> ()
+  ) (Digraph.pred !_graph v); !l
+
+let stages_lazy v =
+  let r, s = ref [], ref [] in
+  let _ = List.iter (fun v ->
+    match (Hashtbl.find _vlabel v).c with
+    | Blue  -> s := !s @ [v]; r := !r @ [!s]; s := []
+    | Red   -> s := !s @ [v]
+    | Green -> ()
+  ) (_stages_lazy v) in
+  if List.length !s = 0 then !r else !r @ [!s]
+
 let mark_stage_done s =
   List.iter (fun k ->
     let v = Hashtbl.find _vlabel k in
@@ -70,3 +88,16 @@ let print_stages x =
   ) x
 
 let print_tasks () = TopoOrd.iter (fun v -> print_vertex v) !_graph
+
+let () =
+  add_edge "" "1" "2" Red;
+  add_edge "" "1" "4" Blue;
+  add_edge "" "1" "6" Red;
+  add_edge "" "2" "3" Red;
+  add_edge "" "4" "3" Red;
+  add_edge "" "3" "5" Blue;
+  add_edge "" "4" "7" Red;
+  add_edge "" "6" "8" Blue;
+  add_edge "" "7" "8" Blue;
+  TopoOrd.iter (fun v -> print_vertex v) !_graph;
+  print_stages (stages_lazy "5");

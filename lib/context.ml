@@ -169,6 +169,14 @@ let run_job () =
     Dag.mark_stage_done s;
   ) (Dag.stages ())
 
+let run_job_lazy x =
+  List.iter (fun s ->
+    let s' = List.map (fun x -> Dag.get_vlabel_f x) s in
+    _broadcast_all Pipeline (Array.of_list s');
+    bsp_barrier _context.worker;
+    Dag.mark_stage_done s;
+  ) (Dag.stages_lazy x)
+
 let collect x =
   Utils.logger ("collect " ^ x ^ "\n");
   run_job ();
