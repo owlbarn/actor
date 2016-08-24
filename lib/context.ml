@@ -179,7 +179,7 @@ let run_job_lazy x =
 
 let collect x =
   Utils.logger ("collect " ^ x ^ "\n");
-  run_job ();
+  run_job_lazy x;
   _broadcast_all Collect [|x|];
   bsp_barrier _context.worker
 

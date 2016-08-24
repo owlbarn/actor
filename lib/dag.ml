@@ -89,7 +89,7 @@ let print_stages x =
 
 let print_tasks () = TopoOrd.iter (fun v -> print_vertex v) !_graph
 
-let () =
+let test () =
   add_edge "" "1" "2" Red;
   add_edge "" "1" "4" Blue;
   add_edge "" "1" "6" Red;
