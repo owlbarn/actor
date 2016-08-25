@@ -109,7 +109,7 @@ let worker_fun m =
     let bar = m.bar in
     match m.typ with
     | OK -> (
-      print_endline ("OK <- " ^ i ^ " m.clk : " ^ string_of_int (m.clk));
+      print_endline ("OK <- " ^ i ^ " m.bar : " ^ string_of_int (m.bar));
       )
     | Count -> (
       Utils.logger ("count @ " ^ _addr);
@@ -221,35 +221,35 @@ let map f x =
   let y = Memory.rand_id () in
   Utils.logger ("map " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
-  Dag.add_edge (to_msg !Utils._clock 0 MapTask [|g; x; y|]) x y Red; y
+  Dag.add_edge (to_msg 0 MapTask [|g; x; y|]) x y Red; y
 
 let filter f x =
   let y = Memory.rand_id () in
   Utils.logger ("filter " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
-  Dag.add_edge (to_msg !Utils._clock 0 FilterTask [|g; x; y|]) x y Red; y
+  Dag.add_edge (to_msg 0 FilterTask [|g; x; y|]) x y Red; y
 
 let union x y =
   let z = Memory.rand_id () in
   Utils.logger ("union " ^ x ^ " & " ^ y ^ " -> " ^ z ^ "\n");
-  Dag.add_edge (to_msg !Utils._clock 0 UnionTask [|x; y; z|]) x z Red;
-  Dag.add_edge (to_msg !Utils._clock 0 UnionTask [|x; y; z|]) y z Red; z
+  Dag.add_edge (to_msg 0 UnionTask [|x; y; z|]) x z Red;
+  Dag.add_edge (to_msg 0 UnionTask [|x; y; z|]) y z Red; z
 
 let shuffle x =
   let y = Memory.rand_id () in
   Utils.logger ("shuffle " ^ x ^ " -> " ^ y ^ "\n");
   let z = Marshal.to_string (StrMap.keys _context.worker) [] in
-  Dag.add_edge (to_msg !Utils._clock 0 ShuffleTask [|x; y; z|]) x y Blue; y
+  Dag.add_edge (to_msg 0 ShuffleTask [|x; y; z|]) x y Blue; y
 
 let reduce f x =
   let y = Memory.rand_id () in
   Utils.logger ("reduce " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
-  Dag.add_edge (to_msg !Utils._clock 0 ReduceTask [|g; x; y|]) x y Red; y
+  Dag.add_edge (to_msg 0 ReduceTask [|g; x; y|]) x y Red; y
 
 let join x y =
   let z = Memory.rand_id () in
   Utils.logger ("join " ^ x ^ " & " ^ y ^ " -> " ^ z ^ "\n");
   let x, y = shuffle x, shuffle y in
-  Dag.add_edge (to_msg !Utils._clock 0 JoinTask [|x; y; z|]) x z Red;
-  Dag.add_edge (to_msg !Utils._clock 0 JoinTask [|x; y; z|]) y z Red; z
+  Dag.add_edge (to_msg 0 JoinTask [|x; y; z|]) x z Red;
+  Dag.add_edge (to_msg 0 JoinTask [|x; y; z|]) y z Red; z

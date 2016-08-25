@@ -6,17 +6,12 @@ open Types
 
 (* logical clock *)
 
-let _clock = ref 0
-
 let recv s =
-  let m' = ZMQ.Socket.recv_all s in
-  let i, m = (List.nth m' 0, List.nth m' 1 |> of_msg) in
-  if !_clock < m.clk then _clock := m.clk;
-  i, m
+  let m = ZMQ.Socket.recv_all s in
+  (List.nth m 0, List.nth m 1 |> of_msg)
 
 let send ?(bar=0) v t s =
-  ZMQ.Socket.send v (to_msg !_clock bar t s);
-  _clock := !_clock + 1
+  ZMQ.Socket.send v (to_msg bar t s)
 
 (* logger outputs runtime information *)
 
