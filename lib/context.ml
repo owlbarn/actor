@@ -11,6 +11,7 @@ type t = {
 }
 
 (* FIXME: global varibles ...*)
+let _clock = ref 0
 let _context = { jid = ""; master = ""; worker = StrMap.empty }
 let _ztx = ZMQ.Context.create ()
 let _addr, _router = Utils.bind_available_addr _ztx
@@ -23,6 +24,13 @@ let _broadcast_all t s =
   StrMap.iter (fun k v -> ZMQ.Socket.send v (to_msg t s)) _context.worker
 
 let bsp_barrier x =
+  let r = ref [] in
+  while (List.length !r) < (StrMap.cardinal x) do
+    let i, m = recv _router in
+    r := !r @ [ Marshal.from_string m 0]
+  done; !r
+
+let _bsp_barrier id x =
   let r = ref [] in
   while (List.length !r) < (StrMap.cardinal x) do
     let i, m = recv _router in
@@ -69,7 +77,7 @@ let process_pipeline s =
         let v = Utils.choose_load x (List.length z) i in
         let s = ZMQ.Socket.(create _ztx dealer) in
         ZMQ.Socket.(set_identity s _addr; connect s k);
-        ZMQ.Socket.send_all s [to_msg OK [|Marshal.to_string v []|]]; s) z in
+        ZMQ.Socket.send s (to_msg OK [|Marshal.to_string v []|]); s) z in
       List.fold_left (fun x _ -> (recv _router |> snd |> of_msg) :: x) [] l
       |> List.map (fun m -> Marshal.from_string m.par.(0) 0 |> Utils.flatten_kvg)
       |> List.flatten |> Memory.add m.par.(1);

@@ -20,7 +20,7 @@ let find id = Obj.obj (Hashtbl.find _data id)
 
 let size id = Obj.size (find id)
 
-let load filename = None 
+let load filename = None
 
 (* FIXME: debug purpose *)
 

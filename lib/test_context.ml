@@ -42,7 +42,7 @@ let test () =
   Printf.printf "num of x4 is %s\n" (Context.count x4 |> string_of_int);
   Printf.printf "sum of x3 is %.2f\n" (Context.fold (+.) 0. x3);
   Printf.printf "max of x3 is %.2f\n" (Context.fold max 0. x3);
-  print_kv_list (Context.collect x7);
+  (*print_kv_list (Context.collect x7 *);
   (* test join *)
   (* let x8 = Context.join x5 x5 in
   print_join_list (Context.collect x8); *)
