@@ -10,7 +10,16 @@ let print_kv_list x =
   List.iter (fun l ->
     if (List.length l) > 0 then
       ( List.iter (fun (k,v) -> Printf.printf "(%c,%.2f)\t" k v) l; print_endline "" )
-    ) x
+  ) x
+
+let print_join_list x =
+  List.iter (fun l ->
+    if (List.length l) > 0 then
+      ( List.iter (fun (k,l1) ->
+        Printf.printf "%c : " k;
+        List.iter (fun v -> Printf.printf "%.2f; " v) l1 ) l;
+        print_endline "" )
+  ) x
 
 let test () =
   Context.init Sys.argv.(1) "tcp://localhost:5555";
@@ -23,7 +32,7 @@ let test () =
   let x3 = Context.union x1 x2 in
   (* Test filter *)
   let x4 = Context.filter ((>) 10.) x3 in
-  (* Test shuffle *)
+  (* Test shuffle & reduce *)
   let x5 = Context.map (fun x -> if x > 10. then ('a',x) else ('b',x)) x3 in
   let x6 = Context.shuffle x5 in
   let x7 = Context.reduce (max) x6 in
@@ -34,8 +43,9 @@ let test () =
   Printf.printf "sum of x3 is %.2f\n" (Context.fold (+.) 0. x3);
   Printf.printf "max of x3 is %.2f\n" (Context.fold max 0. x3);
   print_kv_list (Context.collect x7);
-  (* test reduce *)
-
+  (* test join *)
+  let x8 = Context.join x5 x5 in
+  print_join_list (Context.collect x8);
   (* Terminate *)
   Context.terminate ()
 

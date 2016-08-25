@@ -58,6 +58,11 @@ let process_pipeline s =
         | [] -> failwith "error in reduce"
       ) |> Memory.add m.par.(2)
       )
+    | JoinTask -> (
+      Utils.logger ("join @ " ^ _addr);
+      (Memory.find m.par.(0)) @ (Memory.find m.par.(1))
+      |> Utils.group_by_key |> Memory.add m.par.(2)
+      )
     | ShuffleTask -> (
       Utils.logger ("shuffle @ " ^ _addr);
       let x = Memory.find m.par.(0) |> Utils.group_by_key in
@@ -244,4 +249,6 @@ let reduce f x =
 let join x y = (* TODO: not finished ... *)
   let z = Memory.rand_id () in
   Utils.logger ("join " ^ x ^ " & " ^ y ^ " -> " ^ z ^ "\n");
-  let x', y' = shuffle x, shuffle y in ()
+  let x, y = shuffle x, shuffle y in
+  Dag.add_edge (to_msg JoinTask [|x; y; z|]) x z Red;
+  Dag.add_edge (to_msg JoinTask [|x; y; z|]) y z Red; z
