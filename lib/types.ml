@@ -17,13 +17,8 @@ type message_type =
   | MapTask | FilterTask | ReduceTask | ShuffleTask | UnionTask | JoinTask
   | Pipeline | Collect | Count | Broadcast | Fold | Terminate
 
-type _message_rec = {
-  clk : int;
-  typ : message_type;
-  par : string array;
-}
-
 type message_rec = {
+  clk : int;
   typ : message_type;
   par : string array;
 }
@@ -45,12 +40,8 @@ type service_rec = {
   mutable workers : string list;
 }
 
-let _to_msg c t p =
+let to_msg c t p =
   let m = { clk = c; typ = t; par = p } in
-  Marshal.to_string m [ ]
-
-let to_msg t p =
-  let m = { typ = t; par = p } in
   Marshal.to_string m [ ]
 
 let of_msg s =

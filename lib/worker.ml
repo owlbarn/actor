@@ -4,6 +4,7 @@
 
 open Types
 
+let _clock = ref 0
 let manager = "tcp://127.0.0.1:5555"
 let addr = "tcp://127.0.0.1:" ^ (string_of_int (Random.int 10000 + 50000))
 let myid = "actor_" ^ (string_of_int (Random.int 9000 + 1000))
@@ -11,12 +12,12 @@ let _ztx = ZMQ.Context.create ()
 
 let register req id u_addr m_addr =
   Utils.logger ("register -> " ^ m_addr);
-  ZMQ.Socket.send req (to_msg User_Reg [|id; u_addr|]);
+  ZMQ.Socket.send req (to_msg !_clock User_Reg [|id; u_addr|]);
   ignore (ZMQ.Socket.recv req)
 
 let heartbeat req id u_addr m_addr =
   Utils.logger ("heartbeat -> " ^ m_addr);
-  ZMQ.Socket.send req (to_msg Heartbeat [|id; u_addr|]);
+  ZMQ.Socket.send req (to_msg !_clock Heartbeat [|id; u_addr|]);
   ignore (ZMQ.Socket.recv req)
 
 let start_app app arg =

@@ -20,6 +20,7 @@ module Actors = struct
   let addrs () = StrMap.fold (fun k v l -> l @ [v.addr]) !_actors []
 end
 
+let _clock = ref 0
 let addr = "tcp://*:5555"
 let myid = "manager_" ^ (string_of_int (Random.int 5000))
 
@@ -37,10 +38,10 @@ let process r m =
     if Service.mem jid = false then (
       Service.add jid master;
       let addrs = Marshal.to_string (Actors.addrs ()) [] in
-      ZMQ.Socket.send r (to_msg Job_Master [|addrs; ""|]) )
+      ZMQ.Socket.send r (to_msg !_clock Job_Master [|addrs; ""|]) )
     else
       let master = (Service.find jid).master in
-      ZMQ.Socket.send r (to_msg Job_Worker [|master; ""|])
+      ZMQ.Socket.send r (to_msg !_clock Job_Worker [|master; ""|])
     )
   | Heartbeat -> (
     Utils.logger ("heartbeat @ " ^ m.par.(0));
