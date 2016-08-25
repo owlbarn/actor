@@ -142,7 +142,7 @@ let worker_fun m =
       Utils.logger ("terminate @ " ^ _addr);
       Utils.send ~bar master OK [||];
       Unix.sleep 1; (* FIXME: sleep ... *)
-      failwith "terminated"
+      failwith ("#" ^ _context.jid ^ " terminated")
       )
     | _ -> ()
   done with Failure e -> (
