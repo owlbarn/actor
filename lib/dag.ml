@@ -35,7 +35,7 @@ let add_edge f u v c =
   Hashtbl.add _vlabel v { c = c; f = f };
   Digraph.add_edge !_graph u v
 
-let stages () =
+let stages_eager () =
   let r, s = ref [], ref [] in
   let _ = TopoOrd.iter (fun v ->
     match (Hashtbl.find _vlabel v).c with

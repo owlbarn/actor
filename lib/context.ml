@@ -25,7 +25,6 @@ let _broadcast_all t s =
   StrMap.iter (fun k v -> ZMQ.Socket.send v (to_msg t s)) _context.worker
 
 let bsp_barrier x =
-  (* TODO: refactor with List.fold ... *)
   let r = ref [] in
   while (List.length !r) < (StrMap.cardinal x) do
     let i, m = recv _router in
@@ -161,13 +160,13 @@ let init jid url =
     | _ -> Utils.logger "unknown command";
   ZMQ.Socket.close req
 
-let run_job () =
+let run_job_eager () =
   List.iter (fun s ->
     let s' = List.map (fun x -> Dag.get_vlabel_f x) s in
     _broadcast_all Pipeline (Array.of_list s');
     bsp_barrier _context.worker;
     Dag.mark_stage_done s;
-  ) (Dag.stages ())
+  ) (Dag.stages_eager ())
 
 let run_job_lazy x =
   List.iter (fun s ->
@@ -185,13 +184,13 @@ let collect x =
 
 let count x =
   Utils.logger ("count " ^ x ^ "\n");
-  run_job ();
+  run_job_lazy x;
   _broadcast_all Count [|x|];
   bsp_barrier _context.worker |> List.fold_left (+) 0
 
 let fold f a x =
   Utils.logger ("fold " ^ x ^ "\n");
-  run_job ();
+  run_job_lazy x;
   let g = Marshal.to_string f [ Marshal.Closures ] in
   _broadcast_all Fold [|g; x|];
   bsp_barrier _context.worker
