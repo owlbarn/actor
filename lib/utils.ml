@@ -36,11 +36,23 @@ let bind_available_addr ztx =
   !addr, router
 
 (* the following 3 functions are for shuffle operations *)
-let group_by_key x =
+
+let _group_by_key x =
+  let h = Hashtbl.create 1024 in
+  List.iter (fun (k,v) ->
+    match Hashtbl.mem h k with
+    | true  -> Hashtbl.replace h k ((Hashtbl.find h k) @ [v])
+    | false -> Hashtbl.add h k [v]
+  ) x;
+  Hashtbl.fold (fun k v l -> (k,v) :: l) h []
+
+let group_by_key x = (* FIXME: stack overflow if there too many values for a key *)
   let h, g = Hashtbl.(create 1024, create 1024) in
   List.iter (fun (k,v) -> Hashtbl.(add h k v; if not (mem g k) then add g k None)) x;
   Hashtbl.fold (fun k _ l -> (k,Hashtbl.find_all h k) :: l) g []
 
-let flatten_kvg x = List.map (fun (k,l) -> List.map (fun v -> (k,v)) l) x |> List.flatten
+let flatten_kvg x =
+  try List.map (fun (k,l) -> List.map (fun v -> (k,v)) l) x |> List.flatten
+  with exn -> print_endline "hahahah"; []
 
 let choose_load x n i = List.filter (fun (k,l) -> (Hashtbl.hash k mod n) = i) x
