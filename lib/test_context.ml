@@ -36,9 +36,9 @@ let test () =
   let x5 = Context.map (fun x -> if x > 10. then ('a',x) else ('b',x)) x3 in
   let x6 = Context.shuffle x5 in
   let x7 = Context.reduce (max) x6 in
-  print_kv_list (Context.collect x5);
+  (* print_kv_list *) (Context.collect x5);
   (* collect data *)
-  List.iter (fun x -> print_float_list x) (Context.collect x3);
+  (* List.iter (fun x -> print_float_list x) *) (Context.collect x3);
   Printf.printf "num of x4 is %s\n" (Context.count x4 |> string_of_int);
   Printf.printf "sum of x3 is %.2f\n" (Context.fold (+.) 0. x3);
   Printf.printf "max of x3 is %.2f\n" (Context.fold max 0. x3);

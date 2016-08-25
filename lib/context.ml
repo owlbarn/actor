@@ -16,14 +16,17 @@ let _ztx = ZMQ.Context.create ()
 let _addr, _router = Utils.bind_available_addr _ztx
 
 let _broadcast_all t s =
-  StrMap.iter (fun k v -> Utils.send v t s) _context.worker
+  let bar = Random.int 536870912 in
+  StrMap.iter (fun k v -> Utils.send ~bar v t s) _context.worker;
+  bar
 
-let bsp_barrier id x =
-  let r = ref [] in
-  while (List.length !r) < (StrMap.cardinal x) do
+let bsp_barrier b x =
+  let h = Hashtbl.create 1024 in
+  while (Hashtbl.length h) < (StrMap.cardinal x) do
     let i, m = Utils.recv _router in
-    r := !r @ [ m ]
-  done; !r
+    if b = m.bar && not (Hashtbl.mem h i) then Hashtbl.add h i m
+  done;
+  Hashtbl.fold (fun k v l -> v :: l) h []
 
 let process_pipeline s =
   Array.iter (fun s ->
@@ -103,46 +106,47 @@ let worker_fun m =
   (* set up local loop of a job worker *)
   try while true do
     let i, m = Utils.recv _router in
+    let bar = m.bar in
     match m.typ with
     | OK -> (
-      print_endline ("OK <- " ^ i ^ " : " ^ m.par.(0));
+      print_endline ("OK <- " ^ i ^ " m.clk : " ^ string_of_int (m.clk));
       )
     | Count -> (
       Utils.logger ("count @ " ^ _addr);
       let y = List.length (Memory.find m.par.(0)) in
-      Utils.send master OK [|Marshal.to_string y []|]
+      Utils.send ~bar master OK [|Marshal.to_string y []|]
       )
     | Collect -> (
       Utils.logger ("collect @ " ^ _addr);
       let y = Memory.find m.par.(0) in
-      Utils.send master OK [|Marshal.to_string y []|]
+      Utils.send ~bar master OK [|Marshal.to_string y []|]
       )
     | Broadcast -> (
       Utils.logger ("broadcast @ " ^ _addr);
       Memory.add m.par.(1) (Marshal.from_string m.par.(0) 0);
-      Utils.send master OK [||]
+      Utils.send ~bar master OK [||]
       )
     | Fold -> (
       Utils.logger ("fold @ " ^ _addr);
       let f : 'a -> 'b -> 'a = Marshal.from_string m.par.(0) 0 in
       let y = match Memory.find m.par.(1) with
       | hd :: tl -> Some (List.fold_left f hd tl) | [] -> None
-      in Utils.send master OK [|Marshal.to_string y []|];
+      in Utils.send ~bar master OK [|Marshal.to_string y []|];
       )
     | Pipeline -> (
       Utils.logger ("pipelined @ " ^ _addr);
       process_pipeline m.par;
-      Utils.send master OK [||]
+      Utils.send ~bar master OK [||]
       )
     | Terminate -> (
       Utils.logger ("terminate @ " ^ _addr);
-      Utils.send master OK [||];
+      Utils.send ~bar master OK [||];
       Unix.sleep 1; (* FIXME: sleep ... *)
       failwith "terminated"
       )
     | _ -> ()
-  done with exn -> (
-    Utils.logger "task finished.";
+  done with Failure e -> (
+    Utils.logger e;
     ZMQ.Socket.(close master; close _router);
     Pervasives.exit 0 )
 
@@ -161,31 +165,31 @@ let init jid url =
 let run_job_eager () =
   List.iter (fun s ->
     let s' = List.map (fun x -> Dag.get_vlabel_f x) s in
-    _broadcast_all Pipeline (Array.of_list s');
-    bsp_barrier !Utils._clock _context.worker;
+    let bar = _broadcast_all Pipeline (Array.of_list s') in
+    bsp_barrier bar _context.worker;
     Dag.mark_stage_done s;
   ) (Dag.stages_eager ())
 
 let run_job_lazy x =
   List.iter (fun s ->
     let s' = List.map (fun x -> Dag.get_vlabel_f x) s in
-    _broadcast_all Pipeline (Array.of_list s');
-    bsp_barrier !Utils._clock _context.worker;
+    let bar = _broadcast_all Pipeline (Array.of_list s') in
+    bsp_barrier bar _context.worker;
     Dag.mark_stage_done s;
   ) (Dag.stages_lazy x)
 
 let collect x =
   Utils.logger ("collect " ^ x ^ "\n");
   run_job_lazy x;
-  _broadcast_all Collect [|x|];
-  bsp_barrier !Utils._clock _context.worker
+  let bar = _broadcast_all Collect [|x|] in
+  bsp_barrier bar _context.worker
   |> List.map (fun m -> Marshal.from_string m.par.(0) 0)
 
 let count x =
   Utils.logger ("count " ^ x ^ "\n");
   run_job_lazy x;
-  _broadcast_all Count [|x|];
-  bsp_barrier !Utils._clock _context.worker
+  let bar = _broadcast_all Count [|x|] in
+  bsp_barrier bar _context.worker
   |> List.map (fun m -> Marshal.from_string m.par.(0) 0)
   |> List.fold_left (+) 0
 
@@ -193,8 +197,8 @@ let fold f a x =
   Utils.logger ("fold " ^ x ^ "\n");
   run_job_lazy x;
   let g = Marshal.to_string f [ Marshal.Closures ] in
-  _broadcast_all Fold [|g; x|];
-  bsp_barrier !Utils._clock _context.worker
+  let bar = _broadcast_all Fold [|g; x|] in
+  bsp_barrier bar _context.worker
   |> List.map (fun m -> Marshal.from_string m.par.(0) 0)
   |> List.filter (function Some x -> true | None -> false)
   |> List.map (function Some x -> x | None -> failwith "")
@@ -202,14 +206,14 @@ let fold f a x =
 
 let terminate () =
   Utils.logger ("terminate #" ^ _context.jid ^ "\n");
-  _broadcast_all Terminate [||];
-  bsp_barrier !Utils._clock _context.worker
+  let bar = _broadcast_all Terminate [||] in
+  bsp_barrier bar _context.worker
 
 let broadcast x =
   Utils.logger ("broadcast -> " ^ string_of_int (StrMap.cardinal _context.worker) ^ " workers\n");
   let y = Memory.rand_id () in
-  _broadcast_all Broadcast [|Marshal.to_string x []; y|];
-  bsp_barrier !Utils._clock _context.worker; y
+  let bar = _broadcast_all Broadcast [|Marshal.to_string x []; y|] in
+  bsp_barrier bar _context.worker; y
 
 let get_value x = Memory.find x
 
@@ -217,35 +221,35 @@ let map f x =
   let y = Memory.rand_id () in
   Utils.logger ("map " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
-  Dag.add_edge (to_msg !Utils._clock MapTask [|g; x; y|]) x y Red; y
+  Dag.add_edge (to_msg !Utils._clock 0 MapTask [|g; x; y|]) x y Red; y
 
 let filter f x =
   let y = Memory.rand_id () in
   Utils.logger ("filter " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
-  Dag.add_edge (to_msg !Utils._clock FilterTask [|g; x; y|]) x y Red; y
+  Dag.add_edge (to_msg !Utils._clock 0 FilterTask [|g; x; y|]) x y Red; y
 
 let union x y =
   let z = Memory.rand_id () in
   Utils.logger ("union " ^ x ^ " & " ^ y ^ " -> " ^ z ^ "\n");
-  Dag.add_edge (to_msg !Utils._clock UnionTask [|x; y; z|]) x z Red;
-  Dag.add_edge (to_msg !Utils._clock UnionTask [|x; y; z|]) y z Red; z
+  Dag.add_edge (to_msg !Utils._clock 0 UnionTask [|x; y; z|]) x z Red;
+  Dag.add_edge (to_msg !Utils._clock 0 UnionTask [|x; y; z|]) y z Red; z
 
 let shuffle x =
   let y = Memory.rand_id () in
   Utils.logger ("shuffle " ^ x ^ " -> " ^ y ^ "\n");
   let z = Marshal.to_string (StrMap.keys _context.worker) [] in
-  Dag.add_edge (to_msg !Utils._clock ShuffleTask [|x; y; z|]) x y Blue; y
+  Dag.add_edge (to_msg !Utils._clock 0 ShuffleTask [|x; y; z|]) x y Blue; y
 
 let reduce f x =
   let y = Memory.rand_id () in
   Utils.logger ("reduce " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
-  Dag.add_edge (to_msg !Utils._clock ReduceTask [|g; x; y|]) x y Red; y
+  Dag.add_edge (to_msg !Utils._clock 0 ReduceTask [|g; x; y|]) x y Red; y
 
-let join x y = (* TODO: not finished ... *)
+let join x y =
   let z = Memory.rand_id () in
   Utils.logger ("join " ^ x ^ " & " ^ y ^ " -> " ^ z ^ "\n");
   let x, y = shuffle x, shuffle y in
-  Dag.add_edge (to_msg !Utils._clock JoinTask [|x; y; z|]) x z Red;
-  Dag.add_edge (to_msg !Utils._clock JoinTask [|x; y; z|]) y z Red; z
+  Dag.add_edge (to_msg !Utils._clock 0 JoinTask [|x; y; z|]) x z Red;
+  Dag.add_edge (to_msg !Utils._clock 0 JoinTask [|x; y; z|]) y z Red; z

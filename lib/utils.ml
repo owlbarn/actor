@@ -14,8 +14,8 @@ let recv s =
   if !_clock < m.clk then _clock := m.clk;
   i, m
 
-let send v t s =
-  ZMQ.Socket.send v (to_msg !_clock t s);
+let send ?(bar=0) v t s =
+  ZMQ.Socket.send v (to_msg !_clock bar t s);
   _clock := !_clock + 1
 
 (* logger outputs runtime information *)

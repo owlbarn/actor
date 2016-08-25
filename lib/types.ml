@@ -19,6 +19,7 @@ type message_type =
 
 type message_rec = {
   clk : int;
+  bar : int;
   typ : message_type;
   par : string array;
 }
@@ -40,8 +41,8 @@ type service_rec = {
   mutable workers : string list;
 }
 
-let to_msg c t p =
-  let m = { clk = c; typ = t; par = p } in
+let to_msg c b t p =
+  let m = { clk = c; bar = b; typ = t; par = p } in
   Marshal.to_string m [ ]
 
 let of_msg s =
