@@ -11,12 +11,12 @@ let _ztx = ZMQ.Context.create ()
 
 let register req id u_addr m_addr =
   Utils.logger ("register -> " ^ m_addr);
-  ZMQ.Socket.send req (to_msg !Utils._clock User_Reg [|id; u_addr|]);
+  Utils.send req User_Reg [|id; u_addr|];
   ignore (ZMQ.Socket.recv req)
 
 let heartbeat req id u_addr m_addr =
   Utils.logger ("heartbeat -> " ^ m_addr);
-  ZMQ.Socket.send req (to_msg !Utils._clock Heartbeat [|id; u_addr|]);
+  Utils.send req Heartbeat [|id; u_addr|];
   ignore (ZMQ.Socket.recv req)
 
 let start_app app arg =

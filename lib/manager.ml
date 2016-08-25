@@ -30,22 +30,22 @@ let process r m =
     if Actors.mem uid = false then
       Utils.logger (uid ^ " @ " ^ addr);
       Actors.add uid addr;
-      ZMQ.Socket.send r (Marshal.to_string OK []);
+      Utils.send r OK [||];
     )
   | Job_Reg -> (
     let master, jid = m.par.(0), m.par.(1) in
     if Service.mem jid = false then (
       Service.add jid master;
       let addrs = Marshal.to_string (Actors.addrs ()) [] in
-      ZMQ.Socket.send r (to_msg !Utils._clock Job_Master [|addrs; ""|]) )
+      Utils.send r Job_Master [|addrs; ""|] )
     else
       let master = (Service.find jid).master in
-      ZMQ.Socket.send r (to_msg !Utils._clock Job_Worker [|master; ""|])
+      Utils.send r Job_Worker [|master; ""|]
     )
   | Heartbeat -> (
     Utils.logger ("heartbeat @ " ^ m.par.(0));
     Actors.add m.par.(0) m.par.(1);
-    ZMQ.Socket.send r (Marshal.to_string OK []);
+    Utils.send r OK [||];
     )
   | Data_Reg -> ()
   | _ -> ()

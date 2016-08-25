@@ -9,8 +9,10 @@ open Types
 let _clock = ref 0
 
 let recv s =
-  let m = ZMQ.Socket.recv_all s in
-  (List.nth m 0, List.nth m 1 |> of_msg)
+  let m' = ZMQ.Socket.recv_all s in
+  let i, m = (List.nth m' 0, List.nth m' 1 |> of_msg) in
+  if !_clock < m.clk then _clock := m.clk;
+  i, m
 
 let send v t s =
   ZMQ.Socket.send v (to_msg !_clock t s);
