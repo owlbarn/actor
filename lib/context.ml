@@ -18,7 +18,7 @@ let _addr, _router = Utils.bind_available_addr _ztx
 
 let recv s =
   let m = ZMQ.Socket.recv_all s in
-  (List.nth m 0, List.nth m 1)
+  (List.nth m 0, List.nth m 1 |> of_msg)
 
 let send v t s =
   ZMQ.Socket.send v (to_msg !_clock t s);
@@ -31,14 +31,14 @@ let ___bsp_barrier x =
   let r = ref [] in
   while (List.length !r) < (StrMap.cardinal x) do
     let i, m = recv _router in
-    r := !r @ [ Marshal.from_string m 0]
+    r := !r @ [ m ]
   done; !r
 
 let bsp_barrier id x =
   let r = ref [] in
   while (List.length !r) < (StrMap.cardinal x) do
     let i, m = recv _router in
-    r := !r @ [ Marshal.from_string m 0]
+    r := !r @ [ m ]
   done; !r
 
 let process_pipeline s =
@@ -82,7 +82,7 @@ let process_pipeline s =
         let s = ZMQ.Socket.(create _ztx dealer) in
         ZMQ.Socket.(set_identity s _addr; connect s k);
         send s OK [|Marshal.to_string v []|]; s) z in
-      List.fold_left (fun x _ -> (recv _router |> snd |> of_msg) :: x) [] l
+      List.fold_left (fun x _ -> (recv _router |> snd) :: x) [] l
       |> List.map (fun m -> Marshal.from_string m.par.(0) 0 |> Utils.flatten_kvg)
       |> List.flatten |> Memory.add m.par.(1);
       List.iter ZMQ.Socket.close l;
@@ -105,8 +105,8 @@ let master_fun m =
   while (StrMap.cardinal _context.worker) < (List.length addrs) do
     let i, m = recv _router in
     let s = ZMQ.Socket.create _ztx ZMQ.Socket.dealer in
-    ZMQ.Socket.connect s m;
-    _context.worker <- (StrMap.add m s _context.worker);
+    ZMQ.Socket.connect s m.par.(0);
+    _context.worker <- (StrMap.add m.par.(0) s _context.worker);
   done
 
 let worker_fun m =
@@ -115,24 +115,23 @@ let worker_fun m =
   let master = ZMQ.Socket.create _ztx ZMQ.Socket.dealer in
   ZMQ.Socket.set_identity master _addr;
   ZMQ.Socket.connect master _context.master;
-  ZMQ.Socket.send master _addr;
+  send master OK [|_addr|];
   (* set up local loop of a job worker *)
   try while true do
-    let i, m' = recv _router in
-    let m = of_msg m' in
+    let i, m = recv _router in
     match m.typ with
     | OK -> (
       print_endline ("OK <- " ^ i ^ " : " ^ m.par.(0));
       )
     | Count -> (
       Utils.logger ("count @ " ^ _addr);
-      let y = Marshal.to_string (List.length (Memory.find m.par.(0))) [] in
-      ZMQ.Socket.send master y
+      let y = List.length (Memory.find m.par.(0)) in
+      send master OK [|Marshal.to_string y []|]
       )
     | Collect -> (
       Utils.logger ("collect @ " ^ _addr);
-      let y = Marshal.to_string (Memory.find m.par.(0)) [] in
-      ZMQ.Socket.send master y
+      let y = Memory.find m.par.(0) in
+      send master OK [|Marshal.to_string y []|]
       )
     | Broadcast -> (
       Utils.logger ("broadcast @ " ^ _addr);
@@ -144,7 +143,7 @@ let worker_fun m =
       let f : 'a -> 'b -> 'a = Marshal.from_string m.par.(0) 0 in
       let y = match Memory.find m.par.(1) with
       | hd :: tl -> Some (List.fold_left f hd tl) | [] -> None
-      in ZMQ.Socket.send master (Marshal.to_string y []);
+      in send master OK [|Marshal.to_string y []|];
       )
     | Pipeline -> (
       Utils.logger ("pipelined @ " ^ _addr);
@@ -196,12 +195,15 @@ let collect x =
   run_job_lazy x;
   _broadcast_all Collect [|x|];
   bsp_barrier !_clock _context.worker
+  |> List.map (fun m -> Marshal.from_string m.par.(0) 0)
 
 let count x =
   Utils.logger ("count " ^ x ^ "\n");
   run_job_lazy x;
   _broadcast_all Count [|x|];
-  bsp_barrier !_clock _context.worker |> List.fold_left (+) 0
+  bsp_barrier !_clock _context.worker
+  |> List.map (fun m -> Marshal.from_string m.par.(0) 0)
+  |> List.fold_left (+) 0
 
 let fold f a x =
   Utils.logger ("fold " ^ x ^ "\n");
@@ -209,6 +211,7 @@ let fold f a x =
   let g = Marshal.to_string f [ Marshal.Closures ] in
   _broadcast_all Fold [|g; x|];
   bsp_barrier !_clock _context.worker
+  |> List.map (fun m -> Marshal.from_string m.par.(0) 0)
   |> List.filter (function Some x -> true | None -> false)
   |> List.map (function Some x -> x | None -> failwith "")
   |> List.fold_left f a
