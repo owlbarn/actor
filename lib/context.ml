@@ -11,33 +11,17 @@ type t = {
 }
 
 (* FIXME: global varibles ...*)
-let _clock = ref 0
 let _context = { jid = ""; master = ""; worker = StrMap.empty }
 let _ztx = ZMQ.Context.create ()
 let _addr, _router = Utils.bind_available_addr _ztx
 
-let recv s =
-  let m = ZMQ.Socket.recv_all s in
-  (List.nth m 0, List.nth m 1 |> of_msg)
-
-let send v t s =
-  ZMQ.Socket.send v (to_msg !_clock t s);
-  _clock := !_clock + 1
-
 let _broadcast_all t s =
-  StrMap.iter (fun k v -> send v t s) _context.worker
-
-let ___bsp_barrier x =
-  let r = ref [] in
-  while (List.length !r) < (StrMap.cardinal x) do
-    let i, m = recv _router in
-    r := !r @ [ m ]
-  done; !r
+  StrMap.iter (fun k v -> Utils.send v t s) _context.worker
 
 let bsp_barrier id x =
   let r = ref [] in
   while (List.length !r) < (StrMap.cardinal x) do
-    let i, m = recv _router in
+    let i, m = Utils.recv _router in
     r := !r @ [ m ]
   done; !r
 
@@ -81,8 +65,8 @@ let process_pipeline s =
         let v = Utils.choose_load x (List.length z) i in
         let s = ZMQ.Socket.(create _ztx dealer) in
         ZMQ.Socket.(set_identity s _addr; connect s k);
-        send s OK [|Marshal.to_string v []|]; s) z in
-      List.fold_left (fun x _ -> (recv _router |> snd) :: x) [] l
+        Utils.send s OK [|Marshal.to_string v []|]; s) z in
+      List.fold_left (fun x _ -> (Utils.recv _router |> snd) :: x) [] l
       |> List.map (fun m -> Marshal.from_string m.par.(0) 0 |> Utils.flatten_kvg)
       |> List.flatten |> Memory.add m.par.(1);
       List.iter ZMQ.Socket.close l;
@@ -99,11 +83,11 @@ let master_fun m =
     ZMQ.Socket.connect req x;
     let app = Filename.basename Sys.argv.(0) in
     let arg = Marshal.to_string Sys.argv [] in
-    send req Job_Create [|_addr; app; arg|]; req
+    Utils.send req Job_Create [|_addr; app; arg|]; req
   ) addrs |> List.iter ZMQ.Socket.close;
   (* wait until all the allocated actors register *)
   while (StrMap.cardinal _context.worker) < (List.length addrs) do
-    let i, m = recv _router in
+    let i, m = Utils.recv _router in
     let s = ZMQ.Socket.create _ztx ZMQ.Socket.dealer in
     ZMQ.Socket.connect s m.par.(0);
     _context.worker <- (StrMap.add m.par.(0) s _context.worker);
@@ -115,10 +99,10 @@ let worker_fun m =
   let master = ZMQ.Socket.create _ztx ZMQ.Socket.dealer in
   ZMQ.Socket.set_identity master _addr;
   ZMQ.Socket.connect master _context.master;
-  send master OK [|_addr|];
+  Utils.send master OK [|_addr|];
   (* set up local loop of a job worker *)
   try while true do
-    let i, m = recv _router in
+    let i, m = Utils.recv _router in
     match m.typ with
     | OK -> (
       print_endline ("OK <- " ^ i ^ " : " ^ m.par.(0));
@@ -126,33 +110,33 @@ let worker_fun m =
     | Count -> (
       Utils.logger ("count @ " ^ _addr);
       let y = List.length (Memory.find m.par.(0)) in
-      send master OK [|Marshal.to_string y []|]
+      Utils.send master OK [|Marshal.to_string y []|]
       )
     | Collect -> (
       Utils.logger ("collect @ " ^ _addr);
       let y = Memory.find m.par.(0) in
-      send master OK [|Marshal.to_string y []|]
+      Utils.send master OK [|Marshal.to_string y []|]
       )
     | Broadcast -> (
       Utils.logger ("broadcast @ " ^ _addr);
       Memory.add m.par.(1) (Marshal.from_string m.par.(0) 0);
-      send master OK [||]
+      Utils.send master OK [||]
       )
     | Fold -> (
       Utils.logger ("fold @ " ^ _addr);
       let f : 'a -> 'b -> 'a = Marshal.from_string m.par.(0) 0 in
       let y = match Memory.find m.par.(1) with
       | hd :: tl -> Some (List.fold_left f hd tl) | [] -> None
-      in send master OK [|Marshal.to_string y []|];
+      in Utils.send master OK [|Marshal.to_string y []|];
       )
     | Pipeline -> (
       Utils.logger ("pipelined @ " ^ _addr);
       process_pipeline m.par;
-      send master OK [||]
+      Utils.send master OK [||]
       )
     | Terminate -> (
       Utils.logger ("terminate @ " ^ _addr);
-      send master OK [||];
+      Utils.send master OK [||];
       Unix.sleep 1; (* FIXME: sleep ... *)
       failwith "terminated"
       )
@@ -166,7 +150,7 @@ let init jid url =
   _context.jid <- jid;
   let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
   ZMQ.Socket.connect req url;
-  send req Job_Reg [|_addr; jid|];
+  Utils.send req Job_Reg [|_addr; jid|];
   let m = of_msg (ZMQ.Socket.recv req) in
   match m.typ with
     | Job_Master -> master_fun m
@@ -178,7 +162,7 @@ let run_job_eager () =
   List.iter (fun s ->
     let s' = List.map (fun x -> Dag.get_vlabel_f x) s in
     _broadcast_all Pipeline (Array.of_list s');
-    bsp_barrier !_clock _context.worker;
+    bsp_barrier !Utils._clock _context.worker;
     Dag.mark_stage_done s;
   ) (Dag.stages_eager ())
 
@@ -186,7 +170,7 @@ let run_job_lazy x =
   List.iter (fun s ->
     let s' = List.map (fun x -> Dag.get_vlabel_f x) s in
     _broadcast_all Pipeline (Array.of_list s');
-    bsp_barrier !_clock _context.worker;
+    bsp_barrier !Utils._clock _context.worker;
     Dag.mark_stage_done s;
   ) (Dag.stages_lazy x)
 
@@ -194,14 +178,14 @@ let collect x =
   Utils.logger ("collect " ^ x ^ "\n");
   run_job_lazy x;
   _broadcast_all Collect [|x|];
-  bsp_barrier !_clock _context.worker
+  bsp_barrier !Utils._clock _context.worker
   |> List.map (fun m -> Marshal.from_string m.par.(0) 0)
 
 let count x =
   Utils.logger ("count " ^ x ^ "\n");
   run_job_lazy x;
   _broadcast_all Count [|x|];
-  bsp_barrier !_clock _context.worker
+  bsp_barrier !Utils._clock _context.worker
   |> List.map (fun m -> Marshal.from_string m.par.(0) 0)
   |> List.fold_left (+) 0
 
@@ -210,7 +194,7 @@ let fold f a x =
   run_job_lazy x;
   let g = Marshal.to_string f [ Marshal.Closures ] in
   _broadcast_all Fold [|g; x|];
-  bsp_barrier !_clock _context.worker
+  bsp_barrier !Utils._clock _context.worker
   |> List.map (fun m -> Marshal.from_string m.par.(0) 0)
   |> List.filter (function Some x -> true | None -> false)
   |> List.map (function Some x -> x | None -> failwith "")
@@ -219,13 +203,13 @@ let fold f a x =
 let terminate () =
   Utils.logger ("terminate #" ^ _context.jid ^ "\n");
   _broadcast_all Terminate [||];
-  bsp_barrier !_clock _context.worker
+  bsp_barrier !Utils._clock _context.worker
 
 let broadcast x =
   Utils.logger ("broadcast -> " ^ string_of_int (StrMap.cardinal _context.worker) ^ " workers\n");
   let y = Memory.rand_id () in
   _broadcast_all Broadcast [|Marshal.to_string x []; y|];
-  bsp_barrier !_clock _context.worker; y
+  bsp_barrier !Utils._clock _context.worker; y
 
 let get_value x = Memory.find x
 
@@ -233,35 +217,35 @@ let map f x =
   let y = Memory.rand_id () in
   Utils.logger ("map " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
-  Dag.add_edge (to_msg !_clock MapTask [|g; x; y|]) x y Red; y
+  Dag.add_edge (to_msg !Utils._clock MapTask [|g; x; y|]) x y Red; y
 
 let filter f x =
   let y = Memory.rand_id () in
   Utils.logger ("filter " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
-  Dag.add_edge (to_msg !_clock FilterTask [|g; x; y|]) x y Red; y
+  Dag.add_edge (to_msg !Utils._clock FilterTask [|g; x; y|]) x y Red; y
 
 let union x y =
   let z = Memory.rand_id () in
   Utils.logger ("union " ^ x ^ " & " ^ y ^ " -> " ^ z ^ "\n");
-  Dag.add_edge (to_msg !_clock UnionTask [|x; y; z|]) x z Red;
-  Dag.add_edge (to_msg !_clock UnionTask [|x; y; z|]) y z Red; z
+  Dag.add_edge (to_msg !Utils._clock UnionTask [|x; y; z|]) x z Red;
+  Dag.add_edge (to_msg !Utils._clock UnionTask [|x; y; z|]) y z Red; z
 
 let shuffle x =
   let y = Memory.rand_id () in
   Utils.logger ("shuffle " ^ x ^ " -> " ^ y ^ "\n");
   let z = Marshal.to_string (StrMap.keys _context.worker) [] in
-  Dag.add_edge (to_msg !_clock ShuffleTask [|x; y; z|]) x y Blue; y
+  Dag.add_edge (to_msg !Utils._clock ShuffleTask [|x; y; z|]) x y Blue; y
 
 let reduce f x =
   let y = Memory.rand_id () in
   Utils.logger ("reduce " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
-  Dag.add_edge (to_msg !_clock ReduceTask [|g; x; y|]) x y Red; y
+  Dag.add_edge (to_msg !Utils._clock ReduceTask [|g; x; y|]) x y Red; y
 
 let join x y = (* TODO: not finished ... *)
   let z = Memory.rand_id () in
   Utils.logger ("join " ^ x ^ " & " ^ y ^ " -> " ^ z ^ "\n");
   let x, y = shuffle x, shuffle y in
-  Dag.add_edge (to_msg !_clock JoinTask [|x; y; z|]) x z Red;
-  Dag.add_edge (to_msg !_clock JoinTask [|x; y; z|]) y z Red; z
+  Dag.add_edge (to_msg !Utils._clock JoinTask [|x; y; z|]) x z Red;
+  Dag.add_edge (to_msg !Utils._clock JoinTask [|x; y; z|]) y z Red; z

@@ -4,6 +4,20 @@
 
 open Types
 
+(* logical clock *)
+
+let _clock = ref 0
+
+let recv s =
+  let m = ZMQ.Socket.recv_all s in
+  (List.nth m 0, List.nth m 1 |> of_msg)
+
+let send v t s =
+  ZMQ.Socket.send v (to_msg !_clock t s);
+  _clock := !_clock + 1
+
+(* logger outputs runtime information *)
+
 let logger s =
   let open Unix in
   let t = gmtime (time ()) in
