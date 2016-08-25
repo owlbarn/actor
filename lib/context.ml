@@ -12,10 +12,8 @@ type t = {
 
 (* FIXME: global varibles ...*)
 let _context = { jid = ""; master = ""; worker = StrMap.empty }
-let _addr = "tcp://127.0.0.1:" ^ (string_of_int (Random.int 10000 + 50000))
 let _ztx = ZMQ.Context.create ()
-let _router : [`Router] ZMQ.Socket.t = ZMQ.Socket.create _ztx ZMQ.Socket.router
-let _ = ZMQ.Socket.bind _router _addr
+let _addr, _router = Utils.bind_available_addr _ztx
 
 let recv s =
   let m = ZMQ.Socket.recv_all s in

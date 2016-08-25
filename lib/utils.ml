@@ -9,6 +9,16 @@ let logger s =
   let t = gmtime (time ()) in
   Printf.printf "[#%i %02i:%02i:%02i] %s\n%!" (getpid ()) t.tm_hour t.tm_min t.tm_sec s
 
+let rec _bind_available_addr addr router ztx =
+  addr := "tcp://127.0.0.1:" ^ (string_of_int (Random.int 10000 + 50000));
+  try ZMQ.Socket.bind router !addr
+  with exn -> _bind_available_addr addr router ztx
+
+let bind_available_addr ztx =
+  let router : [`Router] ZMQ.Socket.t = ZMQ.Socket.create ztx ZMQ.Socket.router in
+  let addr = ref "" in _bind_available_addr addr router ztx;
+  !addr, router
+
 (* the following 3 functions are for shuffle operations *)
 let group_by_key x =
   let h, g = Hashtbl.(create 1024, create 1024) in
