@@ -44,7 +44,7 @@ let process_pipeline s =
       )
     | FlattenTask -> (
       Utils.logger ("flatten @ " ^ _addr);
-      List.flatten (Memory.find m.par.(1)) |> Memory.add m.par.(2)
+      List.flatten (Memory.find m.par.(0)) |> Memory.add m.par.(1)
       )
     | UnionTask -> (
       Utils.logger ("union @ " ^ _addr);

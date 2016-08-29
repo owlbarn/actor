@@ -25,7 +25,7 @@ let load id fname =
   let b = Bytes.create l in
   let f = Unix.openfile fname [] 0o644 in
   let _ = Unix.read f b 0 l in
-  add id b
+  add id [ b ]
 
 (* FIXME: debug purpose *)
 
