@@ -1,6 +1,6 @@
 DEPS = str,unix,uint,ZMQ,ocamlgraph
 
-EXAMPLES = test_kmeans test_serialise test_context types utils manager worker client context memory service dag
+EXAMPLES = test_kmeans test_serialise test_wordcount test_context types utils manager worker client context memory service dag
 
 all:
 	ocamlfind ocamlc -package $(DEPS) -o types types.ml
@@ -13,6 +13,7 @@ all:
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o manager types.cmo utils.cmo service.cmo manager.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o test_context types.cmo dag.cmo utils.cmo memory.cmo context.cmo test_context.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o test_serialise test_serialise.ml
+	ocamlfind ocamlc -package $(DEPS) -linkpkg -o test_wordcount types.cmo dag.cmo utils.cmo memory.cmo context.cmo test_wordcount.ml
 	ocamlfind ocamlc -package $(DEPS) -linkpkg -o test_kmeans types.cmo dag.cmo utils.cmo memory.cmo context.cmo test_kmeans.ml
 
 clean:

@@ -42,6 +42,10 @@ let process_pipeline s =
       let f : 'a -> bool = Marshal.from_string m.par.(0) 0 in
       List.filter f (Memory.find m.par.(1)) |> Memory.add m.par.(2)
       )
+    | FlattenTask -> (
+      Utils.logger ("flatten @ " ^ _addr);
+      List.flatten (Memory.find m.par.(1)) |> Memory.add m.par.(2)
+      )
     | UnionTask -> (
       Utils.logger ("union @ " ^ _addr);
       (Memory.find m.par.(0)) @ (Memory.find m.par.(1))
@@ -228,6 +232,11 @@ let filter f x =
   Utils.logger ("filter " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
   Dag.add_edge (to_msg 0 FilterTask [|g; x; y|]) x y Red; y
+
+let flatten x =
+  let y = Memory.rand_id () in
+  Utils.logger ("flatten " ^ x ^ " -> " ^ y ^ "\n");
+  Dag.add_edge (to_msg 0 FlattenTask [|x; y|]) x y Red; y
 
 let union x y =
   let z = Memory.rand_id () in

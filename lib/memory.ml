@@ -20,14 +20,16 @@ let find id = Obj.obj (Hashtbl.find _data id)
 
 let size id = Obj.size (find id)
 
-let load fname =
+let load id fname =
   let l = Unix.((stat fname).st_size) in
   let b = Bytes.create l in
   let f = Unix.openfile fname [] 0o644 in
-  let _ = Unix.read f b 0 l in b
+  let _ = Unix.read f b 0 l in
+  add id b
 
 (* FIXME: debug purpose *)
 
 let _ =
   let d = Array.init 5 (fun x -> Random.float 10.) in
-  add "default" (Array.to_list d)
+  add "default" (Array.to_list d);
+  load "wordcount" "../data/wordcount.data"
