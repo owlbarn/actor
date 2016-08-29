@@ -20,7 +20,11 @@ let find id = Obj.obj (Hashtbl.find _data id)
 
 let size id = Obj.size (find id)
 
-let load filename = None
+let load fname =
+  let l = Unix.((stat fname).st_size) in
+  let b = Bytes.create l in
+  let f = Unix.openfile fname [] 0o644 in
+  let _ = Unix.read f b 0 l in b
 
 (* FIXME: debug purpose *)
 
