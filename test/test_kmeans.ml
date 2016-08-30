@@ -8,8 +8,7 @@ let distance x y = (((fst x) -. (fst y)) ** 2.) +. (((snd x) -. (snd y)) ** 2.)
 let add_2pts x y = ( ((fst x)+.(fst y)), ((snd x)+.(snd y)) )
 
 let format_filter_data fname = fname
-  |> Ctx.map Str.(split (regexp "[\r\n]"))
-  |> Ctx.flatten
+  |> Ctx.flatmap Str.(split (regexp "[\r\n]"))
   |> Ctx.map Str.(split (regexp "[,]"))
   |> Ctx.map (fun x -> (float_of_string (List.nth x 0),float_of_string (List.nth x 1)))
   |> Ctx.filter (fun _ -> Random.float 1. < 0.1)

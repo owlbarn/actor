@@ -12,8 +12,7 @@ let stop_words = ["a";"are";"is";"in";"it";"that";"this";"and";"to";"of";"so";
 let wordcount () =
   Ctx.init Sys.argv.(1) "tcp://localhost:5555";
   let _ = "wordcount.data"
-  |> Ctx.map Str.(split (regexp "[ \t\n]"))
-  |> Ctx.flatten
+  |> Ctx.flatmap Str.(split (regexp "[ \t\n]"))
   |> Ctx.map String.lowercase
   |> Ctx.filter (fun x -> (String.length x) > 0)
   |> Ctx.filter (fun x -> not (List.mem x stop_words))

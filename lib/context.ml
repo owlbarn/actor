@@ -242,6 +242,8 @@ let flatten x =
   Utils.logger ("flatten " ^ x ^ " -> " ^ y ^ "\n");
   Dag.add_edge (to_msg 0 FlattenTask [|x; y|]) x y Red; y
 
+let flatmap f x = flatten (map f x)
+
 let union x y =
   let z = Memory.rand_id () in
   Utils.logger ("union " ^ x ^ " & " ^ y ^ " -> " ^ z ^ "\n");
