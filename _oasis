@@ -31,18 +31,18 @@ Executable test_wordcount
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_wordcount.ml
-  BuildDepends:   str, unix, uint, ZMQ, ocamlgraph, Omap
+  BuildDepends:   Omap, str, unix, uint, ZMQ, ocamlgraph
 
 Executable test_context
-  Path:           ./lib
+  Path:           ./test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_context.ml
-  BuildDepends:   str, unix, uint, ZMQ, ocamlgraph
+  BuildDepends:   Omap, str, unix, uint, ZMQ, ocamlgraph
 
 Executable test_kmeans
-  Path:           ./lib
+  Path:           ./test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_kmeans.ml
-  BuildDepends:   str, unix, uint, ZMQ, ocamlgraph
+  BuildDepends:   Omap, str, unix, uint, ZMQ, ocamlgraph
