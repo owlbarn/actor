@@ -26,7 +26,7 @@ let kmeans x =
         let d = distance x y in
         if d < (snd !k) then k := (i,d)
       ) centers;
-      (fst !k, (x, 1.)) ) x |> Ctx.shuffle in
+      (fst !k, (x, 1.)) ) x in
     let y = Ctx.reduce_by_key (fun x y -> (add_2pts (fst x) (fst y), (snd x)+.(snd y)) ) y in
     centers := Ctx.collect y
       |> List.flatten

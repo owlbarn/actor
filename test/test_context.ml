@@ -34,8 +34,7 @@ let test () =
   let x4 = Context.filter ((>) 10.) x3 in
   (* Test shuffle & reduce_by_key *)
   let x5 = Context.map (fun x -> if x > 10. then ('a',x) else ('b',x)) x3 in
-  let x6 = Context.shuffle x5 in
-  let x7 = Context.reduce_by_key (max) x6 in
+  let x7 = Context.reduce_by_key (max) x5 in
   let _  = (* print_kv_list *) (Context.collect x5) in
   (* collect data *)
   let _  = (* List.iter (fun x -> print_float_list x) *) (Context.collect x3) in

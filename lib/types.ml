@@ -15,7 +15,7 @@ type message_type =
   | User_Reg | Data_Reg
   | Job_Reg | Job_Master | Job_Worker | Job_Create
   | MapTask | FilterTask | ReduceByKeyTask | ShuffleTask | UnionTask | JoinTask | FlattenTask
-  | Pipeline | Collect | Count | Broadcast | Fold | Terminate
+  | Pipeline | Collect | Count | Broadcast | Fold | Reduce | Terminate
 
 type message_rec = {
   bar : int;

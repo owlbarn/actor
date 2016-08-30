@@ -208,6 +208,10 @@ let fold f a x =
   |> List.map (function Some x -> x | None -> failwith "")
   |> List.fold_left f a
 
+(* TODO: implement this ... *)
+let reduce f x =
+  let y = collect x |> List.flatten in y
+
 let terminate () =
   Utils.logger ("terminate #" ^ _context.jid ^ "\n");
   let bar = _broadcast_all Terminate [||] in
@@ -251,6 +255,7 @@ let shuffle x =
   Dag.add_edge (to_msg 0 ShuffleTask [|x; y; z|]) x y Blue; y
 
 let reduce_by_key f x =
+  let x = shuffle x in
   let y = Memory.rand_id () in
   Utils.logger ("reduce_by_key " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
