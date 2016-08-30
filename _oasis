@@ -23,3 +23,9 @@ Executable worker
   BuildTools: ocamlbuild
   MainIs: worker.ml
   BuildDepends: ZMQ
+
+Executable test_wordcount
+  Path:   ./lib
+  BuildTools: ocamlbuild
+  MainIs: test_wordcount.ml
+  BuildDepends: str, unix, uint, ZMQ, ocamlgraph
