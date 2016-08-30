@@ -32,4 +32,5 @@ let load id fname =
 let _ =
   let d = Array.init 5000 (fun x -> Random.float 10.) in
   add "default" (Array.to_list d);
-  load "wordcount" "./data/wordcount.data"
+  load "wordcount.data" "./data/wordcount.data";
+  load "kmeans.data" "./data/kmeans.data"

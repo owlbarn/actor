@@ -11,7 +11,7 @@ let stop_words = ["a";"are";"is";"in";"it";"that";"this";"and";"to";"of";"so";
 
 let wordcount () =
   Ctx.init Sys.argv.(1) "tcp://localhost:5555";
-  let _ = "wordcount"
+  let _ = "wordcount.data"
   |> Ctx.map Str.(split (regexp "[ \t\n]"))
   |> Ctx.flatten
   |> Ctx.map String.lowercase
