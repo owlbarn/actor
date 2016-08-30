@@ -211,7 +211,7 @@ let fold f a x =
 let terminate () =
   Utils.logger ("terminate #" ^ _context.jid ^ "\n");
   let bar = _broadcast_all Terminate [||] in
-  bsp_barrier bar _context.worker
+  let _ = bsp_barrier bar _context.worker in ()
 
 let broadcast x =
   Utils.logger ("broadcast -> " ^ string_of_int (StrMap.cardinal _context.worker) ^ " workers\n");
