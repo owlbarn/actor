@@ -20,8 +20,8 @@ module Workers = struct
   let addrs () = StrMap.fold (fun k v l -> l @ [v.addr]) !_workers []
 end
 
-let addr = "tcp://*:5555"
-let myid = "manager_" ^ (string_of_int (Random.int 5000))
+let addr = Config.manager_addr
+let myid = Config.manager_id
 
 let process r m =
   match m.typ with
