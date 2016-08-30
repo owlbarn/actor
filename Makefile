@@ -9,3 +9,4 @@ clean:
 cleanall:
 	rm -rf _build setup.* myocamlbuild.ml _tags
 	rm -rf *.byte *.native
+	rm -rf lib/META lib/*.mldylib lib/*.mllib
