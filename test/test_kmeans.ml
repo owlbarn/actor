@@ -1,14 +1,17 @@
-(** []
-  test the context module
+(** [ Naive K-means implementation ]
 *)
 
-let kmeans () =
-  Context.init Sys.argv.(1) "tcp://localhost:5555";
-  let x = ref "default" in
-  for i = 0 to 999 do
-    x := Context.map (fun x -> x +. 1.) !x;
-  done;
-  let _ = Context.collect !x in
-  Context.terminate ()
+module Ctx = Context
 
-let _ = kmeans ()
+let kmeans () =
+  let x = ref "default" in
+  for i = 0 to 99 do
+    x := Ctx.map (fun x -> x +. 1.) !x;
+  done;
+  let _ = Ctx.collect !x in ()
+
+
+let _ =
+  Ctx.init Sys.argv.(1) "tcp://localhost:5555";
+  kmeans ();
+  Ctx.terminate ()
