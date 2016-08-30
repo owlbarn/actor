@@ -1,0 +1,25 @@
+OASISFormat: 0.4
+Name:        Omap
+Version:     0.1
+Synopsis:    Omap is a mapeduce framework in OCaml.
+Authors:     Liang Wang
+License:     MIT
+Plugins:     META (0.4)
+
+Library "Omap"
+  Path:       ./lib
+  BuildTools: ocamlbuild, ocamldoc
+  Modules:    Types, Utils, Manager, Worker, Context, Memory, Service, Dag
+  BuildDepends: str, unix, uint, ZMQ, ocamlgraph
+
+Executable manager
+  Path:   ./lib
+  BuildTools: ocamlbuild
+  MainIs: manager.ml
+  BuildDepends: ZMQ
+
+Executable worker
+  Path:   ./lib
+  BuildTools: ocamlbuild
+  MainIs: worker.ml
+  BuildDepends: ZMQ
