@@ -27,11 +27,11 @@ Executable worker
   BuildDepends:   ZMQ
 
 Executable test_wordcount
-  Path:           ./lib
+  Path:           ./test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_wordcount.ml
-  BuildDepends:   str, unix, uint, ZMQ, ocamlgraph
+  BuildDepends:   str, unix, uint, ZMQ, ocamlgraph, Omap
 
 Executable test_context
   Path:           ./lib
