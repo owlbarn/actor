@@ -13,19 +13,36 @@ Library "Omap"
   BuildDepends: str, unix, uint, ZMQ, ocamlgraph
 
 Executable manager
-  Path:   ./lib
-  BuildTools: ocamlbuild
-  MainIs: manager.ml
-  BuildDepends: ZMQ
+  Path:           ./lib
+  BuildTools:     ocamlbuild
+  CompiledObject: byte
+  MainIs:         manager.ml
+  BuildDepends:   ZMQ
 
 Executable worker
-  Path:   ./lib
-  BuildTools: ocamlbuild
-  MainIs: worker.ml
-  BuildDepends: ZMQ
+  Path:           ./lib
+  BuildTools:     ocamlbuild
+  CompiledObject: byte
+  MainIs:         worker.ml
+  BuildDepends:   ZMQ
 
 Executable test_wordcount
-  Path:   ./lib
-  BuildTools: ocamlbuild
-  MainIs: test_wordcount.ml
-  BuildDepends: str, unix, uint, ZMQ, ocamlgraph
+  Path:           ./lib
+  BuildTools:     ocamlbuild
+  CompiledObject: byte
+  MainIs:         test_wordcount.ml
+  BuildDepends:   str, unix, uint, ZMQ, ocamlgraph
+
+Executable test_context
+  Path:           ./lib
+  BuildTools:     ocamlbuild
+  CompiledObject: byte
+  MainIs:         test_context.ml
+  BuildDepends:   str, unix, uint, ZMQ, ocamlgraph
+
+Executable test_kmeans
+  Path:           ./lib
+  BuildTools:     ocamlbuild
+  CompiledObject: byte
+  MainIs:         test_kmeans.ml
+  BuildDepends:   str, unix, uint, ZMQ, ocamlgraph

@@ -6,7 +6,7 @@ open Types
 
 let manager = "tcp://127.0.0.1:5555"
 let addr = "tcp://127.0.0.1:" ^ (string_of_int (Random.int 10000 + 50000))
-let myid = "actor_" ^ (string_of_int (Random.int 9000 + 1000))
+let myid = "worker_" ^ (string_of_int (Random.int 9000 + 1000))
 let _ztx = ZMQ.Context.create ()
 
 let register req id u_addr m_addr =
