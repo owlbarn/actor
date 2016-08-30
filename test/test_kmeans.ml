@@ -8,8 +8,7 @@ let kmeans () =
   for i = 0 to 999 do
     x := Context.map (fun x -> x +. 1.) !x;
   done;
-  Context.collect !x;
-  (* Terminate *)
+  let _ = Context.collect !x in
   Context.terminate ()
 
 let _ = kmeans ()

@@ -170,7 +170,7 @@ let run_job_eager () =
   List.iter (fun s ->
     let s' = List.map (fun x -> Dag.get_vlabel_f x) s in
     let bar = _broadcast_all Pipeline (Array.of_list s') in
-    bsp_barrier bar _context.worker;
+    let _ = bsp_barrier bar _context.worker in
     Dag.mark_stage_done s;
   ) (Dag.stages_eager ())
 
@@ -178,7 +178,7 @@ let run_job_lazy x =
   List.iter (fun s ->
     let s' = List.map (fun x -> Dag.get_vlabel_f x) s in
     let bar = _broadcast_all Pipeline (Array.of_list s') in
-    bsp_barrier bar _context.worker;
+    let _ = bsp_barrier bar _context.worker in
     Dag.mark_stage_done s;
   ) (Dag.stages_lazy x)
 
@@ -217,7 +217,7 @@ let broadcast x =
   Utils.logger ("broadcast -> " ^ string_of_int (StrMap.cardinal _context.worker) ^ " workers\n");
   let y = Memory.rand_id () in
   let bar = _broadcast_all Broadcast [|Marshal.to_string x []; y|] in
-  bsp_barrier bar _context.worker; y
+  let _ = bsp_barrier bar _context.worker in y
 
 let get_value x = Memory.find x
 
