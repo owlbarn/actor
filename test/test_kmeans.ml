@@ -27,7 +27,7 @@ let kmeans x =
         if d < (snd !k) then k := (i,d)
       ) centers;
       (fst !k, (x, 1.)) ) x |> Ctx.shuffle in
-    let y = Ctx.reduce (fun x y -> (add_2pts (fst x) (fst y), (snd x)+.(snd y)) ) y in
+    let y = Ctx.reduce_by_key (fun x y -> (add_2pts (fst x) (fst y), (snd x)+.(snd y)) ) y in
     centers := Ctx.collect y
       |> List.flatten
       |> List.map (fun (k,v) -> let p, c = v in ((fst p)/.c,(snd p)/.c) )

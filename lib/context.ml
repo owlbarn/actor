@@ -51,8 +51,8 @@ let process_pipeline s =
       (Memory.find m.par.(0)) @ (Memory.find m.par.(1))
       |> Memory.add m.par.(2)
       )
-    | ReduceTask -> (
-      Utils.logger ("reduce @ " ^ _addr);
+    | ReduceByKeyTask -> (
+      Utils.logger ("reduce_by_key @ " ^ _addr);
       let f : 'a -> 'a -> 'a = Marshal.from_string m.par.(0) 0 in
       Memory.find m.par.(1) |> Utils.group_by_key |> List.map (fun (k,l) ->
         match l with hd :: tl -> (k, List.fold_left f hd tl)
@@ -250,11 +250,11 @@ let shuffle x =
   let z = Marshal.to_string (StrMap.keys _context.worker) [] in
   Dag.add_edge (to_msg 0 ShuffleTask [|x; y; z|]) x y Blue; y
 
-let reduce f x =
+let reduce_by_key f x =
   let y = Memory.rand_id () in
-  Utils.logger ("reduce " ^ x ^ " -> " ^ y ^ "\n");
+  Utils.logger ("reduce_by_key " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
-  Dag.add_edge (to_msg 0 ReduceTask [|g; x; y|]) x y Red; y
+  Dag.add_edge (to_msg 0 ReduceByKeyTask [|g; x; y|]) x y Red; y
 
 let join x y =
   let z = Memory.rand_id () in

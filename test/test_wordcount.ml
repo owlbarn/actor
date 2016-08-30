@@ -19,7 +19,7 @@ let wordcount () =
   |> Ctx.filter (fun x -> not (List.mem x stop_words))
   |> Ctx.map (fun k -> (k,1))
   |> Ctx.shuffle
-  |> Ctx.reduce (+)
+  |> Ctx.reduce_by_key (+)
   |> Ctx.collect
   |> List.flatten |> print_result in
   Context.terminate ()

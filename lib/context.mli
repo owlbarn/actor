@@ -4,7 +4,7 @@ val init : string -> string -> unit
 
 val map : ('a -> 'b) -> string -> string
 
-val reduce : ('a -> 'a -> 'a) -> string -> string
+val reduce_by_key : ('a -> 'a -> 'a) -> string -> string
 
 val fold : ('a -> 'b -> 'a) -> 'a -> string -> 'a
 
