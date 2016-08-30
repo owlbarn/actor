@@ -16,6 +16,8 @@ val shuffle : string -> string
 
 val union : string -> string -> string
 
+val join : string -> string -> string
+
 val broadcast : 'a -> string
 
 val get_value : string -> 'a
