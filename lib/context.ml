@@ -55,7 +55,8 @@ let process_pipeline s =
       Utils.logger ("reduce_by_key @ " ^ _addr);
       let f : 'a -> 'a -> 'a = Marshal.from_string m.par.(0) 0 in
       Memory.find m.par.(1) |> Utils.group_by_key |> List.map (fun (k,l) ->
-        match l with hd :: tl -> (k, List.fold_left f hd tl)
+        match l with
+        | hd :: tl -> (k, List.fold_left f hd tl)
         | [] -> failwith "error in reduce"
       ) |> Memory.add m.par.(2)
       )
@@ -278,10 +279,21 @@ let shuffle x =
   Dag.add_edge (to_msg 0 ShuffleTask [|x; y; z; b|]) x y Blue; y
 
 let reduce_by_key f x =
+  (** TODO: without local combiner ... keep or not? *)
   let x = shuffle x in
   let y = Memory.rand_id () in
   Utils.logger ("reduce_by_key " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
+  Dag.add_edge (to_msg 0 ReduceByKeyTask [|g; x; y|]) x y Red; y
+
+let ___reduce_by_key f x =
+  (** TODO: with local combiner ... keep or not? *)
+  let g = Marshal.to_string f [ Marshal.Closures ] in
+  let y = Memory.rand_id () in
+  Dag.add_edge (to_msg 0 ReduceByKeyTask [|g; x; y|]) x y Red;
+  let x = shuffle y in
+  let y = Memory.rand_id () in
+  Utils.logger ("reduce_by_key " ^ x ^ " -> " ^ y ^ "\n");
   Dag.add_edge (to_msg 0 ReduceByKeyTask [|g; x; y|]) x y Red; y
 
 let join x y =
