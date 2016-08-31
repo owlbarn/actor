@@ -6,9 +6,9 @@ open Types
 
 type t = Obj.t
 
-let _data = Hashtbl.create 1048576
+let _data = Hashtbl.create 10_000_000
 
-let rand_id () = string_of_int (Random.int 536870912)
+let rand_id () = string_of_int (Random.int 536_870_912)
 
 let mem id = Hashtbl.mem _data id
 
