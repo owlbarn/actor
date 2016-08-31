@@ -10,10 +10,11 @@ type t = {
   mutable worker : [`Dealer] ZMQ.Socket.t StrMap.t;
 }
 
-(* FIXME: global varibles ...*)
+(** some global varibles *)
 let _context = { jid = ""; master = ""; worker = StrMap.empty }
 let _ztx = ZMQ.Context.create ()
 let _addr, _router = Utils.bind_available_addr _ztx
+let _msgbuf = Hashtbl.create 1024
 
 let _broadcast_all t s =
   let bar = Random.int 536870912 in
@@ -22,6 +23,11 @@ let _broadcast_all t s =
 
 let bsp_barrier b x =
   let h = Hashtbl.create 1024 in
+  (** first check the buffer for those arrive early *)
+  List.iter (fun (i,m) ->
+    if not (Hashtbl.mem h i) then Hashtbl.(add h i m; remove _msgbuf b)
+  ) (Hashtbl.find_all _msgbuf b);
+  (** then wait for the rest of the messages *)
   while (Hashtbl.length h) < (StrMap.cardinal x) do
     let i, m = Utils.recv _router in
     if b = m.bar && not (Hashtbl.mem h i) then Hashtbl.add h i m
@@ -117,9 +123,6 @@ let worker_fun m =
     let i, m = Utils.recv _router in
     let bar = m.bar in
     match m.typ with
-    | OK -> (
-      print_endline ("OK : " ^ _addr ^ " <- " ^ i ^ " m.bar : " ^ string_of_int (m.bar));
-      )
     | Count -> (
       Utils.logger ("count @ " ^ _addr);
       let y = List.length (Memory.find m.par.(0)) in
@@ -161,7 +164,8 @@ let worker_fun m =
       failwith ("#" ^ _context.jid ^ " terminated")
       )
     | _ -> (
-      print_endline ("Unknown : " ^ _addr ^ " <- " ^ i ^ " m.bar : " ^ string_of_int (m.bar))
+      print_endline ("Buffering " ^ _addr ^ " <- " ^ i ^ " m.bar : " ^ string_of_int (m.bar));
+      Hashtbl.add _msgbuf m.bar (i,m)
       )
   done with Failure e -> (
     Utils.logger e;
