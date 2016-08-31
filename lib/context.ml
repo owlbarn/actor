@@ -160,7 +160,9 @@ let worker_fun m =
       Unix.sleep 1; (* FIXME: sleep ... *)
       failwith ("#" ^ _context.jid ^ " terminated")
       )
-    | _ -> ()
+    | _ -> (
+      print_endline ("Unknown : " ^ _addr ^ " <- " ^ i ^ " m.bar : " ^ string_of_int (m.bar))
+      )
   done with Failure e -> (
     Utils.logger e;
     ZMQ.Socket.(close master; close _router);
