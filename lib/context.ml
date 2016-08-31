@@ -118,7 +118,7 @@ let worker_fun m =
     let bar = m.bar in
     match m.typ with
     | OK -> (
-      print_endline ("OK <- " ^ i ^ " m.bar : " ^ string_of_int (m.bar));
+      print_endline ("OK : " ^ _addr ^ " <- " ^ i ^ " m.bar : " ^ string_of_int (m.bar));
       )
     | Count -> (
       Utils.logger ("count @ " ^ _addr);
