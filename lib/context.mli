@@ -6,7 +6,7 @@ val map : ('a -> 'b) -> string -> string
 
 val flatmap : ('a -> 'b list) -> string -> string
 
-(* val reduce : ('a -> 'a -> 'a) -> string -> 'a *)
+val reduce : ('a -> 'a -> 'a) -> string -> 'a option
 
 val reduce_by_key : ('a -> 'a -> 'a) -> string -> string
 

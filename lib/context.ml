@@ -130,6 +130,13 @@ let worker_fun m =
       Memory.add m.par.(1) (Marshal.from_string m.par.(0) 0);
       Utils.send ~bar master OK [||]
       )
+    | Reduce -> (
+      Utils.logger ("reduce @ " ^ _addr);
+      let f : 'a -> 'a -> 'a = Marshal.from_string m.par.(0) 0 in
+      let y = match Memory.find m.par.(1) with
+      | hd :: tl -> Some (List.fold_left f hd tl) | [] -> None
+      in Utils.send ~bar master OK [|Marshal.to_string y []|];
+      )
     | Fold -> (
       Utils.logger ("fold @ " ^ _addr);
       let f : 'a -> 'b -> 'a = Marshal.from_string m.par.(0) 0 in
@@ -208,9 +215,18 @@ let fold f a x =
   |> List.map (function Some x -> x | None -> failwith "")
   |> List.fold_left f a
 
-(* TODO: implement this ... *)
 let reduce f x =
-  let y = collect x |> List.flatten in y
+  Utils.logger ("reduce " ^ x ^ "\n");
+  run_job_lazy x;
+  let g = Marshal.to_string f [ Marshal.Closures ] in
+  let bar = _broadcast_all Reduce [|g; x|] in
+  let y = bsp_barrier bar _context.worker
+  |> List.map (fun m -> Marshal.from_string m.par.(0) 0)
+  |> List.filter (function Some x -> true | None -> false)
+  |> List.map (function Some x -> x | None -> failwith "") in
+  match y with
+  | hd :: tl -> Some (List.fold_left f hd tl)
+  | [] -> None
 
 let terminate () =
   Utils.logger ("terminate #" ^ _context.jid ^ "\n");
