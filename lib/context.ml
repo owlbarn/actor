@@ -68,15 +68,19 @@ let process_pipeline s =
       Utils.logger ("shuffle @ " ^ _addr);
       let x = Memory.find m.par.(0) |> Utils.group_by_key in
       let z = Marshal.from_string m.par.(2) 0 in
+      let bar = Marshal.from_string m.par.(3) 0 in
       let l = List.mapi (fun i k ->
         let v = Utils.choose_load x (List.length z) i in
         let s = ZMQ.Socket.(create _ztx dealer) in
         ZMQ.Socket.(set_identity s _addr; connect s k);
-        Utils.send s OK [|Marshal.to_string v []|]; s) z in
-      List.fold_left (fun x _ -> (Utils.recv _router |> snd) :: x) [] l
+        Utils.send ~bar s OK [|Marshal.to_string v []|];
+        (k,s) ) z in
+      List.iter (fun (k,s) -> _context.worker <- (StrMap.add k s _context.worker)) l;
+      bsp_barrier bar _context.worker
       |> List.map (fun m -> Marshal.from_string m.par.(0) 0 |> Utils.flatten_kvg)
       |> List.flatten |> Memory.add m.par.(1);
-      List.iter ZMQ.Socket.close l;
+      List.iter ZMQ.Socket.close (StrMap.values _context.worker);
+      _context.worker <- StrMap.empty
       )
     | _ -> Utils.logger "unknow task types"
   ) s
@@ -270,7 +274,8 @@ let shuffle x =
   let y = Memory.rand_id () in
   Utils.logger ("shuffle " ^ x ^ " -> " ^ y ^ "\n");
   let z = Marshal.to_string (StrMap.keys _context.worker) [] in
-  Dag.add_edge (to_msg 0 ShuffleTask [|x; y; z|]) x y Blue; y
+  let b = Marshal.to_string (Random.int 536870912) [] in
+  Dag.add_edge (to_msg 0 ShuffleTask [|x; y; z; b|]) x y Blue; y
 
 let reduce_by_key f x =
   let x = shuffle x in
