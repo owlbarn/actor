@@ -46,3 +46,10 @@ Executable test_kmeans
   CompiledObject: byte
   MainIs:         test_kmeans.ml
   BuildDepends:   Omap, str, unix, uint, ZMQ, ocamlgraph
+
+Executable test_irmin
+  Path:           ./test
+  BuildTools:     ocamlbuild
+  CompiledObject: byte
+  MainIs:         test_irmin.ml
+  BuildDepends:   unix, irmin, irmin.mem, lwt, lwt.unix
