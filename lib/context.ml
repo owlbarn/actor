@@ -309,3 +309,5 @@ let join x y =
   let x, y = shuffle x, shuffle y in
   Dag.add_edge (to_msg 0 JoinTask [|x; y; z|]) x z Red;
   Dag.add_edge (to_msg 0 JoinTask [|x; y; z|]) y z Red; z
+
+let _ = Pervasives.at_exit (fun _ -> (** cleaning up *) ())
