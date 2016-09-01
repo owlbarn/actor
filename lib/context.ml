@@ -161,7 +161,6 @@ let worker_fun m =
       Utils.logger ("terminate @ " ^ _addr);
       Utils.send ~bar master OK [||];
       Unix.sleep 1; (* FIXME: sleep ... *)
-      ZMQ.Context.terminate _ztx;
       failwith ("#" ^ _context.jid ^ " terminated")
       )
     | _ -> (
@@ -243,8 +242,8 @@ let reduce f x =
 let terminate () =
   Utils.logger ("terminate #" ^ _context.jid ^ "\n");
   let bar = _broadcast_all Terminate [||] in
-  let _ = bsp_barrier bar _context.worker in
-  ZMQ.Context.terminate _ztx
+  let _ = bsp_barrier bar _context.worker in ()
+  (* TODO: ZMQ.Context.terminate _ztx *)
 
 let broadcast x =
   Utils.logger ("broadcast -> " ^ string_of_int (StrMap.cardinal _context.worker) ^ " workers\n");
