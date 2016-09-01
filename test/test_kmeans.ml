@@ -15,7 +15,7 @@ let format_filter_data fname = fname
 
 let kmeans x =
   let centers = ref [(1.,1.); (2.,2.); (3.,3.); (4.,4.)] in
-  for i = 0 to 100 do
+  for i = 0 to 50 do
     let bc = Ctx.broadcast !centers in
     let y = Ctx.map (fun x ->
       let k = ref (-1, max_float) in
