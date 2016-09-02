@@ -310,6 +310,8 @@ let join x y =
   Dag.add_edge (to_msg 0 JoinTask [|x; y; z|]) x z Red;
   Dag.add_edge (to_msg 0 JoinTask [|x; y; z|]) y z Red; z
 
+let apply f l = None
+
 let load x = None
 
 let save x = None
