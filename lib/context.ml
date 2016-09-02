@@ -310,7 +310,15 @@ let join x y =
   Dag.add_edge (to_msg 0 JoinTask [|x; y; z|]) x z Red;
   Dag.add_edge (to_msg 0 JoinTask [|x; y; z|]) y z Red; z
 
-let apply f l = None
+let apply f i o =
+  Utils.logger ("apply f ... " ^ "\n");
+  let g = Marshal.to_string f [ Marshal.Closures ] in
+  let o = List.map (fun _ -> Memory.rand_id ()) o in
+  let x = Marshal.to_string i [ ] in
+  let y = Marshal.to_string o [ ] in
+  let z = Memory.rand_id () in
+  List.iter (fun m -> Dag.add_edge (to_msg 0 ApplyTask [|g; x; z; y|]) m z Red) i;
+  List.iter (fun n -> Dag.add_edge (to_msg 0 NopTask [|z; y|]) z n Red) o; o
 
 let load x = None
 

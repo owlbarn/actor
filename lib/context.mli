@@ -31,3 +31,5 @@ val count : string -> int
 val collect : string -> 'a list
 
 val terminate : unit -> unit
+
+val apply : ('a list -> 'b list) -> string list -> string list -> string list
