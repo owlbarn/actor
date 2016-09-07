@@ -26,6 +26,13 @@ Executable worker
   MainIs:         worker.ml
   BuildDepends:   ZMQ
 
+Executable storage
+  Path:           ./lib
+  BuildTools:     ocamlbuild
+  CompiledObject: byte
+  MainIs:         storage.ml
+  BuildDepends:   ZMQ
+
 Executable test_wordcount
   Path:           ./test
   BuildTools:     ocamlbuild

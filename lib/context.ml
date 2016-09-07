@@ -325,8 +325,18 @@ let apply f i o =
   List.iter (fun m -> Dag.add_edge (to_msg 0 ApplyTask [|g; x; z; y|]) m z Red) i;
   List.iter (fun n -> Dag.add_edge (to_msg 0 NopTask [|z; y|]) z n Red) o; o
 
-let load x = None
+let load x =
+  let path = Str.(split (regexp "://")) x in
+  match (List.nth path 0) with
+  | "irmin" -> Utils.logger "call irmin"
+  | "hdfs"  -> Utils.logger "HDFS is not suported at the moment."
+  | _ -> Utils.logger ("Error: unknown storage system!")
 
-let save x = None
+let save x =
+  let path = Str.(split (regexp "://")) x in
+  match (List.nth path 0) with
+  | "irmin" -> Utils.logger "call irmin"
+  | "hdfs"  -> Utils.logger "HDFS is not suported at the moment."
+  | _ -> Utils.logger "Error: unknown storage system!"
 
 let _ = Pervasives.at_exit (fun _ -> (** cleaning up *) ())
