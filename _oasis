@@ -31,7 +31,7 @@ Executable storage
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         storage.ml
-  BuildDepends:   ZMQ
+  BuildDepends:   ZMQ, irmin, irmin.unix, lwt, lwt.unix
 
 Executable test_wordcount
   Path:           ./test
