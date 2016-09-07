@@ -18,15 +18,6 @@ let save x s =
   let y = _repo >>= fun t -> Store.update (t "Updating ...")  [x] s in
   Lwt_main.run y
 
-let test () =
-  _repo >>= fun t ->
-  Store.update (t "Updating foo/bar")  ["foo"; "bar"] "hi!" >>= fun () ->
-  Store.read_exn (t "Reading foo/bar") ["foo"; "bar"] >>= fun x ->
-  Printf.printf "Read: %s\n%!" x;
-  Lwt.return_unit
-
-let t1 () = Lwt_main.run (test ())
-
 let _ =
   let _ = save "k1" "hello" in
   let _ = save "k2" "world" in

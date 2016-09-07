@@ -328,9 +328,9 @@ let apply f i o =
 let load x =
   let path = Str.(split (regexp "://")) x in
   match (List.nth path 0) with
-  | "irmin" -> Utils.logger "call irmin"
-  | "hdfs"  -> Utils.logger "HDFS is not suported at the moment."
-  | _ -> Utils.logger ("Error: unknown storage system!")
+  | "irmin" -> Storage.load x
+  | "hdfs"  -> Utils.logger "HDFS is not suported."; ""
+  | _ -> Utils.logger ("Error: unknown storage system!"); ""
 
 let save x =
   let path = Str.(split (regexp "://")) x in

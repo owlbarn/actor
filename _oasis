@@ -9,8 +9,8 @@ Plugins:     META (0.4)
 Library "Omap"
   Path:       ./lib
   BuildTools: ocamlbuild, ocamldoc
-  Modules:    Types, Utils, Config, Manager, Worker, Context, Memory, Service, Dag
-  BuildDepends: str, unix, uint, ZMQ, ocamlgraph
+  Modules:    Types, Utils, Config, Manager, Worker, Context, Memory, Service, Dag, Storage
+  BuildDepends: str, unix, uint, ZMQ, ocamlgraph, irmin.unix, lwt, lwt.unix
 
 Executable manager
   Path:           ./lib
@@ -31,7 +31,7 @@ Executable storage
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         storage.ml
-  BuildDepends:   ZMQ, irmin, irmin.unix, lwt, lwt.unix
+  BuildDepends:   ZMQ, irmin.unix, lwt, lwt.unix
 
 Executable test_wordcount
   Path:           ./test
