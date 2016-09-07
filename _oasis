@@ -10,7 +10,7 @@ Library "Omap"
   Path:       ./lib
   BuildTools: ocamlbuild, ocamldoc
   Modules:    Types, Utils, Config, Manager, Worker, Context, Memory, Service, Dag, Storage
-  BuildDepends: str, unix, uint, ZMQ, ocamlgraph, irmin.unix, lwt, lwt.unix
+  BuildDepends: str, unix, uint, ZMQ, ocamlgraph
 
 Executable manager
   Path:           ./lib
@@ -31,7 +31,7 @@ Executable storage
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         storage.ml
-  BuildDepends:   ZMQ, irmin.unix, lwt, lwt.unix
+  BuildDepends:   ZMQ
 
 Executable test_wordcount
   Path:           ./test
@@ -53,10 +53,3 @@ Executable test_kmeans
   CompiledObject: byte
   MainIs:         test_kmeans.ml
   BuildDepends:   Omap, str, unix, uint, ZMQ, ocamlgraph
-
-Executable test_irmin
-  Path:           ./test
-  BuildTools:     ocamlbuild
-  CompiledObject: byte
-  MainIs:         test_irmin.ml
-  BuildDepends:   unix, irmin, irmin.mem, lwt, lwt.unix
