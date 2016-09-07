@@ -30,17 +30,21 @@ let bsp_barrier b x =
   (** then wait for the rest of the messages *)
   while (Hashtbl.length h) < (StrMap.cardinal x) do
     let i, m = Utils.recv _router in
-    if b = m.bar && not (Hashtbl.mem h i) then Hashtbl.add h i m
+    if b = m.bar && not (Hashtbl.mem h i) then Hashtbl.add h i m;
   done;
   Hashtbl.fold (fun k v l -> v :: l) h []
 
 let shuffle bar x z =
   List.mapi (fun i k ->
     let v = Utils.choose_load x (List.length z) i in
-    let s = ZMQ.Socket.(create _ztx dealer) in
-    ZMQ.Socket.(set_identity s _addr; connect s k);
-    Utils.send ~bar s OK [|Marshal.to_string v []|];
-    (k,s)
+    let s = if StrMap.mem k _context.worker then
+      StrMap.find k _context.worker
+    else (
+      let s = ZMQ.Socket.(create _ztx dealer) in
+      let _ = ZMQ.Socket.(set_identity s _addr; connect s k) in
+      let _ = _context.worker <- StrMap.add k s _context.worker in
+      s ) in
+    Utils.send ~bar s OK [|Marshal.to_string v []|]
   ) z
 
 let process_pipeline s =
@@ -85,13 +89,10 @@ let process_pipeline s =
       let x = Memory.find m.par.(0) |> Utils.group_by_key in
       let z = Marshal.from_string m.par.(2) 0 in
       let bar = Marshal.from_string m.par.(3) 0 in
-      shuffle bar x z
-      |> List.iter (fun (k,s) -> _context.worker <- (StrMap.add k s _context.worker));
+      let _ = shuffle bar x z in
       bsp_barrier bar _context.worker
       |> List.map (fun m -> Marshal.from_string m.par.(0) 0 |> Utils.flatten_kvg)
       |> List.flatten |> Memory.add m.par.(1);
-      List.iter ZMQ.Socket.close (StrMap.values _context.worker);
-      _context.worker <- StrMap.empty
       )
     | _ -> Utils.logger "unknown task types"
   ) s
