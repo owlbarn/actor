@@ -172,7 +172,7 @@ let worker_fun m =
       Utils.logger ("load " ^ m.par.(0) ^ " @ " ^ _addr);
       let path = Str.(split (regexp "://")) m.par.(0) in
       let b = match (List.nth path 0) with
-      | "unix"  -> Storage.load (List.nth path 1)
+      | "unix"  -> Storage.unix_load (List.nth path 1)
       | _ -> Utils.logger ("Error: unknown system!"); "" in
       Memory.add m.par.(1) [ b ];
       Utils.send ~bar master OK [||]
@@ -181,7 +181,7 @@ let worker_fun m =
       Utils.logger ("save " ^ m.par.(0) ^ " @ " ^ _addr);
       let path = Str.(split (regexp "://")) m.par.(0) in
       let c = match (List.nth path 0) with
-      | "unix"  -> Storage.save (List.nth path 1) (Memory.find m.par.(1))
+      | "unix"  -> Storage.unix_save (List.nth path 1) (Memory.find m.par.(1))
       | _ -> Utils.logger ("Error: unknown system!"); 0 in
       Utils.send ~bar master OK [|Marshal.to_string c []|]
       )
