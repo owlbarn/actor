@@ -169,7 +169,7 @@ let worker_fun m =
       failwith ("#" ^ _context.jid ^ " terminated")
       )
     | Load -> (
-      Utils.logger ("load @ " ^ _addr);
+      Utils.logger ("load " ^ m.par.(0) ^ " @ " ^ _addr);
       let path = Str.(split (regexp "://")) m.par.(0) in
       let b = match (List.nth path 0) with
       | "unix"  -> Storage.load (List.nth path 1)
