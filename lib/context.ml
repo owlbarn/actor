@@ -178,7 +178,12 @@ let worker_fun m =
       Utils.send ~bar master OK [||]
       )
     | Save -> (
-      (** TODO: persistent data ... *)
+      Utils.logger ("save " ^ m.par.(0) ^ " @ " ^ _addr);
+      let path = Str.(split (regexp "://")) m.par.(0) in
+      let c = match (List.nth path 0) with
+      | "unix"  -> Storage.save (List.nth path 1) (Memory.find m.par.(1))
+      | _ -> Utils.logger ("Error: unknown system!"); 0 in
+      Utils.send ~bar master OK [|Marshal.to_string c []|]
       )
     | _ -> (
       print_endline ("Buffering " ^ _addr ^ " <- " ^ i ^ " m.bar : " ^ string_of_int (m.bar));
@@ -343,10 +348,11 @@ let load x =
   let bar = _broadcast_all Load [|x; y|] in
   let _ = bsp_barrier bar _context.worker in y
 
-let save f b =
-  let path = Str.(split (regexp "://")) f in
-  match (List.nth path 0) with
-  | "unix"  -> Storage.save (List.nth path 1) b
-  | _ -> Utils.logger ("Error: unknown system!"); 0
+let save x y =
+  Utils.logger ("save " ^ x ^ "\n");
+  let bar = _broadcast_all Save [|x; y|] in
+  bsp_barrier bar _context.worker
+  |> List.map (fun m -> Marshal.from_string m.par.(0) 0)
+  |> List.fold_left (+) 0
 
 let _ = Pervasives.at_exit (fun _ -> (** cleaning up *) ())
