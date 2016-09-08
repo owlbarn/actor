@@ -11,7 +11,7 @@ let stop_words = ["a";"are";"is";"in";"it";"that";"this";"and";"to";"of";"so";
 
 let wordcount () =
   Ctx.init Sys.argv.(1) "tcp://localhost:5555";
-  let _ = "wordcount.data"
+  Ctx.load "unix://data/wordcount.data"
   |> Ctx.flatmap Str.(split (regexp "[ \t\n]"))
   |> Ctx.map String.lowercase
   |> Ctx.filter (fun x -> (String.length x) > 0)
@@ -19,7 +19,7 @@ let wordcount () =
   |> Ctx.map (fun k -> (k,1))
   |> Ctx.reduce_by_key (+)
   |> Ctx.collect
-  |> List.flatten |> print_result in
-  Context.terminate ()
+  |> List.flatten |> print_result;
+  Ctx.terminate ()
 
 let _ = wordcount ()

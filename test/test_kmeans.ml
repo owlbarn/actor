@@ -32,5 +32,5 @@ let kmeans x =
 
 let _ =
   Ctx.init Sys.argv.(1) "tcp://localhost:5555";
-  "kmeans.data" |> format_filter_data |> kmeans |> print_points;
+  Ctx.load "unix://data/kmeans.data" |> format_filter_data |> kmeans |> print_points;
   Ctx.terminate ()

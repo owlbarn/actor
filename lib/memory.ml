@@ -29,7 +29,7 @@ let load id fname =
 
 (* FIXME: debug purpose *)
 
-let _ =
+let t () =
   let d = Array.init 5000 (fun x -> Random.float 10.) in
   add "default" (Array.to_list d);
   load "wordcount.data" "./data/wordcount.data";

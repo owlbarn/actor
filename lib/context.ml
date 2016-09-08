@@ -168,6 +168,18 @@ let worker_fun m =
       Unix.sleep 1; (* FIXME: sleep ... *)
       failwith ("#" ^ _context.jid ^ " terminated")
       )
+    | Load -> (
+      Utils.logger ("load @ " ^ _addr);
+      let path = Str.(split (regexp "://")) m.par.(0) in
+      let b = match (List.nth path 0) with
+      | "unix"  -> Storage.load (List.nth path 1)
+      | _ -> Utils.logger ("Error: unknown system!"); "" in
+      Memory.add m.par.(1) [ b ];
+      Utils.send ~bar master OK [||]
+      )
+    | Save -> (
+      (** TODO: persistent data ... *)
+      )
     | _ -> (
       print_endline ("Buffering " ^ _addr ^ " <- " ^ i ^ " m.bar : " ^ string_of_int (m.bar));
       Hashtbl.add _msgbuf m.bar (i,m)
@@ -325,16 +337,16 @@ let apply f i o =
   List.iter (fun m -> Dag.add_edge (to_msg 0 ApplyTask [|g; x; z; y|]) m z Red) i;
   List.iter (fun n -> Dag.add_edge (to_msg 0 NopTask [|z; y|]) z n Red) o; o
 
-let load f =
-  let path = Str.(split (regexp "://")) f in
-  match (List.nth path 0) with
-  | "unix"  -> Storage.load f
-  | _ -> Utils.logger ("Error: unknown system!"); ""
+let load x =
+  Utils.logger ("load " ^ x ^ "\n");
+  let y = Memory.rand_id () in
+  let bar = _broadcast_all Load [|x; y|] in
+  let _ = bsp_barrier bar _context.worker in y
 
 let save f b =
   let path = Str.(split (regexp "://")) f in
   match (List.nth path 0) with
-  | "unix"  -> Storage.save f b
+  | "unix"  -> Storage.save (List.nth path 1) b
   | _ -> Utils.logger ("Error: unknown system!"); 0
 
 let _ = Pervasives.at_exit (fun _ -> (** cleaning up *) ())
