@@ -18,6 +18,8 @@ let _msgbuf = Hashtbl.create 1024
 
 let barrier bar = Barrier.bsp bar _router _context.worker _msgbuf
 
+let dbp_bar bar = Barrier.dbp bar _router _context.worker _msgbuf
+
 let _broadcast_all t s =
   let bar = Random.int 536870912 in
   StrMap.iter (fun k v -> Utils.send ~bar v t s) _context.worker;
