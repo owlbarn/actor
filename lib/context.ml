@@ -16,23 +16,12 @@ let _ztx = ZMQ.Context.create ()
 let _addr, _router = Utils.bind_available_addr _ztx
 let _msgbuf = Hashtbl.create 1024
 
+let barrier bar = Barrier.bsp bar _router _context.worker _msgbuf
+
 let _broadcast_all t s =
   let bar = Random.int 536870912 in
   StrMap.iter (fun k v -> Utils.send ~bar v t s) _context.worker;
   bar
-
-let bsp_barrier b x =
-  let h = Hashtbl.create 1024 in
-  (** first check the buffer for those arrive early *)
-  List.iter (fun (i,m) ->
-    if not (Hashtbl.mem h i) then Hashtbl.(add h i m; remove _msgbuf b)
-  ) (Hashtbl.find_all _msgbuf b);
-  (** then wait for the rest of the messages *)
-  while (Hashtbl.length h) < (StrMap.cardinal x) do
-    let i, m = Utils.recv _router in
-    if b = m.bar && not (Hashtbl.mem h i) then Hashtbl.add h i m;
-  done;
-  Hashtbl.fold (fun k v l -> v :: l) h []
 
 let shuffle bar x z =
   List.mapi (fun i k ->
@@ -90,7 +79,7 @@ let process_pipeline s =
       let z = Marshal.from_string m.par.(2) 0 in
       let bar = Marshal.from_string m.par.(3) 0 in
       let _ = shuffle bar x z in
-      bsp_barrier bar _context.worker
+      barrier bar
       |> List.map (fun m -> Marshal.from_string m.par.(0) 0 |> Utils.flatten_kvg)
       |> List.flatten |> Memory.add m.par.(1);
       )
@@ -210,7 +199,7 @@ let run_job_eager () =
   List.iter (fun s ->
     let s' = List.map (fun x -> Dag.get_vlabel_f x) s in
     let bar = _broadcast_all Pipeline (Array.of_list s') in
-    let _ = bsp_barrier bar _context.worker in
+    let _ = barrier bar in
     Dag.mark_stage_done s;
   ) (Dag.stages_eager ())
 
@@ -218,7 +207,7 @@ let run_job_lazy x =
   List.iter (fun s ->
     let s' = List.map (fun x -> Dag.get_vlabel_f x) s in
     let bar = _broadcast_all Pipeline (Array.of_list s') in
-    let _ = bsp_barrier bar _context.worker in
+    let _ = barrier bar in
     Dag.mark_stage_done s;
   ) (Dag.stages_lazy x)
 
@@ -226,14 +215,14 @@ let collect x =
   Utils.logger ("collect " ^ x ^ "\n");
   run_job_lazy x;
   let bar = _broadcast_all Collect [|x|] in
-  bsp_barrier bar _context.worker
+  barrier bar
   |> List.map (fun m -> Marshal.from_string m.par.(0) 0)
 
 let count x =
   Utils.logger ("count " ^ x ^ "\n");
   run_job_lazy x;
   let bar = _broadcast_all Count [|x|] in
-  bsp_barrier bar _context.worker
+  barrier bar
   |> List.map (fun m -> Marshal.from_string m.par.(0) 0)
   |> List.fold_left (+) 0
 
@@ -242,7 +231,7 @@ let fold f a x =
   run_job_lazy x;
   let g = Marshal.to_string f [ Marshal.Closures ] in
   let bar = _broadcast_all Fold [|g; x|] in
-  bsp_barrier bar _context.worker
+  barrier bar
   |> List.map (fun m -> Marshal.from_string m.par.(0) 0)
   |> List.filter (function Some x -> true | None -> false)
   |> List.map (function Some x -> x | None -> failwith "")
@@ -253,7 +242,7 @@ let reduce f x =
   run_job_lazy x;
   let g = Marshal.to_string f [ Marshal.Closures ] in
   let bar = _broadcast_all Reduce [|g; x|] in
-  let y = bsp_barrier bar _context.worker
+  let y = barrier bar
   |> List.map (fun m -> Marshal.from_string m.par.(0) 0)
   |> List.filter (function Some x -> true | None -> false)
   |> List.map (function Some x -> x | None -> failwith "") in
@@ -264,14 +253,14 @@ let reduce f x =
 let terminate () =
   Utils.logger ("terminate #" ^ _context.jid ^ "\n");
   let bar = _broadcast_all Terminate [||] in
-  let _ = bsp_barrier bar _context.worker in ()
+  let _ = barrier bar in ()
   (* TODO: ZMQ.Context.terminate _ztx *)
 
 let broadcast x =
   Utils.logger ("broadcast -> " ^ string_of_int (StrMap.cardinal _context.worker) ^ " workers\n");
   let y = Memory.rand_id () in
   let bar = _broadcast_all Broadcast [|Marshal.to_string x []; y|] in
-  let _ = bsp_barrier bar _context.worker in y
+  let _ = barrier bar in y
 
 let get_value x = Memory.find x
 
@@ -346,12 +335,12 @@ let load x =
   Utils.logger ("load " ^ x ^ "\n");
   let y = Memory.rand_id () in
   let bar = _broadcast_all Load [|x; y|] in
-  let _ = bsp_barrier bar _context.worker in y
+  let _ = barrier bar in y
 
 let save x y =
   Utils.logger ("save " ^ x ^ "\n");
   let bar = _broadcast_all Save [|x; y|] in
-  bsp_barrier bar _context.worker
+  barrier bar
   |> List.map (fun m -> Marshal.from_string m.par.(0) 0)
   |> List.fold_left (+) 0
 

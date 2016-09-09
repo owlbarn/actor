@@ -2,15 +2,21 @@
   provides flexible synchronisation barrier controls.
 *)
 
-let _bcache = Hashtbl.create 1_000_000
-let _fcache = Hashtbl.create 1_000_000
+open Types
 
-let add bar res = Hashtbl.add _bcache bar res
+(** Bulk synchronous parallel *)
+let bsp bar router workers msgbuf =
+  let h = Hashtbl.create 1024 in
+  (** first check the buffer for those arrive early *)
+  List.iter (fun (i,m) ->
+    if not (Hashtbl.mem h i) then Hashtbl.(add h i m; remove msgbuf bar)
+  ) (Hashtbl.find_all msgbuf bar);
+  (** then wait for the rest of the messages *)
+  while (Hashtbl.length h) < (StrMap.cardinal workers) do
+    let i, m = Utils.recv router in
+    if bar = m.bar && not (Hashtbl.mem h i) then Hashtbl.add h i m;
+  done;
+  Hashtbl.fold (fun k v l -> v :: l) h []
 
-let create_bar f =
-let bar = Random.int 536870912 in
-Hashtbl.add _fcache bar f; bar
-
-let _ =
-  Hashtbl.add _bcache 1 "hello";
-  Hashtbl.add _fcache 1 "hello"
+(** Stale synchronous parallel *)
+let ssp = None
