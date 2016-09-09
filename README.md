@@ -16,6 +16,8 @@ Need to separate the shuffling from Context as a module/function
 
 Interface to Irmin or HDFS to provide persistent storage
 
+working on the barrier module ...
+
 # ISSUE
 
 Stack overflow in reduce function (caused by Hashtbl: when there are over 30000 values with the same key)
