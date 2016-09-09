@@ -9,8 +9,15 @@ Plugins:     META (0.4)
 Library "Omap"
   Path:       ./lib
   BuildTools: ocamlbuild, ocamldoc
-  Modules:    Types, Utils, Config, Manager, Worker, Context, Memory, Service, Dag, Storage
+  Modules:    Types, Utils, Config, Manager, Worker, Context, Memory, Service, Dag, Storage, Barrier
   BuildDepends: str, unix, uint, ZMQ, ocamlgraph
+
+Executable barrier
+  Path:           ./lib
+  BuildTools:     ocamlbuild
+  CompiledObject: byte
+  MainIs:         barrier.ml
+  BuildDepends:   ZMQ
 
 Executable manager
   Path:           ./lib
