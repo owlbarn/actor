@@ -51,8 +51,8 @@ let run id u_addr m_addr =
       | _ -> ()
     with
       | Unix.Unix_error (_,_,_) -> heartbeat req id u_addr m_addr
-      | ZMQ.ZMQ_exception (_,s) -> Logger.error "%s" ("error, " ^ s)
-      | exn -> Logger.error "%s" "unknown error"
+      | ZMQ.ZMQ_exception (_,s) -> Logger.error "%s" s
+      | exn -> Logger.error "%s" "unknown!"
   done;
   ZMQ.Socket.close rep;
   ZMQ.Socket.close req;
