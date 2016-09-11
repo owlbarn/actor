@@ -10,21 +10,21 @@ Library "Omap"
   Path:       ./lib
   BuildTools: ocamlbuild, ocamldoc
   Modules:    Types, Utils, Config, Manager, Worker, Context, Memory, Service, Dag, Storage, Barrier, Logger
-  BuildDepends: str, unix, uint, ZMQ, ocamlgraph
+  BuildDepends: str, unix, uint, ZMQ, ocamlgraph, dolog
 
 Executable manager
   Path:           ./lib
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         manager.ml
-  BuildDepends:   ZMQ, str
+  BuildDepends:   ZMQ, str, dolog
 
 Executable worker
   Path:           ./lib
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         worker.ml
-  BuildDepends:   ZMQ, str
+  BuildDepends:   ZMQ, str, dolog
 
 Executable storage
   Path:           ./lib

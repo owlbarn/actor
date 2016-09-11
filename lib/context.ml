@@ -17,7 +17,7 @@ let _addr, _router = Utils.bind_available_addr _ztx
 let _msgbuf = Hashtbl.create 1024
 
 (** update config information *)
-let _ = Config.(update_logger "" level)
+let _ = Logger.update_config Config.level Config.logdir ""
 
 let barrier bar = Barrier.bsp bar _router _context.worker _msgbuf
 
