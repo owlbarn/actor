@@ -4,8 +4,6 @@
 
 open Types
 
-(* logical clock *)
-
 let recv s =
   let m = ZMQ.Socket.recv_all s in
   (List.nth m 0, List.nth m 1 |> of_msg)
@@ -44,3 +42,8 @@ let flatten_kvg x =
   with exn -> print_endline "Error: flatten_kvg"; []
 
 let choose_load x n i = List.filter (fun (k,l) -> (Hashtbl.hash k mod n) = i) x
+
+(** generate a log file name from address *)
+let addr_to_log x =
+  let path = Str.(split (regexp "://")) x in
+  List.nth path 1 |> Str.(global_replace (regexp "[:.]") "_")

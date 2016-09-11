@@ -16,13 +16,8 @@ let _ztx = ZMQ.Context.create ()
 let _addr, _router = Utils.bind_available_addr _ztx
 let _msgbuf = Hashtbl.create 1024
 
-(** generate a log file name from address *)
-let addr_to_log x =
-  let path = Str.(split (regexp "://")) x in
-  List.nth path 1 |> Str.(global_replace (regexp "[:.]") "_")
-
 (** update config information *)
-let _ = Config.(update_logger (addr_to_log _addr) level)
+let _ = Config.(update_logger "" level)
 
 let barrier bar = Barrier.bsp bar _router _context.worker _msgbuf
 

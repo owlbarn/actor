@@ -17,14 +17,14 @@ Executable manager
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         manager.ml
-  BuildDepends:   ZMQ
+  BuildDepends:   ZMQ, str
 
 Executable worker
   Path:           ./lib
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         worker.ml
-  BuildDepends:   ZMQ
+  BuildDepends:   ZMQ, str
 
 Executable storage
   Path:           ./lib
