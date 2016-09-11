@@ -184,7 +184,7 @@ let worker_fun m =
       Hashtbl.add _msgbuf m.bar (i,m)
       )
   done with Failure e -> (
-    Logger.info "%s" e;
+    Logger.warn "%s" e;
     ZMQ.Socket.(close master; close _router);
     Pervasives.exit 0 )
 
