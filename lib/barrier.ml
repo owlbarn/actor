@@ -33,7 +33,7 @@ let dbp bar router workers msgbuf =
     if bar = m.bar && not (Hashtbl.mem h i) then Hashtbl.add h i m;
     if budget < (Unix.gettimeofday () -. t0) then failwith "timeout"
   done
-  with exn -> Utils.logger "timeout +++");
+  with exn -> Logger.info "%s" "timeout +++");
   Hashtbl.fold (fun k v l -> v :: l) h []
 
 (** Stale synchronous parallel *)

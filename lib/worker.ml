@@ -10,22 +10,22 @@ let myid = "worker_" ^ (string_of_int (Random.int 9000 + 1000))
 let _ztx = ZMQ.Context.create ()
 
 let register req id u_addr m_addr =
-  Utils.logger ("register -> " ^ m_addr);
+  Logger.info "%s" ("register -> " ^ m_addr);
   Utils.send req User_Reg [|id; u_addr|];
   ignore (ZMQ.Socket.recv req)
 
 let heartbeat req id u_addr m_addr =
-  Utils.logger ("heartbeat -> " ^ m_addr);
+  Logger.info "%s" ("heartbeat -> " ^ m_addr);
   Utils.send req Heartbeat [|id; u_addr|];
   ignore (ZMQ.Socket.recv req)
 
 let start_app app arg =
-  Utils.logger ("starting job " ^ app);
+  Logger.info "%s" ("starting job " ^ app);
   match Unix.fork () with
   | 0 -> if Unix.fork () = 0 then Unix.execv app arg else exit 0
   | p -> ignore(Unix.wait ())
 
-let deploy_app x = Utils.logger "error, cannot find app!"
+let deploy_app x = Logger.info "%s" "error, cannot find app!"
 
 let run id u_addr m_addr =
   (* set up connection to manager *)
@@ -42,7 +42,7 @@ let run id u_addr m_addr =
       | Job_Create -> (
         let app = m.par.(1) in
         let arg = Marshal.from_string m.par.(2) 0 in
-        Utils.logger (app ^ " <- " ^ m.par.(0));
+        Logger.info "%s" (app ^ " <- " ^ m.par.(0));
         ZMQ.Socket.send rep (Marshal.to_string OK []);
         match Sys.file_exists app with
         | true ->  start_app app arg
@@ -51,8 +51,8 @@ let run id u_addr m_addr =
       | _ -> ()
     with
       | Unix.Unix_error (_,_,_) -> heartbeat req id u_addr m_addr
-      | ZMQ.ZMQ_exception (_,s) -> Utils.logger ("error, " ^ s)
-      | exn -> Utils.logger "unknown error"
+      | ZMQ.ZMQ_exception (_,s) -> Logger.info "%s" ("error, " ^ s)
+      | exn -> Logger.info "%s" "unknown error"
   done;
   ZMQ.Socket.close rep;
   ZMQ.Socket.close req;

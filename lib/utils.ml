@@ -13,13 +13,6 @@ let recv s =
 let send ?(bar=0) v t s =
   ZMQ.Socket.send v (to_msg bar t s)
 
-(* logger outputs runtime information *)
-
-let logger s =
-  let open Unix in
-  let t = gmtime (time ()) in
-  Printf.printf "[#%i %02i:%02i:%02i] %s\n%!" (getpid ()) t.tm_hour t.tm_min t.tm_sec s
-
 let rec _bind_available_addr addr router ztx =
   addr := "tcp://127.0.0.1:" ^ (string_of_int (Random.int 10000 + 50000));
   try ZMQ.Socket.bind router !addr

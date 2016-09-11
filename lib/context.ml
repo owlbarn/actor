@@ -16,6 +16,14 @@ let _ztx = ZMQ.Context.create ()
 let _addr, _router = Utils.bind_available_addr _ztx
 let _msgbuf = Hashtbl.create 1024
 
+(** generate a log file name from address *)
+let addr_to_log x =
+  let path = Str.(split (regexp "://")) x in
+  List.nth path 1 |> Str.(global_replace (regexp "[:.]") "_")
+
+(** update config information *)
+let _ = Config.(update_logger (addr_to_log _addr) level)
+
 let barrier bar = Barrier.bsp bar _router _context.worker _msgbuf
 
 let dbp_bar bar = Barrier.dbp bar _router _context.worker _msgbuf
@@ -43,26 +51,26 @@ let process_pipeline s =
     let m = of_msg s in
     match m.typ with
     | MapTask -> (
-      Utils.logger ("map @ " ^ _addr);
+      Logger.info "%s" ("map @ " ^ _addr);
       let f : 'a -> 'b = Marshal.from_string m.par.(0) 0 in
       List.map f (Memory.find m.par.(1)) |> Memory.add m.par.(2)
       )
     | FilterTask -> (
-      Utils.logger ("filter @ " ^ _addr);
+      Logger.info "%s" ("filter @ " ^ _addr);
       let f : 'a -> bool = Marshal.from_string m.par.(0) 0 in
       List.filter f (Memory.find m.par.(1)) |> Memory.add m.par.(2)
       )
     | FlattenTask -> (
-      Utils.logger ("flatten @ " ^ _addr);
+      Logger.info "%s" ("flatten @ " ^ _addr);
       List.flatten (Memory.find m.par.(0)) |> Memory.add m.par.(1)
       )
     | UnionTask -> (
-      Utils.logger ("union @ " ^ _addr);
+      Logger.info "%s" ("union @ " ^ _addr);
       (Memory.find m.par.(0)) @ (Memory.find m.par.(1))
       |> Memory.add m.par.(2)
       )
     | ReduceByKeyTask -> (
-      Utils.logger ("reduce_by_key @ " ^ _addr);
+      Logger.info "%s" ("reduce_by_key @ " ^ _addr);
       let f : 'a -> 'a -> 'a = Marshal.from_string m.par.(0) 0 in
       Memory.find m.par.(1) |> Utils.group_by_key |> List.map (fun (k,l) ->
         match l with
@@ -71,12 +79,12 @@ let process_pipeline s =
       ) |> Memory.add m.par.(2)
       )
     | JoinTask -> (
-      Utils.logger ("join @ " ^ _addr);
+      Logger.info "%s" ("join @ " ^ _addr);
       (Memory.find m.par.(0)) @ (Memory.find m.par.(1))
       |> Utils.group_by_key |> Memory.add m.par.(2)
       )
     | ShuffleTask -> (
-      Utils.logger ("shuffle @ " ^ _addr);
+      Logger.info "%s" ("shuffle @ " ^ _addr);
       let x = Memory.find m.par.(0) |> Utils.group_by_key in
       let z = Marshal.from_string m.par.(2) 0 in
       let bar = Marshal.from_string m.par.(3) 0 in
@@ -85,7 +93,7 @@ let process_pipeline s =
       |> List.map (fun m -> Marshal.from_string m.par.(0) 0 |> Utils.flatten_kvg)
       |> List.flatten |> Memory.add m.par.(1);
       )
-    | _ -> Utils.logger "unknown task types"
+    | _ -> Logger.info "%s" "unknown task types"
   ) s
 
 let master_fun m =
@@ -120,68 +128,68 @@ let worker_fun m =
     let bar = m.bar in
     match m.typ with
     | Count -> (
-      Utils.logger ("count @ " ^ _addr);
+      Logger.info "%s" ("count @ " ^ _addr);
       let y = List.length (Memory.find m.par.(0)) in
       Utils.send ~bar master OK [|Marshal.to_string y []|]
       )
     | Collect -> (
-      Utils.logger ("collect @ " ^ _addr);
+      Logger.info "%s" ("collect @ " ^ _addr);
       let y = Memory.find m.par.(0) in
       Utils.send ~bar master OK [|Marshal.to_string y []|]
       )
     | Broadcast -> (
-      Utils.logger ("broadcast @ " ^ _addr);
+      Logger.info "%s" ("broadcast @ " ^ _addr);
       Memory.add m.par.(1) (Marshal.from_string m.par.(0) 0);
       Utils.send ~bar master OK [||]
       )
     | Reduce -> (
-      Utils.logger ("reduce @ " ^ _addr);
+      Logger.info "%s" ("reduce @ " ^ _addr);
       let f : 'a -> 'a -> 'a = Marshal.from_string m.par.(0) 0 in
       let y = match Memory.find m.par.(1) with
       | hd :: tl -> Some (List.fold_left f hd tl) | [] -> None
       in Utils.send ~bar master OK [|Marshal.to_string y []|];
       )
     | Fold -> (
-      Utils.logger ("fold @ " ^ _addr);
+      Logger.info "%s" ("fold @ " ^ _addr);
       let f : 'a -> 'b -> 'a = Marshal.from_string m.par.(0) 0 in
       let y = match Memory.find m.par.(1) with
       | hd :: tl -> Some (List.fold_left f hd tl) | [] -> None
       in Utils.send ~bar master OK [|Marshal.to_string y []|];
       )
     | Pipeline -> (
-      Utils.logger ("pipelined @ " ^ _addr);
+      Logger.info "%s" ("pipelined @ " ^ _addr);
       process_pipeline m.par;
       Utils.send ~bar master OK [||]
       )
     | Terminate -> (
-      Utils.logger ("terminate @ " ^ _addr);
+      Logger.info "%s" ("terminate @ " ^ _addr);
       Utils.send ~bar master OK [||];
       Unix.sleep 1; (* FIXME: sleep ... *)
       failwith ("#" ^ _context.jid ^ " terminated")
       )
     | Load -> (
-      Utils.logger ("load " ^ m.par.(0) ^ " @ " ^ _addr);
+      Logger.info "%s" ("load " ^ m.par.(0) ^ " @ " ^ _addr);
       let path = Str.(split (regexp "://")) m.par.(0) in
       let b = match (List.nth path 0) with
       | "unix"  -> Storage.unix_load (List.nth path 1)
-      | _ -> Utils.logger ("Error: unknown system!"); "" in
+      | _ -> Logger.info "%s" ("Error: unknown system!"); "" in
       Memory.add m.par.(1) [ b ];
       Utils.send ~bar master OK [||]
       )
     | Save -> (
-      Utils.logger ("save " ^ m.par.(0) ^ " @ " ^ _addr);
+      Logger.info "%s" ("save " ^ m.par.(0) ^ " @ " ^ _addr);
       let path = Str.(split (regexp "://")) m.par.(0) in
       let c = match (List.nth path 0) with
       | "unix"  -> Storage.unix_save (List.nth path 1) (Memory.find m.par.(1))
-      | _ -> Utils.logger ("Error: unknown system!"); 0 in
+      | _ -> Logger.info "%s" ("Error: unknown system!"); 0 in
       Utils.send ~bar master OK [|Marshal.to_string c []|]
       )
     | _ -> (
-      print_endline ("Buffering " ^ _addr ^ " <- " ^ i ^ " m.bar : " ^ string_of_int (m.bar));
+      Logger.debug "%s" ("Buffering " ^ _addr ^ " <- " ^ i ^ " m.bar : " ^ string_of_int (m.bar));
       Hashtbl.add _msgbuf m.bar (i,m)
       )
   done with Failure e -> (
-    Utils.logger e;
+    Logger.info "%s" e;
     ZMQ.Socket.(close master; close _router);
     Pervasives.exit 0 )
 
@@ -194,7 +202,7 @@ let init jid url =
   match m.typ with
     | Job_Master -> master_fun m
     | Job_Worker -> worker_fun m
-    | _ -> Utils.logger "unknown command";
+    | _ -> Logger.info "%s" "unknown command";
   ZMQ.Socket.close req
 
 let run_job_eager () =
@@ -214,14 +222,14 @@ let run_job_lazy x =
   ) (Dag.stages_lazy x)
 
 let collect x =
-  Utils.logger ("collect " ^ x ^ "\n");
+  Logger.info "%s" ("collect " ^ x ^ "\n");
   run_job_lazy x;
   let bar = _broadcast_all Collect [|x|] in
   barrier bar
   |> List.map (fun m -> Marshal.from_string m.par.(0) 0)
 
 let count x =
-  Utils.logger ("count " ^ x ^ "\n");
+  Logger.info "%s" ("count " ^ x ^ "\n");
   run_job_lazy x;
   let bar = _broadcast_all Count [|x|] in
   barrier bar
@@ -229,7 +237,7 @@ let count x =
   |> List.fold_left (+) 0
 
 let fold f a x =
-  Utils.logger ("fold " ^ x ^ "\n");
+  Logger.info "%s" ("fold " ^ x ^ "\n");
   run_job_lazy x;
   let g = Marshal.to_string f [ Marshal.Closures ] in
   let bar = _broadcast_all Fold [|g; x|] in
@@ -240,7 +248,7 @@ let fold f a x =
   |> List.fold_left f a
 
 let reduce f x =
-  Utils.logger ("reduce " ^ x ^ "\n");
+  Logger.info "%s" ("reduce " ^ x ^ "\n");
   run_job_lazy x;
   let g = Marshal.to_string f [ Marshal.Closures ] in
   let bar = _broadcast_all Reduce [|g; x|] in
@@ -253,13 +261,13 @@ let reduce f x =
   | [] -> None
 
 let terminate () =
-  Utils.logger ("terminate #" ^ _context.jid ^ "\n");
+  Logger.info "%s" ("terminate #" ^ _context.jid ^ "\n");
   let bar = _broadcast_all Terminate [||] in
   let _ = barrier bar in ()
   (* TODO: ZMQ.Context.terminate _ztx *)
 
 let broadcast x =
-  Utils.logger ("broadcast -> " ^ string_of_int (StrMap.cardinal _context.worker) ^ " workers\n");
+  Logger.info "%s" ("broadcast -> " ^ string_of_int (StrMap.cardinal _context.worker) ^ " workers\n");
   let y = Memory.rand_id () in
   let bar = _broadcast_all Broadcast [|Marshal.to_string x []; y|] in
   let _ = barrier bar in y
@@ -268,32 +276,32 @@ let get_value x = Memory.find x
 
 let map f x =
   let y = Memory.rand_id () in
-  Utils.logger ("map " ^ x ^ " -> " ^ y ^ "\n");
+  Logger.info "%s" ("map " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
   Dag.add_edge (to_msg 0 MapTask [|g; x; y|]) x y Red; y
 
 let filter f x =
   let y = Memory.rand_id () in
-  Utils.logger ("filter " ^ x ^ " -> " ^ y ^ "\n");
+  Logger.info "%s" ("filter " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
   Dag.add_edge (to_msg 0 FilterTask [|g; x; y|]) x y Red; y
 
 let flatten x =
   let y = Memory.rand_id () in
-  Utils.logger ("flatten " ^ x ^ " -> " ^ y ^ "\n");
+  Logger.info "%s" ("flatten " ^ x ^ " -> " ^ y ^ "\n");
   Dag.add_edge (to_msg 0 FlattenTask [|x; y|]) x y Red; y
 
 let flatmap f x = flatten (map f x)
 
 let union x y =
   let z = Memory.rand_id () in
-  Utils.logger ("union " ^ x ^ " & " ^ y ^ " -> " ^ z ^ "\n");
+  Logger.info "%s" ("union " ^ x ^ " & " ^ y ^ " -> " ^ z ^ "\n");
   Dag.add_edge (to_msg 0 UnionTask [|x; y; z|]) x z Red;
   Dag.add_edge (to_msg 0 UnionTask [|x; y; z|]) y z Red; z
 
 let shuffle x =
   let y = Memory.rand_id () in
-  Utils.logger ("shuffle " ^ x ^ " -> " ^ y ^ "\n");
+  Logger.info "%s" ("shuffle " ^ x ^ " -> " ^ y ^ "\n");
   let z = Marshal.to_string (StrMap.keys _context.worker) [] in
   let b = Marshal.to_string (Random.int 536870912) [] in
   Dag.add_edge (to_msg 0 ShuffleTask [|x; y; z; b|]) x y Blue; y
@@ -302,7 +310,7 @@ let reduce_by_key f x =
   (** TODO: without local combiner ... keep or not? *)
   let x = shuffle x in
   let y = Memory.rand_id () in
-  Utils.logger ("reduce_by_key " ^ x ^ " -> " ^ y ^ "\n");
+  Logger.info "%s" ("reduce_by_key " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
   Dag.add_edge (to_msg 0 ReduceByKeyTask [|g; x; y|]) x y Red; y
 
@@ -313,18 +321,18 @@ let ___reduce_by_key f x =
   Dag.add_edge (to_msg 0 ReduceByKeyTask [|g; x; y|]) x y Red;
   let x = shuffle y in
   let y = Memory.rand_id () in
-  Utils.logger ("reduce_by_key " ^ x ^ " -> " ^ y ^ "\n");
+  Logger.info "%s" ("reduce_by_key " ^ x ^ " -> " ^ y ^ "\n");
   Dag.add_edge (to_msg 0 ReduceByKeyTask [|g; x; y|]) x y Red; y
 
 let join x y =
   let z = Memory.rand_id () in
-  Utils.logger ("join " ^ x ^ " & " ^ y ^ " -> " ^ z ^ "\n");
+  Logger.info "%s" ("join " ^ x ^ " & " ^ y ^ " -> " ^ z ^ "\n");
   let x, y = shuffle x, shuffle y in
   Dag.add_edge (to_msg 0 JoinTask [|x; y; z|]) x z Red;
   Dag.add_edge (to_msg 0 JoinTask [|x; y; z|]) y z Red; z
 
 let apply f i o =
-  Utils.logger ("apply f ... " ^ "\n");
+  Logger.info "%s" ("apply f ... " ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
   let o = List.map (fun _ -> Memory.rand_id ()) o in
   let x = Marshal.to_string i [ ] in
@@ -334,13 +342,13 @@ let apply f i o =
   List.iter (fun n -> Dag.add_edge (to_msg 0 NopTask [|z; y|]) z n Red) o; o
 
 let load x =
-  Utils.logger ("load " ^ x ^ "\n");
+  Logger.info "%s" ("load " ^ x ^ "\n");
   let y = Memory.rand_id () in
   let bar = _broadcast_all Load [|x; y|] in
   let _ = barrier bar in y
 
 let save x y =
-  Utils.logger ("save " ^ x ^ "\n");
+  Logger.info "%s" ("save " ^ x ^ "\n");
   let bar = _broadcast_all Save [|x; y|] in
   barrier bar
   |> List.map (fun m -> Marshal.from_string m.par.(0) 0)

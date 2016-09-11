@@ -28,7 +28,7 @@ let process r m =
   | User_Reg -> (
     let uid, addr = m.par.(0), m.par.(1) in
     if Workers.mem uid = false then
-      Utils.logger (uid ^ " @ " ^ addr);
+      Logger.info "%s" (uid ^ " @ " ^ addr);
       Workers.add uid addr;
       Utils.send r OK [||];
     )
@@ -43,7 +43,7 @@ let process r m =
       Utils.send r Job_Worker [|master; ""|]
     )
   | Heartbeat -> (
-    Utils.logger ("heartbeat @ " ^ m.par.(0));
+    Logger.info "%s" ("heartbeat @ " ^ m.par.(0));
     Workers.add m.par.(0) m.par.(1);
     Utils.send r OK [||];
     )
