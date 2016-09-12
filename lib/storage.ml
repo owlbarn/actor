@@ -12,3 +12,11 @@ let unix_save x b =
   let f = Unix.(openfile x [O_WRONLY; O_CREAT] 0o644) in
   let l = Bytes.length b in
   Unix.write f b 0 l
+
+let hdfs_load x = None
+
+let hdfs_save x = None
+
+let irmin_load x = None
+
+let irmin_save x = None
