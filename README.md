@@ -16,6 +16,8 @@ Imply apply function then test
 
 Test delay-bounded and error-bounded barrier
 
+Need to read "transferring files" in ZMQ doc to remove high water marks in the code
+
 # ISSUE
 
 Stack overflow in reduce function (caused by Hashtbl: when there are over 30000 values with the same key)
