@@ -1,6 +1,12 @@
-(** [ Storage ]
+(** [ Storage module ]
   provide a basic persistent storage service
 *)
+
+open Lwt
+open Cohttp
+open Cohttp_lwt_unix
+
+(** the following functions are for native Unix storage *)
 
 let unix_load x =
   let l = Unix.((stat x).st_size) in
@@ -13,10 +19,29 @@ let unix_save x b =
   let l = Bytes.length b in
   Unix.write f b 0 l
 
-let hdfs_load x = None
+
+(** the following functions are for HDFS storage *)
+
+let _hdfs_base = "http://" ^ Config.webhdfs_addr ^ "/webhdfs/v1"
+
+let get_info_json uri =
+  Client.get (Uri.of_string uri) >>= fun (resp, body) ->
+  Cohttp_lwt_body.to_string body
+
+let hdfs_load x =
+  let uri = _hdfs_base ^ x in
+  uri
 
 let hdfs_save x = None
+
+
+(** the following functions are for Irmin storage *)
 
 let irmin_load x = None
 
 let irmin_save x = None
+
+
+(** FIXME: for debug purpose *)
+
+let _ = Logger.debug "%s" (hdfs_load "/tmp/hello.txt")

@@ -17,3 +17,6 @@ let _ =  Logger.update_config level logdir ""
 
 (** Max queue length of ZMQ send and receive *)
 let high_warter_mark = 10_000
+
+(** WebHDFS base addr and port *)
+let webhdfs_addr = "192.168.99.100:50070"
