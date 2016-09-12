@@ -18,6 +18,8 @@ Test delay-bounded and error-bounded barrier
 
 Need to read "transferring files" in ZMQ doc to remove high water marks in the code
 
+Fail to compile using OCaml 4.02.3 (only on my Mac), 4.02.2 works fine.
+
 # ISSUE
 
 Stack overflow in reduce function (caused by Hashtbl: when there are over 30000 values with the same key)

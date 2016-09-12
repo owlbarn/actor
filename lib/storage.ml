@@ -24,9 +24,11 @@ let unix_save x b =
 
 let _hdfs_base = "http://" ^ Config.webhdfs_addr ^ "/webhdfs/v1"
 
-let get_info_json uri =
+let get_file_json uri =
   Client.get (Uri.of_string uri) >>= fun (resp, body) ->
   Cohttp_lwt_body.to_string body
+
+let get_file_info s = None
 
 let hdfs_load x =
   let uri = _hdfs_base ^ x in
