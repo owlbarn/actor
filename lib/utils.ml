@@ -9,7 +9,8 @@ let recv s =
   (List.nth m 0, List.nth m 1 |> of_msg)
 
 let send ?(bar=0) v t s =
-  ZMQ.Socket.send v (to_msg bar t s)
+  try ZMQ.Socket.send ~block:false v (to_msg bar t s)
+  with exn -> Logger.error "fail to send bar:%i" bar
 
 let rec _bind_available_addr addr router ztx =
   addr := "tcp://127.0.0.1:" ^ (string_of_int (Random.int 10000 + 50000));
@@ -19,6 +20,7 @@ let rec _bind_available_addr addr router ztx =
 let bind_available_addr ztx =
   let router : [`Router] ZMQ.Socket.t = ZMQ.Socket.create ztx ZMQ.Socket.router in
   let addr = ref "" in _bind_available_addr addr router ztx;
+  ZMQ.Socket.set_receive_high_water_mark router Config.high_warter_mark;
   !addr, router
 
 (* the following 3 functions are for shuffle operations *)

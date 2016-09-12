@@ -37,6 +37,7 @@ let shuffle bar x z =
       let s = ZMQ.Socket.(create _ztx dealer) in
       let _ = ZMQ.Socket.(set_identity s _addr; connect s k) in
       let _ = _context.worker <- StrMap.add k s _context.worker in
+      let _ = ZMQ.Socket.set_send_high_water_mark s Config.high_warter_mark in
       s ) in
     Utils.send ~bar s OK [|Marshal.to_string v []|]
   ) z

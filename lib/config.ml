@@ -14,3 +14,6 @@ let dfs_path = "storage.data"
 let level = Logger.DEBUG
 let logdir = "log/"
 let _ =  Logger.update_config level logdir ""
+
+(** Max queue length of ZMQ send and receive *)
+let high_warter_mark = 10_000
