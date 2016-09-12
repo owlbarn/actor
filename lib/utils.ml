@@ -5,7 +5,7 @@
 open Types
 
 let recv s =
-  let m = ZMQ.Socket.recv_all s in
+  let m = ZMQ.Socket.recv_all ~block:true s in
   (List.nth m 0, List.nth m 1 |> of_msg)
 
 let send ?(bar=0) v t s =
