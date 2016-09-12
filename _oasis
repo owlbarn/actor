@@ -17,21 +17,21 @@ Executable manager
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         manager.ml
-  BuildDepends:   ZMQ, str, dolog, lwt, lwt.unix, cohttp, cohttp.lwt
+  BuildDepends:   ZMQ, str, dolog
 
 Executable worker
   Path:           ./lib
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         worker.ml
-  BuildDepends:   ZMQ, str, dolog, lwt, lwt.unix, cohttp, cohttp.lwt
+  BuildDepends:   ZMQ, str, dolog
 
 Executable storage
   Path:           ./lib
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         storage.ml
-  BuildDepends:   ZMQ, dolog, lwt, lwt.unix, cohttp, cohttp.lwt
+  BuildDepends:   ZMQ, dolog, cohttp, cohttp.lwt
 
 Executable test_wordcount
   Path:           ./test
