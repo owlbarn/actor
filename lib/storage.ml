@@ -48,6 +48,12 @@ let _get_header_location uri = (
   | Some x -> return (Uri.to_string x) | None -> return "" )
   |> Lwt_main.run
 
+let _put_header_location uri = (
+  Client.put (Uri.of_string uri) >>= fun (resp, body) ->
+  match (resp |> Response.headers |> Header.get_location) with
+  | Some x -> return (Uri.to_string x) | None -> return "" )
+  |> Lwt_main.run
+
 let get_file_info x =
   let open Yojson.Basic.Util in
   let stat = _hdfs_base ^ x ^ "?op=GETFILESTATUS"
@@ -76,7 +82,9 @@ let hdfs_load x =
   Logger.debug "size = %i" info.length;
   get_file_content x
 
-let hdfs_save x = None
+let hdfs_save x =
+  let loc = _hdfs_base ^ x ^ "?op=CREATE"
+  |> _put_header_location in loc
 
 
 (** the following functions are for Irmin storage *)
@@ -89,5 +97,5 @@ let irmin_save x = None
 (** FIXME: for debug purpose *)
 
 let _ =
-  let s = hdfs_load "/tmp/hello.txt" in
-  print_endline s
+  Logger.info "%s" (hdfs_load "/tmp/hello.txt");
+  Logger.info "%s" (hdfs_save "/tmp/world.txt")
