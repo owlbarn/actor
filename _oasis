@@ -10,7 +10,7 @@ Library "Omap"
   Path:       ./lib
   BuildTools: ocamlbuild, ocamldoc
   Modules:    Types, Utils, Config, Manager, Worker, Context, Memory, Service, Dag, Storage, Barrier, Logger
-  BuildDepends: str, unix, uint, ZMQ, ocamlgraph, dolog, lwt, lwt.unix, cohttp, cohttp.lwt
+  BuildDepends: str, unix, uint, ZMQ, ocamlgraph, dolog, lwt, lwt.unix, cohttp, cohttp.lwt, yojson
 
 Executable manager
   Path:           ./lib
@@ -31,7 +31,7 @@ Executable storage
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         storage.ml
-  BuildDepends:   ZMQ, dolog, cohttp, cohttp.lwt
+  BuildDepends:   ZMQ, dolog, cohttp.lwt, yojson
 
 Executable test_wordcount
   Path:           ./test
