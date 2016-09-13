@@ -97,5 +97,5 @@ let irmin_save x = None
 (** FIXME: for debug purpose *)
 
 let _ =
-  Logger.info "%s" (hdfs_load "/tmp/hello.txt");
-  Logger.info "%s" (hdfs_save "/tmp/world.txt")
+  Logger.debug "%s" (hdfs_load "/tmp/hello.txt");
+  Logger.debug "%s" (hdfs_save "/tmp/world.txt")
