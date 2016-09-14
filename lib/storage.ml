@@ -37,19 +37,15 @@ type hdfs_info = {
 
 let _hdfs_base = "http://" ^ Config.webhdfs_addr ^ "/webhdfs/v1"
 
-let _get_body_string uri = (
-  Client.get (Uri.of_string uri) >>= fun (resp, body) ->
-  Cohttp_lwt_body.to_string body )
+let _get_by_uri uri = Client.get (Uri.of_string uri)
+let _put_by_uri uri = Client.put (Uri.of_string uri)
+
+let _get_body t = (
+  t >>= fun (resp, body) -> Cohttp_lwt_body.to_string body )
   |> Lwt_main.run
 
-let _get_header_location uri = (
-  Client.get (Uri.of_string uri) >>= fun (resp, body) ->
-  match (resp |> Response.headers |> Header.get_location) with
-  | Some x -> return (Uri.to_string x) | None -> return "" )
-  |> Lwt_main.run
-
-let _put_header_location uri = (
-  Client.put (Uri.of_string uri) >>= fun (resp, body) ->
+let _get_location t = (
+  t >>= fun (resp, body) ->
   match (resp |> Response.headers |> Header.get_location) with
   | Some x -> return (Uri.to_string x) | None -> return "" )
   |> Lwt_main.run
@@ -57,7 +53,7 @@ let _put_header_location uri = (
 let get_file_info x =
   let open Yojson.Basic.Util in
   let stat = _hdfs_base ^ x ^ "?op=GETFILESTATUS"
-  |> _get_body_string |> Yojson.Basic.from_string
+  |> _get_by_uri |> _get_body |> Yojson.Basic.from_string
   |> member "FileStatus" in
   let info = {
     accessTime = stat |> member "accessTime" |> to_int;
@@ -72,19 +68,19 @@ let get_file_info x =
     ftyp = stat |> member "type" |> to_string;
   } in info
 
-let get_file_content x =
-  let content = _hdfs_base ^ x ^ "?op=OPEN"
-  |> _get_header_location |> _get_body_string in
+let get_file_content x o l =
+  let content = _hdfs_base ^ x ^ "?op=OPEN" ^
+    "&offset=" ^ (string_of_int o) ^ "&length=" ^ (string_of_int l)
+  |> _get_by_uri |> _get_location |> _get_by_uri |> _get_body in
   content
 
 let hdfs_load x =
   let info = get_file_info x in
-  Logger.debug "size = %i" info.length;
-  get_file_content x
+  get_file_content x 0 info.length
 
 let hdfs_save x =
   let loc = _hdfs_base ^ x ^ "?op=CREATE"
-  |> _put_header_location in loc
+  |> _put_by_uri |> _get_location in loc
 
 
 (** the following functions are for Irmin storage *)
