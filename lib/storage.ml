@@ -39,6 +39,7 @@ let _hdfs_base = "http://" ^ Config.webhdfs_addr ^ "/webhdfs/v1"
 
 let _get_by_uri uri = Client.get (Uri.of_string uri)
 let _put_by_uri uri = Client.put (Uri.of_string uri)
+let _post_by_uri s uri = Client.post ~body:(Cohttp_lwt_body.of_string s) (Uri.of_string uri)
 
 let _get_body t = (
   t >>= fun (resp, body) -> Cohttp_lwt_body.to_string body )
@@ -78,10 +79,12 @@ let hdfs_load x =
   let info = get_file_info x in
   get_file_content x 0 info.length
 
-let hdfs_save x =
-  let loc = _hdfs_base ^ x ^ "?op=CREATE"
-  |> _put_by_uri |> _get_location in loc
-
+let hdfs_save x b =
+  let _ = _hdfs_base ^ x ^ "?op=CREATE"
+  |> _put_by_uri |> _get_location |> _put_by_uri |> _get_location in
+  Unix.sleep 1;  (** FIXME: sleep ... *)
+  let s = _hdfs_base ^ x ^ "?op=APPEND"
+  |> _post_by_uri "" |> _get_location |> _post_by_uri b |> _get_body in s
 
 (** the following functions are for Irmin storage *)
 
@@ -125,4 +128,4 @@ let irmin_save x b =
 
 let _ =
   Logger.debug "%s" (hdfs_load "/tmp/hello.txt");
-  Logger.debug "%s" (hdfs_save "/tmp/world.txt")
+  Logger.debug "%s" (hdfs_save "/tmp/world.txt" "test writing to a file\n")

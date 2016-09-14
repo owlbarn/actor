@@ -22,6 +22,4 @@ Need to read "transferring files" in ZMQ doc to remove high water marks in the c
 
 Stack overflow in reduce function (caused by Hashtbl: when there are over 30000 values with the same key)
 
-Fail to compile using OCaml 4.02.3 (only on my Mac), 4.02.2 works fine.
-
-Fail to compile into native code, uint8 complains about duplicate symbols.
+When saving to HDFS using hdfs_save, need to sleep for 1 second otherwise HDFS report error.
