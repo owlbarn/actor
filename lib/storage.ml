@@ -89,9 +89,40 @@ let hdfs_save x =
 
 (** the following functions are for Irmin storage *)
 
-let irmin_load x = None
+module Irmin_Storage =
+  Irmin_unix.Irmin_git.FS
+    (Irmin.Contents.String)(Irmin.Ref.String)(Irmin.Hash.SHA1)
 
-let irmin_save x = None
+let irmin_handle = ref None
+
+let get_store () =
+  match !irmin_handle with
+  | Some s -> return s
+  | None ->
+     let config = Irmin_unix.Irmin_git.config ~root:"." () in
+     Irmin_Storage.Repo.create config
+     >>= Irmin_Storage.master Irmin_unix.task
+     >>= fun t ->
+     let () = irmin_handle := Some t in
+     return t
+
+
+let irmin_load x =
+  (get_store () >>= fun s ->
+   let s = s ("load " ^ x) in
+   Irmin_Storage.read s [x] >>= function
+   | None -> fail Not_found
+   | Some v -> return v)
+  |> Lwt_main.run
+
+
+let irmin_save x b =
+  (get_store () >>= fun s ->
+   let s = s ("save " ^ x) in
+   Irmin_Storage.update s [x] b >>= fun () ->
+   return @@ Bytes.length b)
+  |> Lwt_main.run
+
 
 
 (** FIXME: for debug purpose *)
