@@ -1,6 +1,6 @@
-# actor
+# OCaml Distributed Data Processing
 
-an actor system in ocaml
+A distributed data processing system developed in OCaml
 
 # Todo
 
