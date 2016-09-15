@@ -41,7 +41,6 @@ docker run -t -i ryanrhymes/omap:latest /bin/bash
 After the container starts, go to the home director, clone the git repository.
 
 ```bash
-cd ~
 git clone https://github.com/ryanrhymes/actor.git
 ```
 
