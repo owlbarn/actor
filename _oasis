@@ -38,7 +38,7 @@ Executable parameter
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         parameter.ml
-  BuildDepends:   ZMQ
+  BuildDepends:   ZMQ, dolog
 
 Executable test_wordcount
   Path:           ./test
