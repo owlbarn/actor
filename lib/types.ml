@@ -17,6 +17,7 @@ type message_type =
   | MapTask | FilterTask | ReduceByKeyTask | ShuffleTask | UnionTask
   | JoinTask | FlattenTask | ApplyTask | NopTask
   | Pipeline | Collect | Count | Broadcast | Fold | Reduce | Terminate | Load | Save
+  | PS_Get | PS_Set
 
 type message_rec = {
   bar : int;

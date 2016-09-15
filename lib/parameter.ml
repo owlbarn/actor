@@ -2,9 +2,10 @@
   provides a global variable like kv store
 *)
 
-Logger.update_config Config.level Config.logdir ""
+open Types
 
-let _param = Hashtbl.create 1_000_000
+let _ztx = ZMQ.Context.create ()
+let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 
 let get k t =
   let v, t' = Hashtbl.find _param (Obj.repr k) in
@@ -18,13 +19,29 @@ let set k v t =
 
 let schedule x = None
 
+let service () =
+  let _router = ZMQ.Socket.(create _ztx router) in
+  ZMQ.Socket.bind _router Config.ps_addr;
+  ZMQ.Socket.set_receive_high_water_mark _router Config.high_warter_mark;
+  Logger.info "%s" "parameter server starts ...";
+  try while true do
+    let i, m = Utils.recv _router in
+    let t = m.bar in
+    match m.typ with
+    | PS_Get -> (
+      Logger.info "GET t:%i @ %s" t Config.ps_addr
+      )
+    | PS_Set -> (
+      Logger.info "SET t:%i @ %s" t Config.ps_addr
+      )
+    | _ -> (
+      Logger.debug "%s" "unknown mssage to PS";
+      )
+  done with Failure e -> (
+    Logger.warn "%s" e;
+    ZMQ.Socket.close _router;
+    Pervasives.exit 0 )
 
 (** FIXME: for debug purpose *)
 
-let _ =
-  Hashtbl.add _param (Obj.repr 5) ("abc", 123);
-  Hashtbl.add _param (Obj.repr 6) ("def", 125);
-  let _ = get 5 124 in
-  let _ = get 6 123 in
-  let _ = set 6 "ccc" 126 in
-  ()
+let _ = service ()

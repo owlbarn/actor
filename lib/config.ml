@@ -4,6 +4,7 @@
 
 (** Manager's address, all workders connect to this address *)
 let manager_addr = "tcp://127.0.0.1:5555"
+
 (** Manager's identifier *)
 let manager_id = "manager_0"
 
@@ -20,3 +21,6 @@ let high_warter_mark = 10_000
 
 (** WebHDFS base addr and port *)
 let webhdfs_addr = "192.168.99.100:50070"
+
+(** Parameter server address and port *)
+let ps_addr = "tcp://127.0.0.1:5556"

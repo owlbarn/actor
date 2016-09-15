@@ -38,7 +38,7 @@ Executable parameter
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         parameter.ml
-  BuildDepends:   ZMQ, dolog
+  BuildDepends:   ZMQ, dolog, str
 
 Executable test_wordcount
   Path:           ./test
@@ -60,3 +60,10 @@ Executable test_kmeans
   CompiledObject: byte
   MainIs:         test_kmeans.ml
   BuildDepends:   Omap, str, unix, uint, ZMQ, ocamlgraph
+
+Executable test_parameter
+  Path:           ./test
+  BuildTools:     ocamlbuild
+  CompiledObject: byte
+  MainIs:         test_parameter.ml
+  BuildDepends:   Omap
