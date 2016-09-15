@@ -4,18 +4,29 @@
 
 open Types
 
-let _ztx = ZMQ.Context.create ()
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
+let _ztx = ZMQ.Context.create ()
+let _ps : [`Dealer] ZMQ.Socket.t = ZMQ.Socket.(create _ztx dealer)
+let _ = ZMQ.Socket.connect _ps Config.ps_addr
 
-let get k t =
+
+let _get k t =
   let v, t' = Hashtbl.find _param (Obj.repr k) in
   Logger.debug "%i" (t' - t);
   v
 
-let set k v t =
+let _set k v t =
   let v, t' = Hashtbl.find _param (Obj.repr k) in
   Logger.debug "%i" (t' - t);
   Hashtbl.replace _param (Obj.repr k) (v, t)
+
+let get = None
+
+let set k v t =
+  Logger.info "%s" ("SET @ ???");
+  let k' = Marshal.to_string k [] in
+  let v' = Marshal.to_string v [] in
+  Utils.send ~bar:t _ps PS_Set [|k'; v'|]
 
 let schedule x = None
 
@@ -33,6 +44,7 @@ let service () =
       )
     | PS_Set -> (
       Logger.info "SET t:%i @ %s" t Config.ps_addr
+      
       )
     | _ -> (
       Logger.debug "%s" "unknown mssage to PS";
@@ -42,6 +54,10 @@ let service () =
     ZMQ.Socket.close _router;
     Pervasives.exit 0 )
 
-(** FIXME: for debug purpose *)
 
-let _ = service ()
+(** start parameter server *)
+
+let _ = if Array.length Sys.argv > 1 then
+  match Sys.argv.(1) with
+  | "start" -> service ()
+  | _ -> ()

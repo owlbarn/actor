@@ -1,3 +1,8 @@
 (** [ Test parameter server ]  *)
 
-let _ = print_endline "hello"
+module PS = Parameter
+
+let test () =
+  PS.set (1,1) "abcd" 1; Unix.sleep 1
+
+let _ = test ()
