@@ -105,7 +105,6 @@ let get_store () =
      let () = irmin_handle := Some t in
      return t
 
-
 let irmin_load x =
   (get_store () >>= fun s ->
    let s = s ("load " ^ x) in
@@ -114,14 +113,12 @@ let irmin_load x =
    | Some v -> return v)
   |> Lwt_main.run
 
-
 let irmin_save x b =
   (get_store () >>= fun s ->
    let s = s ("save " ^ x) in
    Irmin_Storage.update s [x] b >>= fun () ->
    return @@ Bytes.length b)
   |> Lwt_main.run
-
 
 
 (** FIXME: for debug purpose *)
