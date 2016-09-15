@@ -18,12 +18,6 @@ Test delay-bounded and error-bounded barrier
 
 Need to read "transferring files" in ZMQ doc to remove high water marks in the code
 
-# Issue
-
-Stack overflow in reduce function (caused by Hashtbl: when there are over 30000 values with the same key)
-
-When saving to HDFS using hdfs_save, need to sleep for 1 second otherwise HDFS report error.
-
 # How to compile & run it?
 
 To compile and build the system, you do not have to install all the software yourself. You can simply pull a ready-made container to set up development environment.
