@@ -7,9 +7,16 @@ open Types
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 let _ztx = ZMQ.Context.create ()
 
-let get k t = None
+let get k =
+  let k' = Obj.repr k in
+  let v, t' = Hashtbl.find _param k' in
+  v, t'
 
-let set k t = None
+let set k v t =
+  let k' = Obj.repr k in
+  match Hashtbl.mem _param k with
+  | true -> Hashtbl.replace _param k' (v,t)
+  | false -> Hashtbl.add _param k' (v,t)
 
 let start () =
   Logger.info "%s" "parameter server starts ...";
@@ -22,11 +29,17 @@ let start () =
     let t = m.bar in
     match m.typ with
     | PS_Get -> (
-      Logger.info "GET t:%i @ %s" t Config.ps_addr
+      let k = Marshal.from_string m.par.(0) 0 in
+      let v, t' = get k in
+      let s = to_msg t OK [| Marshal.to_string v [] |] in
+      ZMQ.Socket.send_all ~block:false _router [i;s];
+      Logger.debug "GET dt = %i @ %s" (t - t') Config.ps_addr
       )
     | PS_Set -> (
-      Logger.info "SET t:%i @ %s" t Config.ps_addr
-
+      let k = Marshal.from_string m.par.(0) 0 in
+      let v = Marshal.from_string m.par.(1) 0 in
+      let _ = set k v t in
+      Logger.debug "SET t:%i @ %s" t Config.ps_addr
       )
     | _ -> (
       Logger.debug "%s" "unknown mssage to PS";
