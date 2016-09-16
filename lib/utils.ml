@@ -12,10 +12,10 @@ let send ?(bar=0) v t s =
   try ZMQ.Socket.send ~block:false v (to_msg bar t s)
   with exn -> Logger.error "fail to send bar:%i" bar
 
-let rec _bind_available_addr addr router ztx =
+let rec _bind_available_addr addr sock ztx =
   addr := "tcp://127.0.0.1:" ^ (string_of_int (Random.int 10000 + 50000));
-  try ZMQ.Socket.bind router !addr
-  with exn -> _bind_available_addr addr router ztx
+  try ZMQ.Socket.bind sock !addr
+  with exn -> _bind_available_addr addr sock ztx
 
 let bind_available_addr ztx =
   let router : [`Router] ZMQ.Socket.t = ZMQ.Socket.create ztx ZMQ.Socket.router in

@@ -7,11 +7,16 @@ open Types
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 let _ztx = ZMQ.Context.create ()
 
+let get k t = None
+
+let set k t = None
+
 let start () =
+  Logger.info "%s" "parameter server starts ...";
   let _router = ZMQ.Socket.(create _ztx router) in
   ZMQ.Socket.bind _router Config.ps_addr;
   ZMQ.Socket.set_receive_high_water_mark _router Config.high_warter_mark;
-  Logger.info "%s" "parameter server starts ...";
+  (** loop to process messages *)
   try while true do
     let i, m = Utils.recv _router in
     let t = m.bar in
