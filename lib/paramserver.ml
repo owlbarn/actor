@@ -6,6 +6,9 @@ open Types
 
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 let _ztx = ZMQ.Context.create ()
+let _step = ref 0
+
+let bsp t = t - !_step = 1
 
 let get k =
   let k' = Obj.repr k in
