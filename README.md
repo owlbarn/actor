@@ -16,8 +16,6 @@ Imply apply function then test
 
 Test delay-bounded and error-bounded barrier
 
-Need to read "transferring files" in ZMQ doc to remove high water marks in the code
-
 # How to compile & run it?
 
 To compile and build the system, you do not have to install all the software yourself. You can simply pull a ready-made container to set up development environment.
