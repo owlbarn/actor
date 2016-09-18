@@ -8,6 +8,18 @@ let _ztx = ZMQ.Context.create ()
 let _ps : [`Dealer] ZMQ.Socket.t = ZMQ.Socket.(create _ztx dealer)
 let _ = ZMQ.Socket.connect _ps Config.ps_addr
 
+let _schedule = None
+let _push = None
+let _pull = None
+
+let register_schedule f = None
+
+let register_push f = None
+(** parallel execution at each worker *)
+
+let register_pull f = None
+(** aggregate function at scheduler *)
+
 let get k t =
   Logger.debug "GET -> %s" Config.ps_addr;
   let k' = Marshal.to_string k [] in
