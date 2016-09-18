@@ -31,13 +31,13 @@ let service_loop _router =
       let v, t' = get k in
       let s = to_msg t OK [| Marshal.to_string v [] |] in
       ZMQ.Socket.send_all ~block:false _router [i;s];
-      Logger.debug "GET dt = %i @ %s" (t - t') Config.ps_addr
+      Logger.debug "GET dt = %i @ %s" (t - t') _context.master
       )
     | PS_Set -> (
       let k = Marshal.from_string m.par.(0) 0 in
       let v = Marshal.from_string m.par.(1) 0 in
       let _ = set k v t in
-      Logger.debug "SET t:%i @ %s" t Config.ps_addr
+      Logger.debug "SET t:%i @ %s" t _context.master
       )
     | _ -> (
       Logger.debug "%s" "unknown mssage to PS";

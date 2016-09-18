@@ -12,13 +12,13 @@ let _push = None
 let _pull = None
 
 let get k t =
-  Logger.debug "GET -> %s" Config.ps_addr;
+  Logger.debug "GET -> %s" _context.master;
   let k' = Marshal.to_string k [] in
   Utils.send ~bar:t (List.nth !_ps 0) PS_Get [|k'|];
   ZMQ.Socket.recv ~block:true (List.nth !_ps 0)
 
 let set k v t =
-  Logger.debug "SET -> %s" Config.ps_addr;
+  Logger.debug "SET -> %s" _context.master;
   let k' = Marshal.to_string k [] in
   let v' = Marshal.to_string v [] in
   Utils.send ~bar:t (List.nth !_ps 0) PS_Set [|k'; v'|]
