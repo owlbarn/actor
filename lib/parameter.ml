@@ -18,9 +18,9 @@ let init jid url =
     | _ -> Logger.info "%s" "unknown command";
   ZMQ.Socket.close req
 
-let get k = None
+let get k = Paramclient.(get k !_step)
 
-let set k v = None
+let set k v = Paramclient.(set k v !_step)
 
 let register_schedule f = None
 (** scheduler funciton at master *)
@@ -30,3 +30,5 @@ let register_pull f = None
 
 let register_push f = None
 (** parallel execution at each worker *)
+
+let terminate () = Paramclient.terminate ()

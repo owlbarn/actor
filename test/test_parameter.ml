@@ -9,6 +9,8 @@ let test_store () =
   Logger.debug "%s" "test done"
 
 let test_context () =
-  PS.init Sys.argv.(1) Config.manager_addr
+  PS.init Sys.argv.(1) Config.manager_addr;
+  Logger.info "%s" "do some work ...";
+  PS.terminate ()
 
 let _ = test_context ()

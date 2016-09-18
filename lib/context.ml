@@ -254,7 +254,6 @@ let terminate () =
   Logger.info "%s" ("terminate #" ^ _context.jid ^ "\n");
   let bar = _broadcast_all Terminate [||] in
   let _ = barrier bar in ()
-  (* TODO: ZMQ.Context.terminate _ztx *)
 
 let broadcast x =
   Logger.info "%s" ("broadcast -> " ^ string_of_int (StrMap.cardinal _context.worker) ^ " workers\n");

@@ -20,7 +20,7 @@ let set k v t =
   | false -> Hashtbl.add _param k' (v,t)
 
 let service_loop _router =
-  Logger.info "%s" "parameter server starts ...";
+  Logger.info "parameter server @ %s" _context.master;
   (** loop to process messages *)
   try while true do
     let i, m = Utils.recv _router in
