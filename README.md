@@ -4,19 +4,15 @@ A distributed data processing system developed in OCaml
 
 # Todo
 
-Architecture: study KV store and PUB/SUB
-
-How to express arbitrary DGA? How to express loop?
-
-Need to separate the shuffling from Context as a module/function
+How to express arbitrary DGA? How to express loop? Apply function.
 
 Interface to Irmin or HDFS to provide persistent storage
-
-Imply apply function then test
 
 Test delay-bounded and error-bounded barrier
 
 Split Context module into server and client two modules
+
+Implement parameter.mli
 
 # How to compile & run it?
 
