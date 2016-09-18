@@ -36,6 +36,7 @@ let process r m =
     let master, jid = m.par.(0), m.par.(1) in
     if Service.mem jid = false then (
       Service.add jid master;
+      (** FIXME: currently send back all nodes as workers *)
       let addrs = Marshal.to_string (Workers.addrs ()) [] in
       Utils.send r Job_Master [|addrs; ""|] )
     else

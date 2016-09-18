@@ -32,8 +32,8 @@ let set k v t =
   let v' = Marshal.to_string v [] in
   Utils.send ~bar:t _ps PS_Set [|k'; v'|]
 
-let worker_fun () =
+let worker_fun jid m ztx =
   while true do
-    Logger.debug "%s" "worker ...";
+    Logger.debug "worker ... %s" jid;
     Unix.sleep 1;
   done

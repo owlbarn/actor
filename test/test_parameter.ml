@@ -1,10 +1,14 @@
 (** [ Test parameter server ]  *)
 
-module PS = Paramclient
+module PS = Parameter
+module PC = Paramclient
 
-let test () =
-  let _ = PS.set (1,1) "abcd" 1 in
-  let _ = PS.get (1,1) 2 in
+let test_store () =
+  let _ = PC.set (1,1) "abcd" 1 in
+  let _ = PC.get (1,1) 2 in
   Logger.debug "%s" "test done"
 
-let _ = test ()
+let test_context () =
+  PS.init Sys.argv.(1) Config.manager_addr
+
+let _ = test_context ()

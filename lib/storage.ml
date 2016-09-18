@@ -121,8 +121,7 @@ let irmin_save x b =
   |> Lwt_main.run
 
 
-(** FIXME: for debug purpose *)
-
-let _ =
+(** FIXME: for debug purpose, move to separate test *)
+let test_hdfs () =
   Logger.debug "%s" (hdfs_load "/tmp/hello.txt");
   Logger.debug "%s" (hdfs_save "/tmp/world.txt" "test writing to a file\n")

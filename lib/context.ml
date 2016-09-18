@@ -4,12 +4,6 @@
 
 open Types
 
-type t = {
-  mutable jid : string;
-  mutable master : string;
-  mutable worker : [`Dealer] ZMQ.Socket.t StrMap.t;
-}
-
 (** some global varibles *)
 let _context = { jid = ""; master = ""; worker = StrMap.empty }
 let _ztx = ZMQ.Context.create ()

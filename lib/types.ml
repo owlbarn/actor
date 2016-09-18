@@ -25,6 +25,12 @@ type message_rec = {
   par : string array;
 }
 
+type context = {
+  mutable jid : string;
+  mutable master : string;
+  mutable worker : [`Dealer] ZMQ.Socket.t StrMap.t;
+}
+
 type actor_rec = {
   id : string;
   addr : string;

@@ -7,6 +7,7 @@ open Types
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 let _ztx = ZMQ.Context.create ()
 let _step = ref 0
+let _context = { jid = ""; master = ""; worker = StrMap.empty }
 
 let bsp t = t - !_step = 1
 
@@ -21,7 +22,7 @@ let set k v t =
   | true -> Hashtbl.replace _param k' (v,t)
   | false -> Hashtbl.add _param k' (v,t)
 
-let master_fun () =
+let _master_fun () =
   Logger.info "%s" "parameter server starts ...";
   let _router = ZMQ.Socket.(create _ztx router) in
   ZMQ.Socket.bind _router Config.ps_addr;
@@ -52,7 +53,22 @@ let master_fun () =
     ZMQ.Socket.close _router;
     Pervasives.exit 0 )
 
-
-(** start parameter server *)
-
-let _ = master_fun ()
+let master_fun jid m _ztx _addr _router =
+  (* contact allocated actors to assign jobs *)
+  let addrs = Marshal.from_string m.par.(0) 0 in
+  List.map (fun x ->
+    let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
+    ZMQ.Socket.connect req x;
+    let app = Filename.basename Sys.argv.(0) in
+    let arg = Marshal.to_string Sys.argv [] in
+    Utils.send req Job_Create [|_addr; app; arg|]; req
+  ) addrs |> List.iter ZMQ.Socket.close;
+  (* wait until all the allocated actors register *)
+  Logger.debug "hereee ...";
+  while (StrMap.cardinal _context.worker) < (List.length addrs) do
+    let i, m = Utils.recv _router in
+    let s = ZMQ.Socket.create _ztx ZMQ.Socket.dealer in
+    ZMQ.Socket.connect s m.par.(0);
+    _context.worker <- (StrMap.add m.par.(0) s _context.worker);
+  done;
+  Logger.debug "hereee +++"
