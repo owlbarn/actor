@@ -13,10 +13,14 @@ let init jid url =
   Utils.send req Job_Reg [|_addr; jid|];
   let m = of_msg (ZMQ.Socket.recv req) in
   match m.typ with
-    | Job_Master -> Paramserver.master_fun jid m _ztx _addr _router
-    | Job_Worker -> Paramclient.worker_fun jid m _ztx _addr _router
+    | Job_Master -> Paramserver.master_init m jid _addr _router _ztx
+    | Job_Worker -> Paramclient.worker_init m jid _addr _router _ztx
     | _ -> Logger.info "%s" "unknown command";
   ZMQ.Socket.close req
+
+let get k = None
+
+let set k v = None
 
 let register_schedule f = None
 (** scheduler funciton at master *)

@@ -5,11 +5,8 @@
 open Types
 
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
-let _ztx = ZMQ.Context.create ()
-let _step = ref 0
 let _context = { jid = ""; master = ""; worker = StrMap.empty }
-
-let bsp t = t - !_step = 1
+let _step = ref 0
 
 let get k =
   let k' = Obj.repr k in
@@ -22,11 +19,8 @@ let set k v t =
   | true -> Hashtbl.replace _param k' (v,t)
   | false -> Hashtbl.add _param k' (v,t)
 
-let _master_fun () =
+let service_loop _router =
   Logger.info "%s" "parameter server starts ...";
-  let _router = ZMQ.Socket.(create _ztx router) in
-  ZMQ.Socket.bind _router Config.ps_addr;
-  ZMQ.Socket.set_receive_high_water_mark _router Config.high_warter_mark;
   (** loop to process messages *)
   try while true do
     let i, m = Utils.recv _router in
@@ -50,11 +44,12 @@ let _master_fun () =
       )
   done with Failure e -> (
     Logger.warn "%s" e;
-    ZMQ.Socket.close _router;
-    Pervasives.exit 0 )
+    ZMQ.Socket.close _router
+  )
 
-let master_fun jid m _ztx _addr _router =
-  (* contact allocated actors to assign jobs *)
+let master_init m jid _addr _router _ztx =
+  let _ = _context.jid <- jid; _context.master = _addr in
+  (** contact allocated actors to assign jobs *)
   let addrs = Marshal.from_string m.par.(0) 0 in
   List.map (fun x ->
     let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
@@ -63,12 +58,12 @@ let master_fun jid m _ztx _addr _router =
     let arg = Marshal.to_string Sys.argv [] in
     Utils.send req Job_Create [|_addr; app; arg|]; req
   ) addrs |> List.iter ZMQ.Socket.close;
-  (* wait until all the allocated actors register *)
-  Logger.debug "hereee ...";
+  (** wait until all the allocated actors register *)
   while (StrMap.cardinal _context.worker) < (List.length addrs) do
     let i, m = Utils.recv _router in
     let s = ZMQ.Socket.create _ztx ZMQ.Socket.dealer in
     ZMQ.Socket.connect s m.par.(0);
     _context.worker <- (StrMap.add m.par.(0) s _context.worker);
   done;
-  Logger.debug "hereee +++"
+  (** enter into master service loop *)
+  service_loop _router
