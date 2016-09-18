@@ -34,15 +34,21 @@ let service_loop _addr _router =
       Logger.info "scheduled @ %s" _addr;
       (** TODO: call _push *)
       )
+    | Terminate -> (
+      Logger.info "%s" ("terminate @ " ^ _addr);
+      Utils.send ~bar:t (_ps ()) OK [||];
+      Unix.sleep 1; (* FIXME: sleep ... *)
+      failwith ("#" ^ _context.jid ^ " terminated")
+      )
     | _ -> (
       Logger.debug "%s" "unknown mssage to PS";
       )
   done with Failure e -> (
     Logger.warn "%s" e;
-    ZMQ.Socket.close _router
-  )
+    ZMQ.Socket.close _router;
+    Pervasives.exit 0 )
 
-let worker_init m jid _addr _router _ztx =
+let init m jid _addr _router _ztx =
   let _ = _context.jid <- jid; _context.master = m.par.(0) in
   (* connect to job master *)
   let master = ZMQ.Socket.create _ztx ZMQ.Socket.dealer in
@@ -52,13 +58,3 @@ let worker_init m jid _addr _router _ztx =
   _master := [master];
   (** enter into worker service loop *)
   service_loop _addr _router
-
-let _broadcast_all t s =
-  let bar = Random.int 536870912 in
-  StrMap.iter (fun k v -> Utils.send ~bar v t s) _context.worker;
-  bar
-
-let terminate () =
-  Logger.info "%s" ("terminate #" ^ _context.jid ^ "\n");
-  let _ = _broadcast_all Terminate [||] in
-  Unix.sleep 1 (** FIXME: change to BSP *)

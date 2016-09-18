@@ -8,9 +8,11 @@ let test_store () =
   let _ = PC.get (1,1) 2 in
   Logger.debug "%s" "test done"
 
+let schedule workers = workers
+
 let test_context () =
+  PS.register_schedule schedule;
   PS.init Sys.argv.(1) Config.manager_addr;
-  Logger.info "%s" "do some work ...";
-  PS.terminate ()
+  Logger.info "%s" "do some work ..."
 
 let _ = test_context ()

@@ -8,7 +8,7 @@ let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 let _context = { jid = ""; master = ""; worker = StrMap.empty }
 let _step = ref 0
 
-let _schedule : (string -> string list) ref = ref (fun worker_id -> [ ])
+let _schedule : ('a -> string list) ref = ref (fun workers -> [ ])
 let _pull : (string list -> unit) ref = ref (fun updates -> ())
 
 let get k =
@@ -22,12 +22,30 @@ let set k v t =
   | true -> Hashtbl.replace _param k' (v,t)
   | false -> Hashtbl.add _param k' (v,t)
 
+let _broadcast_all t s =
+  let bar = Random.int 536870912 in
+  StrMap.iter (fun k v -> Utils.send ~bar v t s) _context.worker;
+  bar
+
+let terminate () =
+  let _ = _broadcast_all Terminate [||] in
+  Unix.sleep 1 (** FIXME: change to BSP *)
+
 let service_loop _router =
   Logger.info "parameter server @ %s" _context.master;
   (** loop to process messages *)
   try while true do
     (** schecule at every message arrival *)
-    !_schedule ""; (** FIXME: schedule whom? *)
+    let tasks = !_schedule (StrMap.keys _context.worker) in
+    match List.length tasks = 0 with
+    | true -> failwith ("terminate #" ^ _context.jid)
+    | false -> (
+      (** TODO: send task to scheduled workers *)
+        List.iter (fun worker_id ->
+          let w = StrMap.find worker_id _context.worker in
+          Utils.send ~bar:!_step w PS_Schedule [| |]
+        ) tasks
+      );
     (** wait for requests or updates from workers *)
     let i, m = Utils.recv _router in
     let t = m.bar in
@@ -53,10 +71,11 @@ let service_loop _router =
       )
   done with Failure e -> (
     Logger.warn "%s" e;
+    terminate ();
     ZMQ.Socket.close _router
   )
 
-let master_init m jid _addr _router _ztx =
+let init m jid _addr _router _ztx =
   let _ = _context.jid <- jid; _context.master = _addr in
   (** contact allocated actors to assign jobs *)
   let addrs = Marshal.from_string m.par.(0) 0 in

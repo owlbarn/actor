@@ -13,8 +13,8 @@ let init jid url =
   Utils.send req Job_Reg [|_addr; jid|];
   let m = of_msg (ZMQ.Socket.recv req) in
   match m.typ with
-    | Job_Master -> Paramserver.master_init m jid _addr _router _ztx
-    | Job_Worker -> Paramclient.worker_init m jid _addr _router _ztx
+    | Job_Master -> Paramserver.init m jid _addr _router _ztx
+    | Job_Worker -> Paramclient.init m jid _addr _router _ztx
     | _ -> Logger.info "%s" "unknown command";
   ZMQ.Socket.close req
 
@@ -30,5 +30,3 @@ let register_pull f = Paramserver._pull := f
 
 (** parallel execution at each worker *)
 let register_push f = Paramclient._push := f
-
-let terminate () = Paramclient.terminate ()
