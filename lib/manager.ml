@@ -38,10 +38,10 @@ let process r m =
       Service.add jid master;
       (** FIXME: currently send back all nodes as workers *)
       let addrs = Marshal.to_string (Workers.addrs ()) [] in
-      Utils.send r Job_Master [|addrs; ""|] )
+      Utils.send r Job_Master [|addrs|] )
     else
       let master = (Service.find jid).master in
-      Utils.send r Job_Worker [|master; ""|]
+      Utils.send r Job_Worker [|master|]
     )
   | Heartbeat -> (
     Logger.info "%s" ("heartbeat @ " ^ m.par.(0));

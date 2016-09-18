@@ -7,18 +7,11 @@ open Types
 let _ztx = ZMQ.Context.create ()
 let _ps : [`Dealer] ZMQ.Socket.t = ZMQ.Socket.(create _ztx dealer)
 let _ = ZMQ.Socket.connect _ps Config.ps_addr
+let _context = { jid = ""; master = ""; worker = StrMap.empty }
 
 let _schedule = None
 let _push = None
 let _pull = None
-
-let register_schedule f = None
-
-let register_push f = None
-(** parallel execution at each worker *)
-
-let register_pull f = None
-(** aggregate function at scheduler *)
 
 let get k t =
   Logger.debug "GET -> %s" Config.ps_addr;
@@ -32,8 +25,13 @@ let set k v t =
   let v' = Marshal.to_string v [] in
   Utils.send ~bar:t _ps PS_Set [|k'; v'|]
 
-let worker_fun jid m ztx =
+let worker_fun jid m _ztx _addr _router =
+  (* connect to job master *)
+  let master = ZMQ.Socket.create _ztx ZMQ.Socket.dealer in
+  ZMQ.Socket.set_identity master _addr;
+  ZMQ.Socket.connect master m.par.(0);
+  Utils.send master OK [|_addr|];
   while true do
     Logger.debug "worker ... %s" jid;
-    Unix.sleep 1;
+    Unix.sleep 2;
   done

@@ -14,6 +14,15 @@ let init jid url =
   let m = of_msg (ZMQ.Socket.recv req) in
   match m.typ with
     | Job_Master -> Paramserver.master_fun jid m _ztx _addr _router
-    | Job_Worker -> Paramclient.worker_fun jid m _ztx
+    | Job_Worker -> Paramclient.worker_fun jid m _ztx _addr _router
     | _ -> Logger.info "%s" "unknown command";
   ZMQ.Socket.close req
+
+let register_schedule f = None
+(** scheduler funciton at master *)
+
+let register_pull f = None
+(** aggregate function at master *)
+
+let register_push f = None
+(** parallel execution at each worker *)
