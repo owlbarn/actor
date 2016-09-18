@@ -21,7 +21,7 @@ let set k v t =
   | true -> Hashtbl.replace _param k' (v,t)
   | false -> Hashtbl.add _param k' (v,t)
 
-let start () =
+let master_fun () =
   Logger.info "%s" "parameter server starts ...";
   let _router = ZMQ.Socket.(create _ztx router) in
   ZMQ.Socket.bind _router Config.ps_addr;
@@ -55,4 +55,4 @@ let start () =
 
 (** start parameter server *)
 
-let _ = start ()
+let _ = master_fun ()
