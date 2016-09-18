@@ -14,6 +14,8 @@ Split Context module into server and client two modules
 
 Implement parameter.mli
 
+Rename ... DataContext and ModelContext?
+
 # How to compile & run it?
 
 To compile and build the system, you do not have to install all the software yourself. You can simply pull a ready-made container to set up development environment.

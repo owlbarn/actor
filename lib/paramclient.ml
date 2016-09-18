@@ -7,11 +7,9 @@ open Types
 let _context = { jid = ""; master = ""; worker = StrMap.empty }
 let _master : [`Dealer] ZMQ.Socket.t list ref = ref []
 let _ps () = List.nth !_master 0
-
 let _step = ref 0
-let _schedule = None
-let _push = None
-let _pull = None
+
+let _push : (string -> string list -> unit) ref = ref (fun worker_id vars -> ())
 
 let get k t =
   Logger.debug "GET -> %s" _context.master;
@@ -32,6 +30,10 @@ let service_loop _addr _router =
     let i, m = Utils.recv _router in
     let t = m.bar in
     match m.typ with
+    | PS_Schedule -> (
+      Logger.info "scheduled @ %s" _addr;
+      (** TODO: call _push *)
+      )
     | _ -> (
       Logger.debug "%s" "unknown mssage to PS";
       )

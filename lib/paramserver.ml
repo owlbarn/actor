@@ -8,6 +8,9 @@ let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 let _context = { jid = ""; master = ""; worker = StrMap.empty }
 let _step = ref 0
 
+let _schedule : (string -> string list) ref = ref (fun worker_id -> [ ])
+let _pull : (string list -> unit) ref = ref (fun updates -> ())
+
 let get k =
   let k' = Obj.repr k in
   let v, t' = Hashtbl.find _param k' in
@@ -23,6 +26,9 @@ let service_loop _router =
   Logger.info "parameter server @ %s" _context.master;
   (** loop to process messages *)
   try while true do
+    (** schecule at every message arrival *)
+    !_schedule ""; (** FIXME: schedule whom? *)
+    (** wait for requests or updates from workers *)
     let i, m = Utils.recv _router in
     let t = m.bar in
     match m.typ with
@@ -31,13 +37,16 @@ let service_loop _router =
       let v, t' = get k in
       let s = to_msg t OK [| Marshal.to_string v [] |] in
       ZMQ.Socket.send_all ~block:false _router [i;s];
-      Logger.debug "GET dt = %i @ %s" (t - t') _context.master
+      Logger.debug "GET <- dt = %i, %s" (t - t') i
       )
     | PS_Set -> (
       let k = Marshal.from_string m.par.(0) 0 in
       let v = Marshal.from_string m.par.(1) 0 in
       let _ = set k v t in
-      Logger.debug "SET t:%i @ %s" t _context.master
+      Logger.debug "SET <- t:%i, %s" t i
+      )
+    | PS_Push -> (
+      Logger.debug "Push <- t:%i, %s" t i
       )
     | _ -> (
       Logger.debug "%s" "unknown mssage to PS";
