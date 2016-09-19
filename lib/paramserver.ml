@@ -21,7 +21,7 @@ let _pull = ref (Marshal.to_string _default_pull [ Marshal.Closures ])
 let get k =
   let k' = Obj.repr k in
   let v, t = Hashtbl.find _param k' in
-  Obj.magic v, t
+  Obj.obj v, t
 
 let set k v t =
   let k' = Obj.repr k in
