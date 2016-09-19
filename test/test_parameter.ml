@@ -11,11 +11,13 @@ let schedule workers =
   let l = List.length workers in
   let x = Random.int l in
   let y = (x + 1) mod l in
-  [ (List.nth workers x, [(1,"task1")]); (List.nth workers y, [(2,"task2")]) ]
+  let k0, k1 = Random.int 100, Random.int 100 in
+  let v0, v1 = Random.int 1000, Random.int 1000 in
+  [ (List.nth workers x, [(k0,v0)]); (List.nth workers y, [(k1,v1)]) ]
 
 let push id vars =
   let updates = List.map (fun (k,v) ->
-    Logger.info "working on %s" v;
+    Logger.info "working on %i" v;
     (k,v) ) vars in
   updates
 
