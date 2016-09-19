@@ -17,7 +17,7 @@ type message_type =
   | MapTask | FilterTask | ReduceByKeyTask | ShuffleTask | UnionTask
   | JoinTask | FlattenTask | ApplyTask | NopTask
   | Pipeline | Collect | Count | Broadcast | Fold | Reduce | Terminate | Load | Save
-  | PS_Get | PS_Set | PS_Schedule | PS_Push | PS_Update
+  | PS_Get | PS_Set | PS_Schedule | PS_Push
 
 type message_rec = {
   bar : int;
@@ -47,6 +47,16 @@ type service_rec = {
   master : string;
   mutable workers : string list;
 }
+
+(** types of user defined functions in model parallel module *)
+
+type ('a, 'b, 'c) ps_schedule_typ = 'a list -> ('a * ('b * 'c) list) list
+
+type ('a, 'b, 'c) ps_pull_typ = ('a * 'b) list -> 'c
+
+type ('a, 'b, 'c) ps_push_typ = 'a -> ('b * 'c) list -> ('b * 'c) list
+
+(** two functions to translate between message rec and string *)
 
 let to_msg b t p =
   let m = { bar = b; typ = t; par = p } in

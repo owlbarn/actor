@@ -26,14 +26,14 @@ let set k v t =
 
 let update_param x t =
   (** update multiple kvs, more efficient than set *)
-  Logger.debug "update -> %s" _context.master;
+  Logger.info "push -> %s" _context.master;
   let x' = Marshal.to_string x [] in
-  Utils.send ~bar:t (_ps ()) PS_Update [|x'|]
+  Utils.send ~bar:t (_ps ()) PS_Push [|x'|]
 
 let service_loop _addr _router =
   Logger.info "parameter worker @ %s" _addr;
   (** unmarshal the push function *)
-  let push : 'a -> 'b -> 'c = Marshal.from_string !_push 0 in
+  let push : ('a, 'b, 'c) ps_push_typ = Marshal.from_string !_push 0 in
   (** loop to process messages *)
   try while true do
     let i, m = Utils.recv _router in

@@ -37,8 +37,8 @@ let terminate () =
 let service_loop _router =
   Logger.info "parameter server @ %s" _context.master;
   (** unmarshal the schedule and pull functions *)
-  let schedule : 'a -> 'b = Marshal.from_string !_schedule 0 in
-  (* let pull : 'a -> 'b = Marshal.from_string !_pull 0 in *)
+  let schedule : ('a, 'b, 'c) ps_schedule_typ = Marshal.from_string !_schedule 0 in
+  (* let pull : ps_pull_typ = Marshal.from_string !_pull 0 in *)
   (** loop to process messages *)
   try while true do
     (** schecule at every message arrival *)
@@ -72,6 +72,10 @@ let service_loop _router =
       Logger.debug "set <- t:%i, %s" t i
       )
     | PS_Push -> (
+      let updates = Marshal.from_string m.par.(0) 0 in
+      List.iter (fun (k,v) ->
+        set k v t
+      ) updates;
       Logger.debug "push <- t:%i, %s" t i
       )
     | _ -> (

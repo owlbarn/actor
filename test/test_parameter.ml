@@ -11,12 +11,13 @@ let schedule workers =
   let l = List.length workers in
   let x = Random.int l in
   let y = (x + 1) mod l in
-  [ (List.nth workers x, ["task1"]); (List.nth workers y, ["task2"]) ]
+  [ (List.nth workers x, [(1,"task1")]); (List.nth workers y, [(2,"task2")]) ]
 
 let push id vars =
-  let updates = List.map (fun x ->
-    Logger.info "working on %s" x;
-    x ) vars in
+  Unix.sleep 1;
+  let updates = List.map (fun (k,v) ->
+    Logger.info "working on %s" v;
+    (k,v) ) vars in
   updates
 
 let test_context () =
