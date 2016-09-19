@@ -7,16 +7,28 @@ open Types
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 let _context = { jid = ""; master = ""; worker = StrMap.empty }
 
-(** current step at master *)
+(** current step and previous steps at master *)
+let _steps : (int, string) Hashtbl.t = Hashtbl.create 1_000_000
 let _step = ref 0
 
 (** default schedule function *)
-let _default_schedule = fun workers -> [ ]
+let _default_schedule = fun workers -> [ ] (** TODO: fix scheduler ... *)
 let _schedule = ref (Marshal.to_string _default_schedule [ Marshal.Closures ])
 
 (** default pull function *)
 let _default_pull = fun updates -> updates
 let _pull = ref (Marshal.to_string _default_pull [ Marshal.Closures ])
+
+(** Bulk synchronous parallel *)
+let bsp t =
+  let finish = Hashtbl.find_all _steps t in
+  let worker = StrMap.keys _context.worker in
+  (List.length finish) = (List.length worker)
+
+let update_steps t w =
+  match List.mem w (Hashtbl.find_all _steps t) with
+  | true  -> ()
+  | false -> Hashtbl.add _steps t w
 
 let get k =
   let k' = Obj.repr k in
@@ -51,7 +63,7 @@ let service_loop _router =
     match List.length tasks = 0 with
     | true  -> failwith ("terminate #" ^ _context.jid)
     | false -> (
-        Logger.debug "scheduling %i workers" (List.length tasks);
+        Logger.debug "schedule t:%i -> %i workers" !_step (List.length tasks);
         (** send tasks to scheduled workers *)
         List.iter (fun (worker, task) ->
           let w = StrMap.find worker _context.worker in
@@ -59,6 +71,8 @@ let service_loop _router =
           Utils.send ~bar:!_step w PS_Schedule [|s|]
         ) tasks
       );
+    (** check wheter to move the overall step on *)
+    if (bsp !_step) = true then _step := !_step + 1;
     (** wait for requests or updates from workers *)
     let i, m = Utils.recv _router in
     let t = m.bar in
@@ -66,7 +80,7 @@ let service_loop _router =
     | PS_Get -> (
       let k = Marshal.from_string m.par.(0) 0 in
       let v, t' = get k in
-      let s = to_msg t OK [| Marshal.to_string v [] |] in
+      let s = to_msg t' OK [| Marshal.to_string v [] |] in
       ZMQ.Socket.send_all ~block:false _router [i;s];
       Logger.debug "get <- dt = %i, %s" (t - t') i
       )
@@ -78,14 +92,11 @@ let service_loop _router =
       )
     | PS_Push -> (
       let updates = Marshal.from_string m.par.(0) 0 |> pull in
-      List.iter (fun (k,v) ->
-        set k v t
-      ) updates;
+      List.iter (fun (k,v) -> set k v t) updates;
+      update_steps t i;
       Logger.debug "push <- t:%i, %s" t i
       )
-    | _ -> (
-      Logger.debug "%s" "unknown mssage to PS";
-      )
+    | _ -> ( Logger.debug "%s" "unknown mssage to PS" )
   done with Failure e -> (
     Logger.warn "%s" e;
     terminate ();

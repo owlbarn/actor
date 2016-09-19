@@ -8,7 +8,7 @@ let _context = { jid = ""; master = ""; worker = StrMap.empty }
 let _master : [`Dealer] ZMQ.Socket.t list ref = ref []
 let _ps () = List.nth !_master 0
 
-(** current step at master *)
+(** current step at client *)
 let _step = ref 0
 
 (** default push function *)
@@ -46,7 +46,7 @@ let service_loop _addr _router =
       Logger.info "scheduled @ %s" _addr;
       let vars = Marshal.from_string m.par.(0) 0 in
       let updates = push _addr vars in
-      update_param updates !_step
+      update_param updates t
       )
     | Terminate -> (
       Logger.info "%s" ("terminate @ " ^ _addr);
@@ -54,9 +54,7 @@ let service_loop _addr _router =
       Unix.sleep 1; (* FIXME: sleep ... *)
       failwith ("#" ^ _context.jid ^ " terminated")
       )
-    | _ -> (
-      Logger.debug "%s" "unknown mssage to PS";
-      )
+    | _ -> ( Logger.debug "%s" "unknown mssage to PS" )
   done with Failure e -> (
     Logger.warn "%s" e;
     ZMQ.Socket.close _router;

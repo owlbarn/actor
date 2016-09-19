@@ -14,7 +14,6 @@ let schedule workers =
   [ (List.nth workers x, [(1,"task1")]); (List.nth workers y, [(2,"task2")]) ]
 
 let push id vars =
-  Unix.sleep 1;
   let updates = List.map (fun (k,v) ->
     Logger.info "working on %s" v;
     (k,v) ) vars in
