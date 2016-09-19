@@ -14,13 +14,15 @@ let schedule workers =
   [ (List.nth workers x, ["task1"]); (List.nth workers y, ["task2"]) ]
 
 let push id vars =
-  Logger.info "do some useful stuff ...";
-  ["abc"; "def"]
+  let updates = List.map (fun x ->
+    Logger.info "working on %s" x;
+    x ) vars in
+  updates
 
 let test_context () =
   PS.register_schedule schedule;
   PS.register_push push;
   PS.init Sys.argv.(1) Config.manager_addr;
-  Logger.info "%s" "do some work ..."
+  Logger.info "do some work at master node"
 
 let _ = test_context ()

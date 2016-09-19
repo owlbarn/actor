@@ -13,16 +13,22 @@ let _default_push = fun worker_id vars -> []
 let _push = ref (Marshal.to_string _default_push [ Marshal.Closures ])
 
 let get k t =
-  Logger.debug "GET -> %s" _context.master;
+  Logger.debug "get -> %s" _context.master;
   let k' = Marshal.to_string k [] in
   Utils.send ~bar:t (_ps ()) PS_Get [|k'|];
   ZMQ.Socket.recv ~block:true (_ps ())
 
 let set k v t =
-  Logger.debug "SET -> %s" _context.master;
+  Logger.debug "set -> %s" _context.master;
   let k' = Marshal.to_string k [] in
   let v' = Marshal.to_string v [] in
   Utils.send ~bar:t (_ps ()) PS_Set [|k'; v'|]
+
+let update_param x t =
+  (** update multiple kvs, more efficient than set *)
+  Logger.debug "update -> %s" _context.master;
+  let x' = Marshal.to_string x [] in
+  Utils.send ~bar:t (_ps ()) PS_Update [|x'|]
 
 let service_loop _addr _router =
   Logger.info "parameter worker @ %s" _addr;
@@ -35,9 +41,9 @@ let service_loop _addr _router =
     match m.typ with
     | PS_Schedule -> (
       Logger.info "scheduled @ %s" _addr;
-      (** TODO: call _push *)
       let vars = Marshal.from_string m.par.(0) 0 in
-      let _ = push _addr vars in ()
+      let updates = push _addr vars in
+      update_param updates !_step
       )
     | Terminate -> (
       Logger.info "%s" ("terminate @ " ^ _addr);
@@ -54,9 +60,10 @@ let service_loop _addr _router =
     Pervasives.exit 0 )
 
 let init m jid _addr _router _ztx =
-  let _ = _context.jid <- jid; _context.master = m.par.(0) in
+  let _ = _context.jid <- jid; _context.master <- m.par.(0) in
   (* connect to job master *)
   let master = ZMQ.Socket.create _ztx ZMQ.Socket.dealer in
+  ZMQ.Socket.set_send_high_water_mark master Config.high_warter_mark;
   ZMQ.Socket.set_identity master _addr;
   ZMQ.Socket.connect master m.par.(0);
   Utils.send master OK [|_addr|];

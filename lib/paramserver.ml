@@ -46,7 +46,8 @@ let service_loop _router =
     match List.length tasks = 0 with
     | true  -> failwith ("terminate #" ^ _context.jid)
     | false -> (
-      (** TODO: send task to scheduled workers *)
+        Logger.debug "scheduling %i workers" (List.length tasks);
+        (** send tasks to scheduled workers *)
         List.iter (fun (worker, task) ->
           let w = StrMap.find worker _context.worker in
           let s = Marshal.to_string task [] in
@@ -62,16 +63,16 @@ let service_loop _router =
       let v, t' = get k in
       let s = to_msg t OK [| Marshal.to_string v [] |] in
       ZMQ.Socket.send_all ~block:false _router [i;s];
-      Logger.debug "GET <- dt = %i, %s" (t - t') i
+      Logger.debug "get <- dt = %i, %s" (t - t') i
       )
     | PS_Set -> (
       let k = Marshal.from_string m.par.(0) 0 in
       let v = Marshal.from_string m.par.(1) 0 in
       let _ = set k v t in
-      Logger.debug "SET <- t:%i, %s" t i
+      Logger.debug "set <- t:%i, %s" t i
       )
     | PS_Push -> (
-      Logger.debug "Push <- t:%i, %s" t i
+      Logger.debug "push <- t:%i, %s" t i
       )
     | _ -> (
       Logger.debug "%s" "unknown mssage to PS";
@@ -97,6 +98,7 @@ let init m jid _addr _router _ztx =
   while (StrMap.cardinal _context.worker) < (List.length addrs) do
     let i, m = Utils.recv _router in
     let s = ZMQ.Socket.create _ztx ZMQ.Socket.dealer in
+    ZMQ.Socket.set_send_high_water_mark s Config.high_warter_mark;
     ZMQ.Socket.connect s m.par.(0);
     _context.worker <- (StrMap.add m.par.(0) s _context.worker);
   done;

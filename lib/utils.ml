@@ -10,7 +10,8 @@ let recv s =
 
 let send ?(bar=0) v t s =
   try ZMQ.Socket.send ~block:false v (to_msg bar t s)
-  with exn -> Logger.error "fail to send bar:%i" bar
+  with exn -> let hwm = ZMQ.Socket.get_send_high_water_mark v in
+  Logger.error "fail to send bar:%i hwm:%i" bar hwm
 
 let rec _bind_available_addr addr sock ztx =
   addr := "tcp://127.0.0.1:" ^ (string_of_int (Random.int 10000 + 50000));
