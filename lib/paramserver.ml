@@ -8,7 +8,7 @@ let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 let _context = { jid = ""; master = ""; worker = StrMap.empty }
 let _step = ref 0
 
-let _schedule : ('a -> string list) ref = ref (fun workers -> [ ])
+let _schedule : ('a -> (string * string list) list) ref = ref (fun workers -> [ ])
 let _pull : (string list -> unit) ref = ref (fun updates -> ())
 
 let get k =
@@ -41,9 +41,10 @@ let service_loop _router =
     | true -> failwith ("terminate #" ^ _context.jid)
     | false -> (
       (** TODO: send task to scheduled workers *)
-        List.iter (fun worker_id ->
-          let w = StrMap.find worker_id _context.worker in
-          Utils.send ~bar:!_step w PS_Schedule [| |]
+        List.iter (fun (worker, task) ->
+          let w = StrMap.find worker _context.worker in
+          let s = Marshal.to_string task [] in
+          Utils.send ~bar:!_step w PS_Schedule [|s|]
         ) tasks
       );
     (** wait for requests or updates from workers *)
