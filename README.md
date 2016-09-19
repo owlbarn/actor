@@ -14,6 +14,8 @@ Split Context module into server and client two modules
 
 Implement parameter.mli
 
+Implement barrier control in parameter modules
+
 Rename ... DataContext and ModelContext?
 
 # How to compile & run it?
