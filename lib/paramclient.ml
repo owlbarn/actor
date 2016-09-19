@@ -9,13 +9,8 @@ let _master : [`Dealer] ZMQ.Socket.t list ref = ref []
 let _ps () = List.nth !_master 0
 let _step = ref 0
 
-(*
-type ps_push_typ = (string -> string list -> string list) ref
-let _push : ps_push_typ = ref (fun worker_id vars -> [])
-*)
-
-type ('a, 'b) ps_push_typ = ('a -> 'b -> string list) ref
-let _push : ('a, string list) ps_push_typ = ref (fun worker_id vars -> [])
+let _default_push = fun worker_id vars -> []
+let _push = ref (Marshal.to_string _default_push [ Marshal.Closures ])
 
 let get k t =
   Logger.debug "GET -> %s" _context.master;
@@ -31,6 +26,8 @@ let set k v t =
 
 let service_loop _addr _router =
   Logger.info "parameter worker @ %s" _addr;
+  (** unmarshal the push function *)
+  let push : 'a -> 'b -> 'c = Marshal.from_string !_push 0 in
   (** loop to process messages *)
   try while true do
     let i, m = Utils.recv _router in
@@ -40,7 +37,7 @@ let service_loop _addr _router =
       Logger.info "scheduled @ %s" _addr;
       (** TODO: call _push *)
       let vars = Marshal.from_string m.par.(0) 0 in
-      let updates = !_push _addr vars in ()
+      let _ = push _addr vars in ()
       )
     | Terminate -> (
       Logger.info "%s" ("terminate @ " ^ _addr);

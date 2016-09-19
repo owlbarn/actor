@@ -8,8 +8,11 @@ let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 let _context = { jid = ""; master = ""; worker = StrMap.empty }
 let _step = ref 0
 
-let _schedule : ('a -> (string * string list) list) ref = ref (fun workers -> [ ])
-let _pull : (string list -> unit) ref = ref (fun updates -> ())
+let _default_schedule = fun workers -> [ ]
+let _schedule = ref (Marshal.to_string _default_schedule [ Marshal.Closures ])
+
+let _default_pull = fun updates -> ()
+let _pull = ref (Marshal.to_string _default_pull [ Marshal.Closures ])
 
 let get k =
   let k' = Obj.repr k in
@@ -19,7 +22,7 @@ let get k =
 let set k v t =
   let k' = Obj.repr k in
   match Hashtbl.mem _param k with
-  | true -> Hashtbl.replace _param k' (v,t)
+  | true  -> Hashtbl.replace _param k' (v,t)
   | false -> Hashtbl.add _param k' (v,t)
 
 let _broadcast_all t s =
@@ -33,12 +36,15 @@ let terminate () =
 
 let service_loop _router =
   Logger.info "parameter server @ %s" _context.master;
+  (** unmarshal the schedule and pull functions *)
+  let schedule : 'a -> 'b = Marshal.from_string !_schedule 0 in
+  (* let pull : 'a -> 'b = Marshal.from_string !_pull 0 in *)
   (** loop to process messages *)
   try while true do
     (** schecule at every message arrival *)
-    let tasks = !_schedule (StrMap.keys _context.worker) in
+    let tasks = schedule (StrMap.keys _context.worker) in
     match List.length tasks = 0 with
-    | true -> failwith ("terminate #" ^ _context.jid)
+    | true  -> failwith ("terminate #" ^ _context.jid)
     | false -> (
       (** TODO: send task to scheduled workers *)
         List.iter (fun (worker, task) ->

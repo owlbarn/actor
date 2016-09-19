@@ -4,6 +4,10 @@
 
 open Types
 
+type ('a, 'b, 'c) ps_push_typ = 'a -> 'b list -> 'c list
+type ('a, 'b) ps_schedule_typ = 'a list -> 'b list
+type ('a, 'b) ps_pull_typ = 'a list -> 'b
+
 let _ztx = ZMQ.Context.create ()
 
 let init jid url =
@@ -23,10 +27,13 @@ let get k = Paramclient.(get k !_step)
 let set k v = Paramclient.(set k v !_step)
 
 (** scheduler funciton at master *)
-let register_schedule f = Paramserver._schedule := f
+let register_schedule (f : ('a, 'b) ps_schedule_typ) =
+  Paramserver._schedule := Marshal.to_string f [ Marshal.Closures ]
 
 (** aggregate function at master *)
-let register_pull f = Paramserver._pull := f
+let register_pull (f : ('a, 'b) ps_pull_typ) =
+  Paramserver._pull := Marshal.to_string f [ Marshal.Closures ]
 
 (** parallel execution at each worker *)
-let register_push f = Paramclient._push := f
+let register_push (f : ('a, 'b, 'c) ps_push_typ) =
+  Paramclient._push := Marshal.to_string f [ Marshal.Closures ]
