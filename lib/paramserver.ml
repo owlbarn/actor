@@ -6,24 +6,29 @@ open Types
 
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 let _context = { jid = ""; master = ""; worker = StrMap.empty }
+
+(** current step at master *)
 let _step = ref 0
 
+(** default schedule function *)
 let _default_schedule = fun workers -> [ ]
 let _schedule = ref (Marshal.to_string _default_schedule [ Marshal.Closures ])
 
-let _default_pull = fun updates -> ()
+(** default pull function *)
+let _default_pull = fun updates -> updates
 let _pull = ref (Marshal.to_string _default_pull [ Marshal.Closures ])
 
 let get k =
   let k' = Obj.repr k in
-  let v, t' = Hashtbl.find _param k' in
-  v, t'
+  let v, t = Hashtbl.find _param k' in
+  Obj.magic v, t
 
 let set k v t =
   let k' = Obj.repr k in
-  match Hashtbl.mem _param k with
-  | true  -> Hashtbl.replace _param k' (v,t)
-  | false -> Hashtbl.add _param k' (v,t)
+  let v' = Obj.repr v in
+  match Hashtbl.mem _param k' with
+  | true  -> Hashtbl.replace _param k' (v',t)
+  | false -> Hashtbl.add _param k' (v',t)
 
 let _broadcast_all t s =
   let bar = Random.int 536870912 in
@@ -38,7 +43,7 @@ let service_loop _router =
   Logger.info "parameter server @ %s" _context.master;
   (** unmarshal the schedule and pull functions *)
   let schedule : ('a, 'b, 'c) ps_schedule_typ = Marshal.from_string !_schedule 0 in
-  (* let pull : ps_pull_typ = Marshal.from_string !_pull 0 in *)
+  let pull : ('a, 'b, 'c) ps_pull_typ = Marshal.from_string !_pull 0 in
   (** loop to process messages *)
   try while true do
     (** schecule at every message arrival *)
@@ -72,7 +77,7 @@ let service_loop _router =
       Logger.debug "set <- t:%i, %s" t i
       )
     | PS_Push -> (
-      let updates = Marshal.from_string m.par.(0) 0 in
+      let updates = Marshal.from_string m.par.(0) 0 |> pull in
       List.iter (fun (k,v) ->
         set k v t
       ) updates;

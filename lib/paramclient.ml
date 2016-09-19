@@ -7,8 +7,11 @@ open Types
 let _context = { jid = ""; master = ""; worker = StrMap.empty }
 let _master : [`Dealer] ZMQ.Socket.t list ref = ref []
 let _ps () = List.nth !_master 0
+
+(** current step at master *)
 let _step = ref 0
 
+(** default push function *)
 let _default_push = fun worker_id vars -> []
 let _push = ref (Marshal.to_string _default_push [ Marshal.Closures ])
 
