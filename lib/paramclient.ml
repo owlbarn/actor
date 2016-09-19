@@ -9,7 +9,13 @@ let _master : [`Dealer] ZMQ.Socket.t list ref = ref []
 let _ps () = List.nth !_master 0
 let _step = ref 0
 
-let _push : (string -> string list -> string list) ref = ref (fun worker_id vars -> [])
+(*
+type ps_push_typ = (string -> string list -> string list) ref
+let _push : ps_push_typ = ref (fun worker_id vars -> [])
+*)
+
+type ('a, 'b) ps_push_typ = ('a -> 'b -> string list) ref
+let _push : ('a, string list) ps_push_typ = ref (fun worker_id vars -> [])
 
 let get k t =
   Logger.debug "GET -> %s" _context.master;
