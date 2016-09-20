@@ -24,4 +24,4 @@ let test_context () =
   PS.init Sys.argv.(1) Config.manager_addr;
   Logger.info "do some work at master node"
 
-let _ = test_context ()
+let _ = test_store ()

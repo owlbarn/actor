@@ -18,6 +18,8 @@ Implement barrier control in parameter modules
 
 Rename ... DataContext and ModelContext?
 
+Set and Get needs re-implementation in PS module
+
 # How to compile & run it?
 
 To compile and build the system, you do not have to install all the software yourself. You can simply pull a ready-made container to set up development environment.

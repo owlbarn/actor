@@ -15,11 +15,12 @@ let _step = ref 0
 let _default_push = fun worker_id vars -> []
 let _push = ref (Marshal.to_string _default_push [ Marshal.Closures ])
 
-let get k t =
+let get k =
   Logger.debug "get -> %s" _context.master;
   let k' = Marshal.to_string k [] in
-  Utils.send ~bar:t (_ps ()) PS_Get [|k'|];
-  ZMQ.Socket.recv ~block:true (_ps ())
+  Utils.send ~bar:!_step (_ps ()) PS_Get [|k'|];
+  let m = of_msg (ZMQ.Socket.recv ~block:true (_ps ())) in
+  Marshal.from_string m.par.(0), m.bar
 
 let set k v t =
   Logger.debug "set -> %s" _context.master;
@@ -44,6 +45,7 @@ let service_loop _addr _router =
     match m.typ with
     | PS_Schedule -> (
       Logger.info "scheduled @ %s" _addr;
+      let _ = _step := if t > !_step then t else !_step in
       let vars = Marshal.from_string m.par.(0) 0 in
       let updates = push _addr vars in
       update_param updates t

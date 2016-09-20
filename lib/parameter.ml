@@ -34,8 +34,12 @@ let register_push (f : ('a, 'b, 'c) ps_push_typ) =
 let register_stop (f : unit -> bool) =
   Paramserver._stop := Marshal.to_string f [ Marshal.Closures ]
 
-(** FIXME: depends on client or server .... *)
-let get k = Paramclient.(get k !_step)
+let get k =
+  match Paramserver._context.jid = "" with
+  | true  -> Paramclient.get k
+  | false -> Paramserver.get k
 
-(** FIXME: depends on client or server .... *)
-let set k v = Paramclient.(set k v !_step)
+let set k v =
+  match Paramserver._context.jid = "" with
+  | true  -> Paramclient.(set k v !_step)
+  | false -> Paramserver.(set k v !_step)
