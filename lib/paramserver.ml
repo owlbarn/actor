@@ -21,6 +21,10 @@ let _schedule = ref (Marshal.to_string _default_schedule [ Marshal.Closures ])
 let _default_pull = fun updates -> updates
 let _pull = ref (Marshal.to_string _default_pull [ Marshal.Closures ])
 
+(** default stopping function *)
+let _default_stop = fun () -> false
+let _stop = ref (Marshal.to_string _default_stop [ Marshal.Closures ])
+
 (** bulk synchronous parallel *)
 let bsp t =
   let num_finish = List.length (Hashtbl.find_all step_worker t) in
@@ -80,8 +84,9 @@ let service_loop _router =
   (** unmarshal the schedule and pull functions *)
   let schedule : ('a, 'b, 'c) ps_schedule_typ = Marshal.from_string !_schedule 0 in
   let pull : ('a, 'b, 'c) ps_pull_typ = Marshal.from_string !_pull 0 in
+  let stop : unit -> bool = Marshal.from_string !_stop 0 in
   (** loop to process messages *)
-  try while true do
+  try while not (stop ()) do
     (** synchronisation barrier check *)
     let t, passed = bsp !_step in _step := t;
     (** schecule the passed at every message arrival *)

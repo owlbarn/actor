@@ -18,12 +18,6 @@ let init jid url =
     | _ -> Logger.info "%s" "unknown command";
   ZMQ.Socket.close req
 
-(** FIXME: depends on client or server .... *)
-let get k = Paramclient.(get k !_step)
-
-(** FIXME: depends on client or server .... *)
-let set k v = Paramclient.(set k v !_step)
-
 (** scheduler funciton at master *)
 let register_schedule (f : ('a, 'b, 'c) ps_schedule_typ) =
   Paramserver._schedule := Marshal.to_string f [ Marshal.Closures ]
@@ -35,3 +29,13 @@ let register_pull (f : ('a, 'b, 'c) ps_pull_typ) =
 (** parallel execution at each worker *)
 let register_push (f : ('a, 'b, 'c) ps_push_typ) =
   Paramclient._push := Marshal.to_string f [ Marshal.Closures ]
+
+(** stopping criterion for the scheduling loop *)
+let register_stop (f : unit -> bool) =
+  Paramserver._stop := Marshal.to_string f [ Marshal.Closures ]
+
+(** FIXME: depends on client or server .... *)
+let get k = Paramclient.(get k !_step)
+
+(** FIXME: depends on client or server .... *)
+let set k v = Paramclient.(set k v !_step)
