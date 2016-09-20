@@ -7,8 +7,9 @@ open Types
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 let _context = { jid = ""; master = ""; worker = StrMap.empty }
 
-(** current step and previous steps at master *)
-let _steps : (int, string) Hashtbl.t = Hashtbl.create 1_000_000
+(** TODO: .... *)
+let worker_step : (string, int) Hashtbl.t = Hashtbl.create 1_000_000
+let step_worker : (int, string) Hashtbl.t = Hashtbl.create 1_000_000
 let _step = ref 0
 
 (** default schedule function *)
@@ -21,14 +22,14 @@ let _pull = ref (Marshal.to_string _default_pull [ Marshal.Closures ])
 
 (** Bulk synchronous parallel *)
 let bsp t =
-  let finish = Hashtbl.find_all _steps t in
+  let finish = Hashtbl.find_all step_worker t in
   let worker = StrMap.keys _context.worker in
   (List.length finish) = (List.length worker)
 
 let update_steps t w =
-  match List.mem w (Hashtbl.find_all _steps t) with
+  match List.mem w (Hashtbl.find_all step_worker t) with
   | true  -> ()
-  | false -> Hashtbl.add _steps t w
+  | false -> Hashtbl.add step_worker t w
 
 let get k =
   let k' = Obj.repr k in
