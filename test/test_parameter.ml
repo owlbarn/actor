@@ -7,15 +7,7 @@ let test_store () =
   let _ = PS.get (1,1) in
   Logger.debug "%s" "test done"
 
-let schedule_0 workers =
-  let l = List.length workers in
-  let x = Random.int l in
-  let y = (x + 1) mod l in
-  let k0, k1 = Random.int 100, Random.int 100 in
-  let v0, v1 = Random.int 1000, Random.int 1000 in
-  [ (List.nth workers x, [(k0,v0)]); (List.nth workers y, [(k1,v1)]) ]
-
-let schedule_1 workers =
+let schedule workers =
   let tasks = List.map (fun x ->
     let k, v = Random.int 100, Random.int 1000 in (x, [(k,v)])
   ) workers in tasks
@@ -27,7 +19,7 @@ let push id vars =
   updates
 
 let test_context () =
-  PS.register_schedule schedule_1;
+  PS.register_schedule schedule;
   PS.register_push push;
   PS.init Sys.argv.(1) Config.manager_addr;
   Logger.info "do some work at master node"

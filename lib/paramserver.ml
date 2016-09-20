@@ -10,7 +10,7 @@ let _context = { jid = ""; master = ""; worker = StrMap.empty }
 (** TODO: .... *)
 let worker_step : (string, int) Hashtbl.t = Hashtbl.create 1_000_000
 let step_worker : (int, string) Hashtbl.t = Hashtbl.create 1_000_000
-let _step = ref 0
+let _step = ref 0 (** actually represents the lowest barrier *)
 
 (** default schedule function *)
 let _default_schedule = fun workers -> [ ] (** TODO: fix scheduler ... *)
@@ -27,6 +27,20 @@ let bsp t =
   match num_finish = num_worker with
   | true  -> t + 1, (StrMap.keys _context.worker)
   | false -> t, []
+
+let ssp t d =
+  let num_finish = List.length (Hashtbl.find_all step_worker t) in
+  let num_worker = StrMap.cardinal _context.worker in
+  let t = match num_finish = num_worker with
+    | true  -> t + 1
+    | false -> t
+  in
+  let l = Hashtbl.fold (fun w t' l ->
+    match (t' - t) < d with
+    | true  -> l @ [ w ]
+    | false -> l
+  ) worker_step []
+  in (t, l)
 
 let update_steps t w =
   let t' = match Hashtbl.mem worker_step w with
@@ -70,18 +84,15 @@ let service_loop _router =
     (** synchronisation barrier check *)
     let t, passed = bsp !_step in _step := t;
     (** schecule the passed at every message arrival *)
-    let tasks = schedule passed in (
-      match List.length tasks = 0 with
-      | true  -> () (*failwith ("terminate #" ^ _context.jid) *)
-      | false -> (
-          Logger.debug "schedule t:%i -> %i workers" !_step (List.length tasks);
-          (** send tasks to scheduled workers *)
-          List.iter (fun (worker, task) ->
-            let w = StrMap.find worker _context.worker in
-            let s = Marshal.to_string task [] in
-            let t = Hashtbl.find worker_step worker + 1 in
-            Utils.send ~bar:t w PS_Schedule [|s|]
-          ) tasks ) );
+    let tasks = schedule passed in
+    List.iter (fun (worker, task) ->
+      let w = StrMap.find worker _context.worker in
+      let s = Marshal.to_string task [] in
+      let t = Hashtbl.find worker_step worker + 1 in
+      Utils.send ~bar:t w PS_Schedule [|s|]
+    ) tasks;
+    if List.length tasks > 0 then
+      Logger.debug "schedule t:%i -> %i workers" !_step (List.length tasks);
     (** wait for another message arrival *)
     let i, m = Utils.recv _router in
     let t = m.bar in
