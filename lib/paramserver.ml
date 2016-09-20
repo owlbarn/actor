@@ -22,14 +22,22 @@ let _pull = ref (Marshal.to_string _default_pull [ Marshal.Closures ])
 
 (** Bulk synchronous parallel *)
 let bsp t =
-  let finish = Hashtbl.find_all step_worker t in
-  let worker = StrMap.keys _context.worker in
-  (List.length finish) = (List.length worker)
+  let num_finish = List.length (Hashtbl.find_all step_worker t) in
+  let num_worker = StrMap.cardinal _context.worker in
+  match num_finish = num_worker with
+  | true  -> t + 1, (StrMap.keys _context.worker)
+  | false -> t, []
 
 let update_steps t w =
-  match List.mem w (Hashtbl.find_all step_worker t) with
-  | true  -> ()
-  | false -> Hashtbl.add step_worker t w
+  let t' = match Hashtbl.mem worker_step w with
+    | true  -> Hashtbl.find worker_step w
+    | false -> (Hashtbl.add worker_step w 0; 0)
+  in
+  match t > t' with
+  | true  -> (
+    Hashtbl.replace worker_step w t;
+    Hashtbl.add step_worker t w )
+  | false -> ()
 
 let get k =
   let k' = Obj.repr k in
@@ -59,22 +67,22 @@ let service_loop _router =
   let pull : ('a, 'b, 'c) ps_pull_typ = Marshal.from_string !_pull 0 in
   (** loop to process messages *)
   try while true do
-    (** schecule at every message arrival *)
-    let tasks = schedule (StrMap.keys _context.worker) in
-    match List.length tasks = 0 with
-    | true  -> failwith ("terminate #" ^ _context.jid)
-    | false -> (
-        Logger.debug "schedule t:%i -> %i workers" !_step (List.length tasks);
-        (** send tasks to scheduled workers *)
-        List.iter (fun (worker, task) ->
-          let w = StrMap.find worker _context.worker in
-          let s = Marshal.to_string task [] in
-          Utils.send ~bar:!_step w PS_Schedule [|s|]
-        ) tasks
-      );
-    (** check wheter to move the overall step on *)
-    if (bsp !_step) = true then _step := !_step + 1;
-    (** wait for requests or updates from workers *)
+    (** synchronisation barrier check *)
+    let t, passed = bsp !_step in _step := t;
+    (** schecule the passed at every message arrival *)
+    let tasks = schedule passed in (
+      match List.length tasks = 0 with
+      | true  -> () (*failwith ("terminate #" ^ _context.jid) *)
+      | false -> (
+          Logger.debug "schedule t:%i -> %i workers" !_step (List.length tasks);
+          (** send tasks to scheduled workers *)
+          List.iter (fun (worker, task) ->
+            let w = StrMap.find worker _context.worker in
+            let s = Marshal.to_string task [] in
+            let t = Hashtbl.find worker_step worker + 1 in
+            Utils.send ~bar:t w PS_Schedule [|s|]
+          ) tasks ) );
+    (** wait for another message arrival *)
     let i, m = Utils.recv _router in
     let t = m.bar in
     match m.typ with
@@ -101,8 +109,7 @@ let service_loop _router =
   done with Failure e -> (
     Logger.warn "%s" e;
     terminate ();
-    ZMQ.Socket.close _router
-  )
+    ZMQ.Socket.close _router )
 
 let init m jid _addr _router _ztx =
   let _ = _context.jid <- jid; _context.master = _addr in
@@ -123,5 +130,9 @@ let init m jid _addr _router _ztx =
     ZMQ.Socket.connect s m.par.(0);
     _context.worker <- (StrMap.add m.par.(0) s _context.worker);
   done;
+  (** initialise the step <--> work tables *)
+  StrMap.iter (fun k v ->
+    Hashtbl.add worker_step k 0; Hashtbl.add step_worker 0 k
+  ) _context.worker;
   (** enter into master service loop *)
   service_loop _router

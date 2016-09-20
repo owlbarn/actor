@@ -27,7 +27,7 @@ let push id vars =
   updates
 
 let test_context () =
-  PS.register_schedule schedule_0;
+  PS.register_schedule schedule_1;
   PS.register_push push;
   PS.init Sys.argv.(1) Config.manager_addr;
   Logger.info "do some work at master node"
