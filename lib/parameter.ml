@@ -18,8 +18,10 @@ let init jid url =
     | _ -> Logger.info "%s" "unknown command";
   ZMQ.Socket.close req
 
+(** FIXME: depends on client or server .... *)
 let get k = Paramclient.(get k !_step)
 
+(** FIXME: depends on client or server .... *)
 let set k v = Paramclient.(set k v !_step)
 
 (** scheduler funciton at master *)
