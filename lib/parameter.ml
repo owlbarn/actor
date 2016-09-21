@@ -6,7 +6,7 @@ open Types
 
 let _ztx = ZMQ.Context.create ()
 
-let init jid url =
+let start jid url =
   let _addr, _router = Utils.bind_available_addr _ztx in
   let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
   ZMQ.Socket.connect req url;
