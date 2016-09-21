@@ -20,7 +20,7 @@ let get k =
   let k' = Marshal.to_string k [] in
   Utils.send ~bar:!_step (_ps ()) PS_Get [|k'|];
   let m = of_msg (ZMQ.Socket.recv ~block:true (_ps ())) in
-  Marshal.from_string m.par.(0), m.bar
+  Marshal.from_string m.par.(0) 0, m.bar
 
 let set k v t =
   Logger.debug "set -> %s" _context.master;
