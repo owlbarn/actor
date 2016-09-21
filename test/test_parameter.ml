@@ -4,7 +4,7 @@ module PS = Parameter
 
 let test_store () =
   let _ = PS.set (1,1) "abcd" in
-  let _ = PS.get (1,1) in
+  (*let _ = PS.get (1,1) in*)
   Logger.debug "%s" "test done"
 
 let schedule workers =
@@ -24,4 +24,4 @@ let test_context () =
   PS.init Sys.argv.(1) Config.manager_addr;
   Logger.info "do some work at master node"
 
-let _ = test_store ()
+let _ = test_context ()

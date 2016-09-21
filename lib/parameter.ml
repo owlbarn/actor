@@ -43,3 +43,5 @@ let set k v =
   match Paramserver._context.jid = "" with
   | true  -> Paramclient.(set k v !_step)
   | false -> Paramserver.(set k v !_step)
+
+let f x = print_endline (get x)
