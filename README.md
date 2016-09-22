@@ -18,7 +18,7 @@ Implement barrier control in parameter modules
 
 Rename ... DataContext and ModelContext?
 
-Set and Get needs re-implementation in PS module
+Implement Coordinate Descent in model parallel ...
 
 # How to compile & run it?
 
