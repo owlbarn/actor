@@ -19,3 +19,6 @@ val get : 'a -> 'b * int
 
 (** given a key, set its value at master *)
 val set : 'a -> 'b -> unit
+
+(** FIXME: reture all the keys in a parameter server *)
+val keys : unit -> 'a list

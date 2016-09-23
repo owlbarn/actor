@@ -53,3 +53,10 @@ Executable test_parameter
   CompiledObject: byte
   MainIs:         test_parameter.ml
   BuildDepends:   Omap
+
+Executable test_coordinate
+  Path:           ./test
+  BuildTools:     ocamlbuild
+  CompiledObject: byte
+  MainIs:         test_coordinate.ml
+  BuildDepends:   Omap
