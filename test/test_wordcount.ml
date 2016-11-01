@@ -13,7 +13,7 @@ let wordcount () =
   Ctx.init Sys.argv.(1) "tcp://localhost:5555";
   Ctx.load "unix://data/wordcount.data"
   |> Ctx.flatmap Str.(split (regexp "[ \t\n]"))
-  |> Ctx.map String.lowercase_ascii
+  |> Ctx.map String.lowercase
   |> Ctx.filter (fun x -> (String.length x) > 0)
   |> Ctx.filter (fun x -> not (List.mem x stop_words))
   |> Ctx.map (fun k -> (k,1))
