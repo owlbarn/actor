@@ -2,7 +2,7 @@
 
 include Log
 
-(** update logging config *)
+(* update logging config *)
 let update_config level logdir fname =
   set_log_level level;
   match fname with

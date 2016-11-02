@@ -7,25 +7,25 @@ open Types
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 let _context = { jid = ""; master = ""; worker = StrMap.empty }
 
-(** record: whether busy; worker's current step; workers at a step *)
+(* record: whether busy; worker's current step; workers at a step *)
 let worker_busy : (string, int) Hashtbl.t = Hashtbl.create 1_000_000
 let worker_step : (string, int) Hashtbl.t = Hashtbl.create 1_000_000
 let step_worker : (int, string) Hashtbl.t = Hashtbl.create 1_000_000
 let _step = ref 0 (** actually represents the lowest barrier *)
 
-(** default schedule function *)
+(* default schedule function *)
 let _default_schedule = fun workers -> [ ] (** TODO: fix scheduler ... *)
 let _schedule = ref (Marshal.to_string _default_schedule [ Marshal.Closures ])
 
-(** default pull function *)
+(* default pull function *)
 let _default_pull = fun updates -> updates
 let _pull = ref (Marshal.to_string _default_pull [ Marshal.Closures ])
 
-(** default stopping function *)
+(* default stopping function *)
 let _default_stop = fun () -> false
 let _stop = ref (Marshal.to_string _default_stop [ Marshal.Closures ])
 
-(** bulk synchronous parallel *)
+(* bulk synchronous parallel *)
 let bsp t =
   let num_finish = List.length (Hashtbl.find_all step_worker t) in
   let num_worker = StrMap.cardinal _context.worker in
@@ -33,7 +33,7 @@ let bsp t =
   | true  -> t + 1, (StrMap.keys _context.worker)
   | false -> t, []
 
-(** stale synchronous parallel *)
+(* stale synchronous parallel *)
 let ssp t d =
   let num_finish = List.length (Hashtbl.find_all step_worker t) in
   let num_worker = StrMap.cardinal _context.worker in
@@ -81,15 +81,15 @@ let terminate () =
 
 let service_loop _router =
   Logger.info "parameter server @ %s" _context.master;
-  (** unmarshal the schedule and pull functions *)
+  (* unmarshal the schedule and pull functions *)
   let schedule : ('a, 'b, 'c) ps_schedule_typ = Marshal.from_string !_schedule 0 in
   let pull : ('a, 'b, 'c) ps_pull_typ = Marshal.from_string !_pull 0 in
   let stop : unit -> bool = Marshal.from_string !_stop 0 in
-  (** loop to process messages *)
+  (* loop to process messages *)
   try while not (stop ()) do
-    (** synchronisation barrier check *)
+    (* synchronisation barrier check *)
     let t, passed = bsp !_step in _step := t;
-    (** schecule the passed at every message arrival *)
+    (* schecule the passed at every message arrival *)
     let tasks = schedule passed in
     List.iter (fun (worker, task) ->
       let w = StrMap.find worker _context.worker in
@@ -131,7 +131,7 @@ let service_loop _router =
 
 let init m jid _addr _router _ztx =
   let _ = _context.jid <- jid; _context.master = _addr in
-  (** contact allocated actors to assign jobs *)
+  (* contact allocated actors to assign jobs *)
   let addrs = Marshal.from_string m.par.(0) 0 in
   List.map (fun x ->
     let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
@@ -148,11 +148,11 @@ let init m jid _addr _router _ztx =
     ZMQ.Socket.connect s m.par.(0);
     _context.worker <- (StrMap.add m.par.(0) s _context.worker);
   done;
-  (** initialise the step <--> work tables *)
+  (* initialise the step <--> work tables *)
   StrMap.iter (fun k v ->
     Hashtbl.add worker_busy k 0;
     Hashtbl.add worker_step k 0;
     Hashtbl.add step_worker 0 k;
   ) _context.worker;
-  (** enter into master service loop *)
+  (* enter into master service loop *)
   service_loop _router

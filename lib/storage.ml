@@ -2,7 +2,7 @@
   provide a basic persistent storage service
 *)
 
-(** the following functions are for native Unix storage *)
+(* the following functions are for native Unix storage *)
 
 let unix_load x =
   let l = Unix.((stat x).st_size) in

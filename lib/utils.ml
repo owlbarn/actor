@@ -46,7 +46,7 @@ let flatten_kvg x =
 
 let choose_load x n i = List.filter (fun (k,l) -> (Hashtbl.hash k mod n) = i) x
 
-(** generate a log file name from address *)
+(* generate a log file name from address *)
 let addr_to_log x =
   let path = Str.(split (regexp "://")) x in
   List.nth path 1 |> Str.(global_replace (regexp "[:.]") "_")

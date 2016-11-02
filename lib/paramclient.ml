@@ -8,10 +8,10 @@ let _context = { jid = ""; master = ""; worker = StrMap.empty }
 let _master : [`Dealer] ZMQ.Socket.t list ref = ref []
 let _ps () = List.nth !_master 0
 
-(** current step at client *)
+(* current step at client *)
 let _step = ref 0
 
-(** default push function *)
+(* default push function *)
 let _default_push = fun worker_id vars -> []
 let _push = ref (Marshal.to_string _default_push [ Marshal.Closures ])
 
@@ -29,16 +29,16 @@ let set k v t =
   Utils.send ~bar:t (_ps ()) PS_Set [|k'; v'|]
 
 let update_param x t =
-  (** update multiple kvs, more efficient than set *)
+  (* update multiple kvs, more efficient than set *)
   Logger.info "push -> %s" _context.master;
   let x' = Marshal.to_string x [] in
   Utils.send ~bar:t (_ps ()) PS_Push [|x'|]
 
 let service_loop _addr _router =
   Logger.info "parameter worker @ %s" _addr;
-  (** unmarshal the push function *)
+  (* unmarshal the push function *)
   let push : ('a, 'b, 'c) ps_push_typ = Marshal.from_string !_push 0 in
-  (** loop to process messages *)
+  (* loop to process messages *)
   try while true do
     let i, m = Utils.recv _router in
     let t = m.bar in
@@ -71,5 +71,5 @@ let init m jid _addr _router _ztx =
   ZMQ.Socket.connect master m.par.(0);
   Utils.send master OK [|_addr|];
   _master := [master];
-  (** enter into worker service loop *)
+  (* enter into worker service loop *)
   service_loop _addr _router

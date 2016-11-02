@@ -4,13 +4,13 @@
 
 open Types
 
-(** some global varibles *)
+(* some global varibles *)
 let _context = { jid = ""; master = ""; worker = StrMap.empty }
 let _ztx = ZMQ.Context.create ()
 let _addr, _router = Utils.bind_available_addr _ztx
 let _msgbuf = Hashtbl.create 1024
 
-(** update config information *)
+(* update config information *)
 let _ = Logger.update_config Config.level Config.logdir ""
 
 let barrier bar = Barrier.bsp bar _router _context.worker _msgbuf
@@ -296,7 +296,7 @@ let shuffle x =
   Dag.add_edge (to_msg 0 ShuffleTask [|x; y; z; b|]) x y Blue; y
 
 let reduce_by_key f x =
-  (** TODO: without local combiner ... keep or not? *)
+  (* TODO: without local combiner ... keep or not? *)
   let x = shuffle x in
   let y = Memory.rand_id () in
   Logger.info "%s" ("reduce_by_key " ^ x ^ " -> " ^ y ^ "\n");
@@ -304,7 +304,7 @@ let reduce_by_key f x =
   Dag.add_edge (to_msg 0 ReduceByKeyTask [|g; x; y|]) x y Red; y
 
 let ___reduce_by_key f x =
-  (** TODO: with local combiner ... keep or not? *)
+  (* TODO: with local combiner ... keep or not? *)
   let g = Marshal.to_string f [ Marshal.Closures ] in
   let y = Memory.rand_id () in
   Dag.add_edge (to_msg 0 ReduceByKeyTask [|g; x; y|]) x y Red;
@@ -343,4 +343,4 @@ let save x y =
   |> List.map (fun m -> Marshal.from_string m.par.(0) 0)
   |> List.fold_left (+) 0
 
-let _ = Pervasives.at_exit (fun _ -> (** cleaning up *) ())
+let _ = Pervasives.at_exit (fun _ -> (* cleaning up *) ())

@@ -18,19 +18,19 @@ let start jid url =
     | _ -> Logger.info "%s" "unknown command";
   ZMQ.Socket.close req
 
-(** scheduler funciton at master *)
+(* scheduler funciton at master *)
 let register_schedule (f : ('a, 'b, 'c) ps_schedule_typ) =
   Paramserver._schedule := Marshal.to_string f [ Marshal.Closures ]
 
-(** aggregate function at master *)
+(* aggregate function at master *)
 let register_pull (f : ('a, 'b, 'c) ps_pull_typ) =
   Paramserver._pull := Marshal.to_string f [ Marshal.Closures ]
 
-(** parallel execution at each worker *)
+(* parallel execution at each worker *)
 let register_push (f : ('a, 'b, 'c) ps_push_typ) =
   Paramclient._push := Marshal.to_string f [ Marshal.Closures ]
 
-(** stopping criterion for the scheduling loop *)
+(* stopping criterion for the scheduling loop *)
 let register_stop (f : unit -> bool) =
   Paramserver._stop := Marshal.to_string f [ Marshal.Closures ]
 
