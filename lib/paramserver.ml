@@ -50,7 +50,7 @@ let ssp t d =
   in (t, l)
 
 (* asynchronous parallel *)
-let asp t = None
+let asp t = ssp t max_int
 
 let update_steps t w =
   let t' = Hashtbl.find worker_step w in

@@ -4,7 +4,7 @@ A distributed data processing system developed in OCaml
 
 # Todo
 
-How to express arbitrary DGA? How to express loop? Apply function.
+How to express arbitrary DAG? How to express loop? Apply function.
 
 Interface to Irmin or HDFS to provide persistent storage
 
