@@ -49,6 +49,9 @@ let ssp t d =
   ) worker_step []
   in (t, l)
 
+(* asynchronous parallel *)
+let asp t = None
+
 let update_steps t w =
   let t' = Hashtbl.find worker_step w in
   match t > t' with

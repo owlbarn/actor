@@ -48,7 +48,7 @@ type service_rec = {
   mutable workers : string list;
 }
 
-(** types of user defined functions in model parallel module *)
+(** types of user-defined functions in model parallel module *)
 
 type ('a, 'b, 'c) ps_schedule_typ = 'a list -> ('a * ('b * 'c) list) list
 
