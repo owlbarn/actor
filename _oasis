@@ -10,7 +10,7 @@ Library "Omap"
   Path:       ./lib
   BuildTools: ocamlbuild, ocamldoc
   Modules:    Types, Utils, Config, Manager, Worker, Context, Memory, Service, Dag, Storage, Barrier, Logger, Parameter, Paramserver, Paramclient
-  BuildDepends: str, unix, uint, ZMQ, ocamlgraph, dolog
+  BuildDepends: str, unix, uint, ZMQ, ocamlgraph, dolog, Owl
 
 Executable manager
   Path:           ./lib
@@ -59,4 +59,11 @@ Executable test_coordinate
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_coordinate.ml
+  BuildDepends:   Omap
+
+Executable test_sgd
+  Path:           ./test
+  BuildTools:     ocamlbuild
+  CompiledObject: byte
+  MainIs:         test_sgd.ml
   BuildDepends:   Omap
