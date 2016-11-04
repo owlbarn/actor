@@ -41,7 +41,7 @@ let get k =
 
 let set k v =
   match Paramserver._context.jid = "" with
-  | true  -> Paramclient.(set k v !_step)
-  | false -> Paramserver.(set k v !_step)
+  | true  -> Paramclient.(set k v !_step); Logger.debug "---"
+  | false -> Paramserver.(set k v !_step); Logger.debug "+++"
 
 let keys () = Hashtbl.fold (fun k v l -> l @ [ Obj.obj k ]) Paramserver._param []

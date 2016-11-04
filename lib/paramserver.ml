@@ -62,11 +62,13 @@ let update_steps t w =
   | false -> ()
 
 let get k =
+  Logger.debug "get @ %s" _context.master;
   let k' = Obj.repr k in
   let v, t = Hashtbl.find _param k' in
   Obj.obj v, t
 
 let set k v t =
+  Logger.debug "set @ %s" _context.master;
   let k' = Obj.repr k in
   let v' = Obj.repr v in
   match Hashtbl.mem _param k' with
@@ -83,7 +85,7 @@ let terminate () =
   Unix.sleep 1 (** FIXME: change to BSP *)
 
 let service_loop _router =
-  Logger.info "parameter server @ %s" _context.master;
+  Logger.debug "parameter server @ %s" _context.master;
   (* unmarshal the schedule and pull functions *)
   let schedule : ('a, 'b, 'c) ps_schedule_typ = Marshal.from_string !_schedule 0 in
   let pull : ('a, 'b, 'c) ps_pull_typ = Marshal.from_string !_pull 0 in
@@ -102,7 +104,7 @@ let service_loop _router =
       Utils.send ~bar:t w PS_Schedule [|s|]
     ) tasks;
     if List.length tasks > 0 then
-      Logger.info "schedule t:%i -> %i workers" !_step (List.length tasks);
+      Logger.debug "schedule t:%i -> %i workers" !_step (List.length tasks);
     (** wait for another message arrival *)
     let i, m = Utils.recv _router in
     let t = m.bar in
@@ -112,21 +114,21 @@ let service_loop _router =
       let v, t' = get k in
       let s = to_msg t' OK [| Marshal.to_string v [] |] in
       ZMQ.Socket.send_all ~block:false _router [i;s];
-      Logger.info "get <- dt = %i, %s" (t - t') i
+      Logger.debug "get <- dt = %i, %s" (t - t') i
       )
     | PS_Set -> (
       let k = Marshal.from_string m.par.(0) 0 in
       let v = Marshal.from_string m.par.(1) 0 in
       let _ = set k v t in
-      Logger.info "set <- t:%i, %s" t i
+      Logger.debug "set <- t:%i, %s" t i
       )
     | PS_Push -> (
       let updates = Marshal.from_string m.par.(0) 0 |> pull in
       List.iter (fun (k,v) -> set k v t) updates;
       update_steps t i;
-      Logger.info "push <- t:%i, %s" t i
+      Logger.debug "push <- t:%i, %s" t i
       )
-    | _ -> ( Logger.info "%s" "unknown mssage to PS" )
+    | _ -> ( Logger.debug "%s" "unknown mssage to PS" )
   done with Failure e -> (
     Logger.warn "%s" e;
     terminate ();

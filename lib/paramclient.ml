@@ -30,12 +30,12 @@ let set k v t =
 
 let update_param x t =
   (* update multiple kvs, more efficient than set *)
-  Logger.info "push -> %s" _context.master;
+  Logger.debug "push -> %s" _context.master;
   let x' = Marshal.to_string x [] in
   Utils.send ~bar:t (_ps ()) PS_Push [|x'|]
 
 let service_loop _addr _router =
-  Logger.info "parameter worker @ %s" _addr;
+  Logger.debug "parameter worker @ %s" _addr;
   (* unmarshal the push function *)
   let push : ('a, 'b, 'c) ps_push_typ = Marshal.from_string !_push 0 in
   (* loop to process messages *)
@@ -44,14 +44,14 @@ let service_loop _addr _router =
     let t = m.bar in
     match m.typ with
     | PS_Schedule -> (
-      Logger.info "scheduled @ %s" _addr;
+      Logger.debug "scheduled @ %s" _addr;
       let _ = _step := if t > !_step then t else !_step in
       let vars = Marshal.from_string m.par.(0) 0 in
       let updates = push _addr vars in
       update_param updates t
       )
     | Terminate -> (
-      Logger.info "%s" ("terminate @ " ^ _addr);
+      Logger.debug "%s" ("terminate @ " ^ _addr);
       Utils.send ~bar:t (_ps ()) OK [||];
       Unix.sleep 1; (* FIXME: sleep ... *)
       failwith ("#" ^ _context.jid ^ " terminated")
