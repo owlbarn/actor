@@ -44,13 +44,14 @@ let schedule workers =
 let push id vars =
   (* update local model, need to improve for sparsity *)
   List.iter (fun (k,v) ->
-    MX.copy_row_to v !_model k
+    MX.copy_col_to v !_model k
   ) vars;
   (* compute the assigned work, return the update gradient *)
+  (* TODO: lots to optimise, not compute whole model, cache local ... *)
   List.map (fun (k,v) ->
     let d = calculate_gradient 10 !data_x !data_y !_model !gradfn !lossfn in
     let d = MX.(d *$ !step_t) in
-    (k, d)
+    (k, MX.col d k)
   ) vars
 
 let pull vars =
@@ -60,13 +61,14 @@ let pull vars =
     (k,v1)
   ) vars
 
-let start () =
+let start jid =
   (* register schedule, push, pull functions *)
   PS.register_schedule schedule;
   PS.register_pull pull;
   PS.register_push push;
   (* pre-cache the model in the server's kv store *)
-  MX.iteri_rows (fun k v -> Paramserver.set k v) !_model;
+  (* FIXME: need to fix this hack *)
+  MX.iteri_cols (fun k v -> Paramserver.set k v 0) !_model;
   (* start running the ps *)
-  PS.start Sys.argv.(1) Config.manager_addr;
-  Logger.info "sdg start running ..."
+  Logger.info "sdg algorithm starts running ...";
+  PS.start jid Config.manager_addr

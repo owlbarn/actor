@@ -72,4 +72,4 @@ Executable test_sgd
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_sgd.ml
-  BuildDepends:   Omap
+  BuildDepends:   Omap, Optimise
