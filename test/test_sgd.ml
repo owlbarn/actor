@@ -7,7 +7,7 @@ module PS = Parameter
 
 let datax = ref (MX.empty 0 0)
 let datay = ref (MX.empty 0 0)
-let model = ref (MX.ones 3 3)
+let model = ref (MX.empty 0 0)
 let gradient = Owl_optimise.square_grad
 
 let _print_model x =
@@ -35,7 +35,7 @@ let calc_gradient x y p b g =
   let y = MX.rows y i in
   let y' = MX.(x $@ p) in
   let d = g x y y' in
-  Logger.debug "loss ==> %.3f" (Owl_optimise.square_loss y y' |> MX.sum);
+  Logger.debug "loss ==> %.10f" (Owl_optimise.square_loss y y' |> MX.sum);
   d
 
 let schedule workers =

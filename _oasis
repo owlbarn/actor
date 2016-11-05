@@ -1,16 +1,22 @@
 OASISFormat: 0.4
 Name:        Omap
 Version:     0.1
-Synopsis:    Omap is a mapeduce framework in OCaml.
+Synopsis:    Omap is a distributed data processing framework in OCaml.
 Authors:     Liang Wang
 License:     MIT
 Plugins:     META (0.4)
 
 Library "Omap"
-  Path:       ./lib
+  Path:       lib
   BuildTools: ocamlbuild, ocamldoc
   Modules:    Types, Utils, Config, Manager, Worker, Context, Memory, Service, Dag, Storage, Barrier, Logger, Parameter, Paramserver, Paramclient
   BuildDepends: str, unix, uint, ZMQ, ocamlgraph, dolog, Owl
+
+Library "Optimise"
+  Path:       lib/optimise
+  BuildTools: ocamlbuild, ocamldoc
+  Modules:    Sgd
+  BuildDepends: Omap, Owl
 
 Executable manager
   Path:           ./lib
