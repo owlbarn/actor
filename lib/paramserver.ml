@@ -135,7 +135,8 @@ let service_loop _router =
     ZMQ.Socket.close _router )
 
 let init m jid _addr _router _ztx =
-  let _ = _context.jid <- jid; _context.master = _addr in
+  _context.jid <- jid;
+  _context.master <- _addr;
   (* contact allocated actors to assign jobs *)
   let addrs = Marshal.from_string m.par.(0) 0 in
   List.map (fun x ->
@@ -144,7 +145,8 @@ let init m jid _addr _router _ztx =
     let app = Filename.basename Sys.argv.(0) in
     let arg = Marshal.to_string Sys.argv [] in
     Utils.send req Job_Create [|_addr; app; arg|]; req
-  ) addrs |> List.iter ZMQ.Socket.close;
+  ) addrs
+  |> List.iter ZMQ.Socket.close;
   (** wait until all the allocated actors register *)
   while (StrMap.cardinal _context.worker) < (List.length addrs) do
     let i, m = Utils.recv _router in

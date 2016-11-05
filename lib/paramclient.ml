@@ -63,7 +63,8 @@ let service_loop _addr _router =
     Pervasives.exit 0 )
 
 let init m jid _addr _router _ztx =
-  let _ = _context.jid <- jid; _context.master <- m.par.(0) in
+  _context.jid <- jid;
+  _context.master <- m.par.(0);
   (* connect to job master *)
   let master = ZMQ.Socket.create _ztx ZMQ.Socket.dealer in
   ZMQ.Socket.set_send_high_water_mark master Config.high_warter_mark;
