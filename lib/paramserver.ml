@@ -147,7 +147,7 @@ let init m jid _addr _router _ztx =
     Utils.send req Job_Create [|_addr; app; arg|]; req
   ) addrs
   |> List.iter ZMQ.Socket.close;
-  (** wait until all the allocated actors register *)
+  (* wait until all the allocated actors register *)
   while (StrMap.cardinal _context.worker) < (List.length addrs) do
     let i, m = Utils.recv _router in
     let s = ZMQ.Socket.create _ztx ZMQ.Socket.dealer in
