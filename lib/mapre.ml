@@ -10,9 +10,10 @@ let init jid url =
   ZMQ.Socket.connect req url;
   Utils.send req Job_Reg [|_addr; jid|];
   let m = of_msg (ZMQ.Socket.recv req) in
+  let _context = Utils.create_context jid _addr _addr _router _ztx in
   match m.typ with
     | Job_Master -> Mapreserver.init m jid _addr _router _ztx
-    | Job_Worker -> Mapreclient.init m jid _addr _router _ztx
+    | Job_Worker -> Mapreclient.init m _context
     | _ -> Logger.info "%s" "unknown command";
   ZMQ.Socket.close req
 

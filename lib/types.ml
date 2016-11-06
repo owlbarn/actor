@@ -32,11 +32,13 @@ type context = {
 }
 
 type context_ext = {
-  mutable jid : string;
+  mutable job_id      : string;
   mutable master_addr : string;
-  mutable worker_addr : string;
-  mutable master_sock : [`Router] ZMQ.Socket.t;
-  mutable worker : [`Dealer] ZMQ.Socket.t StrMap.t;
+  mutable myself_addr : string;
+  mutable master_sock : [`Dealer] ZMQ.Socket.t;
+  mutable myself_sock : [`Router] ZMQ.Socket.t;
+  mutable workers     : [`Dealer] ZMQ.Socket.t StrMap.t;
+  mutable ztx         :  ZMQ.Context.t
 }
 
 type actor_rec = {
@@ -53,7 +55,7 @@ type data_rec = {
 type service_rec = {
   id : string;
   master : string;
-  mutable workers : string list;
+  mutable worker : string list;
 }
 
 (** types of user-defined functions in model parallel module *)

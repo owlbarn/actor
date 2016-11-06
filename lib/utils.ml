@@ -1,6 +1,4 @@
-(** [
-  Some shared helper functions
-]  *)
+(** Some shared helper functions *)
 
 open Types
 
@@ -50,3 +48,14 @@ let choose_load x n i = List.filter (fun (k,l) -> (Hashtbl.hash k mod n) = i) x
 let addr_to_log x =
   let path = Str.(split (regexp "://")) x in
   List.nth path 1 |> Str.(global_replace (regexp "[:.]") "_")
+
+(* create an empty context *)
+let create_context job_id master_addr myself_addr myself_sock ztx = {
+  job_id;
+  master_addr;
+  myself_addr;
+  master_sock = ZMQ.Socket.(create ztx dealer);
+  myself_sock;
+  workers = StrMap.empty;
+  ztx;
+}
