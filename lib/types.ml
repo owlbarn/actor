@@ -26,12 +26,6 @@ type message_rec = {
 }
 
 type context = {
-  mutable jid : string;
-  mutable master : string;
-  mutable worker : [`Dealer] ZMQ.Socket.t StrMap.t;
-}
-
-type context_ext = {
   mutable job_id      : string;
   mutable master_addr : string;
   mutable myself_addr : string;
