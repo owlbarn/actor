@@ -9,8 +9,8 @@ Plugins:     META (0.4)
 Library "Omap"
   Path:       lib
   BuildTools: ocamlbuild, ocamldoc
-  Modules:    Types, Utils, Config, Manager, Worker, Memory, Dag, Service,
-              Storage, Logger
+  Modules:    Types, Utils, Config, Memory, Dag, Service, Storage, Logger，
+              Manager, Worker
   BuildDepends: str, unix, uint, ZMQ, ocamlgraph, dolog
 
 Library "Core"
