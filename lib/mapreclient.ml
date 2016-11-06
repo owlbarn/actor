@@ -2,7 +2,7 @@
 
 open Types
 
-(* some global varibles *)
+(* the global context: master, worker, etc. *)
 let _context = ref (Utils.empty_context ())
 let _msgbuf = Hashtbl.create 1024
 

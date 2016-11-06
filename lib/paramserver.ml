@@ -1,11 +1,10 @@
-(** [ Parameter Server ]
-  provides a global variable like KV store
-*)
+(** [ Model Parallel ] Parameter server module  *)
 
 open Types
 
+(* the global context: master, worker, etc. *)
+let _context = ref (Utils.empty_context ())
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
-let _context = { jid = ""; master = ""; worker = StrMap.empty }
 
 (* record: whether busy; worker's current step; workers at a step *)
 let worker_busy : (string, int) Hashtbl.t = Hashtbl.create 1_000_000
@@ -28,15 +27,15 @@ let _stop = ref (Marshal.to_string _default_stop [ Marshal.Closures ])
 (* bulk synchronous parallel *)
 let bsp t =
   let num_finish = List.length (Hashtbl.find_all step_worker t) in
-  let num_worker = StrMap.cardinal _context.worker in
+  let num_worker = StrMap.cardinal !_context.workers in
   match num_finish = num_worker with
-  | true  -> t + 1, (StrMap.keys _context.worker)
+  | true  -> t + 1, (StrMap.keys !_context.workers)
   | false -> t, []
 
 (* stale synchronous parallel *)
 let ssp t d =
   let num_finish = List.length (Hashtbl.find_all step_worker t) in
-  let num_worker = StrMap.cardinal _context.worker in
+  let num_worker = StrMap.cardinal !_context.workers in
   let t = match num_finish = num_worker with
     | true  -> t + 1
     | false -> t
@@ -62,13 +61,13 @@ let update_steps t w =
   | false -> ()
 
 let get k =
-  Logger.debug "get @ %s" _context.master;
+  Logger.debug "get @ %s" !_context.myself_addr;
   let k' = Obj.repr k in
   let v, t = Hashtbl.find _param k' in
   Obj.obj v, t
 
 let set k v t =
-  Logger.debug "set @ %s" _context.master;
+  Logger.debug "set @ %s" !_context.myself_addr;
   let k' = Obj.repr k in
   let v' = Obj.repr v in
   match Hashtbl.mem _param k' with
@@ -77,15 +76,15 @@ let set k v t =
 
 let _broadcast_all t s =
   let bar = Random.int 536870912 in
-  StrMap.iter (fun k v -> Utils.send ~bar v t s) _context.worker;
+  StrMap.iter (fun k v -> Utils.send ~bar v t s) !_context.workers;
   bar
 
 let terminate () =
   let _ = _broadcast_all Terminate [||] in
   Unix.sleep 1 (** FIXME: change to BSP *)
 
-let service_loop _router =
-  Logger.debug "parameter server @ %s" _context.master;
+let service_loop () =
+  Logger.debug "parameter server @ %s" !_context.myself_addr;
   (* unmarshal the schedule and pull functions *)
   let schedule : ('a, 'b, 'c) ps_schedule_typ = Marshal.from_string !_schedule 0 in
   let pull : ('a, 'b, 'c) ps_pull_typ = Marshal.from_string !_pull 0 in
@@ -97,7 +96,7 @@ let service_loop _router =
     (* schecule the passed at every message arrival *)
     let tasks = schedule passed in
     List.iter (fun (worker, task) ->
-      let w = StrMap.find worker _context.worker in
+      let w = StrMap.find worker !_context.workers in
       let s = Marshal.to_string task [] in
       let t = Hashtbl.find worker_step worker + 1 in
       let _ = Hashtbl.replace worker_busy worker 1 in
@@ -106,14 +105,14 @@ let service_loop _router =
     if List.length tasks > 0 then
       Logger.debug "schedule t:%i -> %i workers" !_step (List.length tasks);
     (** wait for another message arrival *)
-    let i, m = Utils.recv _router in
+    let i, m = Utils.recv !_context.myself_sock in
     let t = m.bar in
     match m.typ with
     | PS_Get -> (
       let k = Marshal.from_string m.par.(0) 0 in
       let v, t' = get k in
       let s = to_msg t' OK [| Marshal.to_string v [] |] in
-      ZMQ.Socket.send_all ~block:false _router [i;s];
+      ZMQ.Socket.send_all ~block:false !_context.myself_sock [i;s];
       Logger.debug "get <- dt = %i, %s" (t - t') i
       )
     | PS_Set -> (
@@ -132,34 +131,33 @@ let service_loop _router =
   done with Failure e -> (
     Logger.warn "%s" e;
     terminate ();
-    ZMQ.Socket.close _router )
+    ZMQ.Socket.close !_context.myself_sock )
 
-let init m jid _addr _router _ztx =
-  _context.jid <- jid;
-  _context.master <- _addr;
+let init m context =
+  _context := context;
   (* contact allocated actors to assign jobs *)
   let addrs = Marshal.from_string m.par.(0) 0 in
   List.map (fun x ->
-    let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
+    let req = ZMQ.Socket.create !_context.ztx ZMQ.Socket.req in
     ZMQ.Socket.connect req x;
     let app = Filename.basename Sys.argv.(0) in
     let arg = Marshal.to_string Sys.argv [] in
-    Utils.send req Job_Create [|_addr; app; arg|]; req
+    Utils.send req Job_Create [|!_context.myself_addr; app; arg|]; req
   ) addrs
   |> List.iter ZMQ.Socket.close;
   (* wait until all the allocated actors register *)
-  while (StrMap.cardinal _context.worker) < (List.length addrs) do
-    let i, m = Utils.recv _router in
-    let s = ZMQ.Socket.create _ztx ZMQ.Socket.dealer in
+  while (StrMap.cardinal !_context.workers) < (List.length addrs) do
+    let i, m = Utils.recv !_context.myself_sock in
+    let s = ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer in
     ZMQ.Socket.set_send_high_water_mark s Config.high_warter_mark;
     ZMQ.Socket.connect s m.par.(0);
-    _context.worker <- (StrMap.add m.par.(0) s _context.worker);
+    !_context.workers <- (StrMap.add m.par.(0) s !_context.workers);
   done;
   (* initialise the step <--> work tables *)
   StrMap.iter (fun k v ->
     Hashtbl.add worker_busy k 0;
     Hashtbl.add worker_step k 0;
     Hashtbl.add step_worker 0 k;
-  ) _context.worker;
+  ) !_context.workers;
   (* enter into master service loop *)
-  service_loop _router
+  service_loop ()

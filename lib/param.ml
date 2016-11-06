@@ -1,20 +1,24 @@
-(** [ Parameter module ]
-  model parallel model programming interface
-*)
+(** [ Model Parallel ] Parameter server module  *)
 
 open Types
 
-let _ztx = ZMQ.Context.create ()
-
 let start jid url =
+  let _ztx = ZMQ.Context.create () in
   let _addr, _router = Utils.bind_available_addr _ztx in
   let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
   ZMQ.Socket.connect req url;
   Utils.send req Job_Reg [|_addr; jid|];
+  (* create and initialise part of the context *)
+  let _context = Utils.empty_context () in
+  _context.job_id <- jid;
+  _context.myself_addr <- _addr;
+  _context.myself_sock <- _router;
+  _context.ztx <- _ztx;
+  (* depends on the role, start server or client *)
   let m = of_msg (ZMQ.Socket.recv req) in
   match m.typ with
-    | Job_Master -> Paramserver.init m jid _addr _router _ztx
-    | Job_Worker -> Paramclient.init m jid _addr _router _ztx
+    | Job_Master -> Paramserver.init m _context
+    | Job_Worker -> Paramclient.init m _context
     | _ -> Logger.info "%s" "unknown command";
   ZMQ.Socket.close req
 
@@ -35,12 +39,12 @@ let register_stop (f : unit -> bool) =
   Paramserver._stop := Marshal.to_string f [ Marshal.Closures ]
 
 let get k =
-  match Paramserver._context.jid = "" with
+  match Paramserver.(!_context.job_id) = "" with
   | true  -> Paramclient.get k
   | false -> Paramserver.get k
 
 let set k v =
-  match Paramserver._context.jid = "" with
+  match Paramserver.(!_context.job_id) = "" with
   | true  -> Paramclient.(set k v !_step)
   | false -> Paramserver.(set k v !_step)
 
