@@ -1,4 +1,4 @@
-(** [ Data Parallel ] Service module *)
+(** [ Data Parallel ] Map-Reduce server module *)
 
 open Types
 

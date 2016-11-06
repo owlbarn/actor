@@ -1,4 +1,4 @@
-(** [ Data Parallel ] Client module *)
+(** [ Data Parallel ] Map-Reduce client module *)
 
 open Types
 
