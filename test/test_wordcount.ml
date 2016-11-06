@@ -2,7 +2,7 @@
   test the context module
 *)
 
-module Ctx = Context
+module Ctx = Mapre
 
 let print_result x = List.iter (fun (k,v) -> Printf.printf "%s : %i\n" k v) x
 
