@@ -59,3 +59,15 @@ let create_context job_id myself_addr myself_sock ztx = {
   workers = StrMap.empty;
   ztx;
 }
+
+let empty_context () =
+  let ztx = ZMQ.Context.create () in
+  {
+    job_id = "";
+    master_addr = "";
+    myself_addr = "";
+    master_sock = ZMQ.Socket.(create ztx dealer);
+    myself_sock = ZMQ.Socket.(create ztx router);
+    workers = StrMap.empty;
+    ztx = ztx;
+  }

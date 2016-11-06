@@ -4,9 +4,6 @@ open Types
 (* some global varibles *)
 let _msgbuf = Hashtbl.create 1024
 
-(* update config information *)
-let _ = Logger.update_config Config.level Config.logdir ""
-
 let barrier _router _context bar = Barrier.bsp bar _router _context.workers _msgbuf
 
 let shuffle _context bar x z =
@@ -146,7 +143,8 @@ let service_loop _context =
     ZMQ.Socket.(close _context.master_sock; close _context.myself_sock);
     Pervasives.exit 0 )
 
-let init _context =
+let init m _context =
+  _context.master_addr <- m.par.(0);
   (* connect to job master *)
   let master = ZMQ.Socket.create _context.ztx ZMQ.Socket.dealer in
   ZMQ.Socket.set_send_high_water_mark master Config.high_warter_mark;

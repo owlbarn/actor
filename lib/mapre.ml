@@ -2,9 +2,11 @@
 
 open Types
 
-let _ztx = ZMQ.Context.create ()
+(* update config information *)
+let _ = Logger.update_config Config.level Config.logdir ""
 
 let init jid url =
+  let _ztx = ZMQ.Context.create () in
   let _addr, _router = Utils.bind_available_addr _ztx in
   let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
   ZMQ.Socket.connect req url;
@@ -12,8 +14,8 @@ let init jid url =
   let m = of_msg (ZMQ.Socket.recv req) in
   let _context = Utils.create_context jid _addr _router _ztx in
   match m.typ with
-    | Job_Master -> Mapreserver.init m jid _addr _router _ztx
-    | Job_Worker -> (_context.master_addr <- m.par.(0); Mapreclient.init _context)
+    | Job_Master -> Mapreserver.init m _context
+    | Job_Worker -> Mapreclient.init m _context
     | _ -> Logger.info "%s" "unknown command";
   ZMQ.Socket.close req
 

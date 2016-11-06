@@ -2,39 +2,33 @@
 open Types
 
 (* some global varibles *)
-let _context = { jid = ""; master = ""; worker = StrMap.empty }
+let _context = ref (Utils.empty_context ())
 let _msgbuf = Hashtbl.create 1024
-let _router : [`Router] ZMQ.Socket.t array ref = ref [||]
 
-(* update config information *)
-let _ = Logger.update_config Config.level Config.logdir ""
+let barrier bar = Barrier.bsp bar !_context.myself_sock !_context.workers _msgbuf
 
-let barrier bar = Barrier.bsp bar !_router.(0) _context.worker _msgbuf
-
-let init m jid _addr router _ztx =
-  _context.jid <- jid;
-  _context.master <- _addr;
-  _router := [|router|];
+let init m context =
+  _context := context;
   (* contact allocated actors to assign jobs *)
   let addrs = Marshal.from_string m.par.(0) 0 in
   List.map (fun x ->
-    let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
+    let req = ZMQ.Socket.create !_context.ztx ZMQ.Socket.req in
     ZMQ.Socket.connect req x;
     let app = Filename.basename Sys.argv.(0) in
     let arg = Marshal.to_string Sys.argv [] in
-    Utils.send req Job_Create [|_addr; app; arg|]; req
+    Utils.send req Job_Create [|!_context.myself_addr; app; arg|]; req
   ) addrs |> List.iter ZMQ.Socket.close;
   (* wait until all the allocated actors register *)
-  while (StrMap.cardinal _context.worker) < (List.length addrs) do
-    let i, m = Utils.recv router in
-    let s = ZMQ.Socket.create _ztx ZMQ.Socket.dealer in
+  while (StrMap.cardinal !_context.workers) < (List.length addrs) do
+    let i, m = Utils.recv !_context.myself_sock in
+    let s = ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer in
     ZMQ.Socket.connect s m.par.(0);
-    _context.worker <- (StrMap.add m.par.(0) s _context.worker);
+    !_context.workers <- (StrMap.add m.par.(0) s !_context.workers);
   done
 
 let _broadcast_all t s =
   let bar = Random.int 536870912 in
-  StrMap.iter (fun k v -> Utils.send ~bar v t s) _context.worker;
+  StrMap.iter (fun k v -> Utils.send ~bar v t s) !_context.workers;
   bar
 
 let run_job_eager () =
@@ -93,12 +87,12 @@ let reduce f x =
   | [] -> None
 
 let terminate () =
-  Logger.info "%s" ("terminate #" ^ _context.jid ^ "\n");
+  Logger.info "%s" ("terminate #" ^ !_context.job_id ^ "\n");
   let bar = _broadcast_all Terminate [||] in
   let _ = barrier bar in ()
 
 let broadcast x =
-  Logger.info "%s" ("broadcast -> " ^ string_of_int (StrMap.cardinal _context.worker) ^ " workers\n");
+  Logger.info "%s" ("broadcast -> " ^ string_of_int (StrMap.cardinal !_context.workers) ^ " workers\n");
   let y = Memory.rand_id () in
   let bar = _broadcast_all Broadcast [|Marshal.to_string x []; y|] in
   let _ = barrier bar in y
@@ -133,7 +127,7 @@ let union x y =
 let shuffle x =
   let y = Memory.rand_id () in
   Logger.info "%s" ("shuffle " ^ x ^ " -> " ^ y ^ "\n");
-  let z = Marshal.to_string (StrMap.keys _context.worker) [] in
+  let z = Marshal.to_string (StrMap.keys !_context.workers) [] in
   let b = Marshal.to_string (Random.int 536870912) [] in
   Dag.add_edge (to_msg 0 ShuffleTask [|x; y; z; b|]) x y Blue; y
 
