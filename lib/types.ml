@@ -31,6 +31,14 @@ type context = {
   mutable worker : [`Dealer] ZMQ.Socket.t StrMap.t;
 }
 
+type context_ext = {
+  mutable jid : string;
+  mutable master_addr : string;
+  mutable worker_addr : string;
+  mutable master_sock : [`Router] ZMQ.Socket.t;
+  mutable worker : [`Dealer] ZMQ.Socket.t StrMap.t;
+}
+
 type actor_rec = {
   id : string;
   addr : string;

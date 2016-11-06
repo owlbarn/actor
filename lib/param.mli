@@ -1,4 +1,4 @@
-(** [ Parameter module ]  *)
+(** [ Model Parallel ] Parameter server module  *)
 
 open Types
 
