@@ -10,7 +10,7 @@ Library "Omap"
   Path:       lib
   BuildTools: ocamlbuild, ocamldoc
   Modules:    Types, Utils, Config, Manager, Worker, Memory, Dag, Service,
-              Storage, Barrier, Logger, Parameter, Paramserver, Paramclient,
+              Storage, Barrier, Logger, Param, Paramserver, Paramclient,
               Mapre, Mapreserver, Mapreclient
   BuildDepends: str, unix, uint, ZMQ, ocamlgraph, dolog, Owl
 

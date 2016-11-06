@@ -6,7 +6,7 @@
 open Owl
 
 module MX = Dense.Real
-module PS = Parameter
+module PS = Param
 
 (* variables used in distributed sgd *)
 let data_x = ref (MX.empty 0 0)
