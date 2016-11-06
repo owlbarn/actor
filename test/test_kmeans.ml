@@ -1,7 +1,7 @@
 (** [ Naive K-means implementation ]
 *)
 
-module Ctx = Context
+module Ctx = Mapre
 
 let print_points = List.iter (fun x -> Printf.printf "(%.2f,%.2f)\n" (fst x) (snd x))
 let distance x y = (((fst x) -. (fst y)) ** 2.) +. (((snd x) -. (snd y)) ** 2.)
