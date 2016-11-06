@@ -146,13 +146,12 @@ let service_loop _context =
     ZMQ.Socket.(close _context.master_sock; close _context.myself_sock);
     Pervasives.exit 0 )
 
-let init m _context =
-  _context.master_addr <- m.par.(0);
+let init _context =
   (* connect to job master *)
   let master = ZMQ.Socket.create _context.ztx ZMQ.Socket.dealer in
   ZMQ.Socket.set_send_high_water_mark master Config.high_warter_mark;
   ZMQ.Socket.set_identity master _context.myself_addr;
-  ZMQ.Socket.connect master m.par.(0);
+  ZMQ.Socket.connect master _context.master_addr;
   Utils.send master OK [|_context.myself_addr|];
   _context.master_sock <- master;
   (* enter into worker service loop *)

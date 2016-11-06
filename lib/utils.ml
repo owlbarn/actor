@@ -50,9 +50,9 @@ let addr_to_log x =
   List.nth path 1 |> Str.(global_replace (regexp "[:.]") "_")
 
 (* create an empty context *)
-let create_context job_id master_addr myself_addr myself_sock ztx = {
+let create_context job_id myself_addr myself_sock ztx = {
   job_id;
-  master_addr;
+  master_addr = "";
   myself_addr;
   master_sock = ZMQ.Socket.(create ztx dealer);
   myself_sock;
