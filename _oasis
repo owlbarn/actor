@@ -10,68 +10,74 @@ Library "Omap"
   Path:       lib
   BuildTools: ocamlbuild, ocamldoc
   Modules:    Types, Utils, Config, Manager, Worker, Memory, Dag, Service,
-              Storage, Barrier, Logger, Param, Paramserver, Paramclient,
-              Mapre, Mapreserver, Mapreclient
-  BuildDepends: str, unix, uint, ZMQ, ocamlgraph, dolog, Owl
+              Storage, Logger
+  BuildDepends: str, unix, uint, ZMQ, ocamlgraph, dolog
+
+Library "Core"
+  Path:       lib/core
+  BuildTools: ocamlbuild, ocamldoc
+  Modules:    Param, Paramserver, Paramclient, Mapre, Mapreserver, Mapreclient,
+              Barrier
+  BuildDepends: Omap
 
 Library "Optimise"
   Path:       lib/optimise
   BuildTools: ocamlbuild, ocamldoc
   Modules:    Sgd
-  BuildDepends: Omap, Owl
+  BuildDepends: Core, Owl
 
 Executable manager
-  Path:           ./lib
+  Path:           lib
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         manager.ml
-  BuildDepends:   ZMQ, str, dolog
+  BuildDepends:   Omap
 
 Executable worker
-  Path:           ./lib
+  Path:           lib
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         worker.ml
-  BuildDepends:   ZMQ, str, dolog
+  BuildDepends:   Omap
 
 Executable test_wordcount
-  Path:           ./test
+  Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_wordcount.ml
-  BuildDepends:   Omap, str, unix, uint, ZMQ, ocamlgraph
+  BuildDepends:   Core
 
 Executable test_context
-  Path:           ./test
+  Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_context.ml
-  BuildDepends:   Omap, str, unix, uint, ZMQ, ocamlgraph
+  BuildDepends:   Core
 
 Executable test_kmeans
-  Path:           ./test
+  Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_kmeans.ml
-  BuildDepends:   Omap, str, unix, uint, ZMQ, ocamlgraph
+  BuildDepends:   Core
 
 Executable test_parameter
-  Path:           ./test
+  Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_parameter.ml
-  BuildDepends:   Omap
+  BuildDepends:   Core
 
 Executable test_coordinate
-  Path:           ./test
+  Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_coordinate.ml
-  BuildDepends:   Omap
+  BuildDepends:   Core
 
 Executable test_sgd
-  Path:           ./test
+  Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_sgd.ml
-  BuildDepends:   Omap, Optimise
+  BuildDepends:   Core, Optimise
