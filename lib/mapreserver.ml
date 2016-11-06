@@ -1,3 +1,4 @@
+(** [ Data Parallel ] Service module *)
 
 open Types
 
@@ -6,25 +7,6 @@ let _context = ref (Utils.empty_context ())
 let _msgbuf = Hashtbl.create 1024
 
 let barrier bar = Barrier.bsp bar !_context.myself_sock !_context.workers _msgbuf
-
-let init m context =
-  _context := context;
-  (* contact allocated actors to assign jobs *)
-  let addrs = Marshal.from_string m.par.(0) 0 in
-  List.map (fun x ->
-    let req = ZMQ.Socket.create !_context.ztx ZMQ.Socket.req in
-    ZMQ.Socket.connect req x;
-    let app = Filename.basename Sys.argv.(0) in
-    let arg = Marshal.to_string Sys.argv [] in
-    Utils.send req Job_Create [|!_context.myself_addr; app; arg|]; req
-  ) addrs |> List.iter ZMQ.Socket.close;
-  (* wait until all the allocated actors register *)
-  while (StrMap.cardinal !_context.workers) < (List.length addrs) do
-    let i, m = Utils.recv !_context.myself_sock in
-    let s = ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer in
-    ZMQ.Socket.connect s m.par.(0);
-    !_context.workers <- (StrMap.add m.par.(0) s !_context.workers);
-  done
 
 let _broadcast_all t s =
   let bar = Random.int 536870912 in
@@ -178,3 +160,22 @@ let save x y =
   barrier bar
   |> List.map (fun m -> Marshal.from_string m.par.(0) 0)
   |> List.fold_left (+) 0
+
+let init m context =
+  _context := context;
+  (* contact allocated actors to assign jobs *)
+  let addrs = Marshal.from_string m.par.(0) 0 in
+  List.map (fun x ->
+    let req = ZMQ.Socket.create !_context.ztx ZMQ.Socket.req in
+    ZMQ.Socket.connect req x;
+    let app = Filename.basename Sys.argv.(0) in
+    let arg = Marshal.to_string Sys.argv [] in
+    Utils.send req Job_Create [|!_context.myself_addr; app; arg|]; req
+  ) addrs |> List.iter ZMQ.Socket.close;
+  (* wait until all the allocated actors register *)
+  while (StrMap.cardinal !_context.workers) < (List.length addrs) do
+    let i, m = Utils.recv !_context.myself_sock in
+    let s = ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer in
+    ZMQ.Socket.connect s m.par.(0);
+    !_context.workers <- (StrMap.add m.par.(0) s !_context.workers);
+  done
