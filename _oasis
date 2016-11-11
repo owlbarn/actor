@@ -24,7 +24,7 @@ Library "Optimise"
   Path:       lib/optimise
   BuildTools: ocamlbuild, ocamldoc
   Modules:    Sgd
-  BuildDepends: Core, Owl
+  BuildDepends: Core, owl
 
 Executable manager
   Path:           lib
