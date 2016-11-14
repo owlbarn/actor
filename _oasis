@@ -1,83 +1,90 @@
 OASISFormat: 0.4
-Name:        Omap
+Name:        omap
 Version:     0.1
-Synopsis:    Omap is a distributed data processing framework in OCaml.
+Synopsis:    omap is a distributed data processing framework in OCaml.
 Authors:     Liang Wang
 License:     MIT
 Plugins:     META (0.4)
 
-Library "Omap"
+Library "omap"
   Path:       lib
   BuildTools: ocamlbuild, ocamldoc
   Modules:    Types, Utils, Config, Memory, Dag, Service, Storage, Logger,
               Manager, Worker
   BuildDepends: str, unix, uint, ZMQ, ocamlgraph, dolog
 
-Library "Core"
+Library "core"
   Path:       lib/core
   BuildTools: ocamlbuild, ocamldoc
   Modules:    Param, Paramserver, Paramclient, Mapre, Mapreserver, Mapreclient,
-              Barrier
-  BuildDepends: Omap
+              Peer, Peerserver, Peerclient, Barrier
+  BuildDepends: omap
 
-Library "Optimise"
+Library "optimise"
   Path:       lib/optimise
   BuildTools: ocamlbuild, ocamldoc
   Modules:    Sgd
-  BuildDepends: Core, owl
+  BuildDepends: core, owl
 
 Executable manager
   Path:           lib
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         manager.ml
-  BuildDepends:   Omap
+  BuildDepends:   omap
 
 Executable worker
   Path:           lib
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         worker.ml
-  BuildDepends:   Omap
+  BuildDepends:   omap
 
 Executable test_wordcount
   Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_wordcount.ml
-  BuildDepends:   Core
+  BuildDepends:   core
 
 Executable test_context
   Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_context.ml
-  BuildDepends:   Core
+  BuildDepends:   core
 
 Executable test_kmeans
   Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_kmeans.ml
-  BuildDepends:   Core
+  BuildDepends:   core
 
 Executable test_parameter
   Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_parameter.ml
-  BuildDepends:   Core
+  BuildDepends:   core
 
 Executable test_coordinate
   Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_coordinate.ml
-  BuildDepends:   Core
+  BuildDepends:   core
 
 Executable test_sgd
   Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_sgd.ml
-  BuildDepends:   Core, Optimise
+  BuildDepends:   core, optimise
+
+Executable test_p2p
+  Path:           test
+  BuildTools:     ocamlbuild
+  CompiledObject: byte
+  MainIs:         test_p2p.ml
+  BuildDepends:   core

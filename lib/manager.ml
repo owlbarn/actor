@@ -48,8 +48,14 @@ let process r m =
     Workers.add m.par.(0) m.par.(1);
     Utils.send r OK [||];
     )
-  | Data_Reg -> ()
-  | _ -> ()
+  | P2P_Reg -> (
+    let addr, jid = m.par.(0), m.par.(1) in
+    Logger.info "P2P @ %s Job:%s" addr jid;
+    Utils.send r OK [||];
+    )
+  | _ -> (
+    Logger.error "unrecognised message type"
+    )
 
 let run id addr =
   let _ztx = ZMQ.Context.create () in
