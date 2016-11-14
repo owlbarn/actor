@@ -50,11 +50,15 @@ let process r m =
     )
   | P2P_Reg -> (
     let addr, jid = m.par.(0), m.par.(1) in
-    Logger.info "P2P @ %s Job:%s" addr jid;
-    Utils.send r OK [||];
+    Logger.info "p2p @ %s job:%s" addr jid;
+    if Service.mem jid = false then Service.add jid "";
+    let peers = Service.choose_workers jid 10 in
+    let peers = Marshal.to_string peers [] in
+    Service.add_worker jid addr;
+    Utils.send r OK [|peers|];
     )
   | _ -> (
-    Logger.error "unrecognised message type"
+    Logger.error "unknown message type"
     )
 
 let run id addr =

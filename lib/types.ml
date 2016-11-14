@@ -22,7 +22,7 @@ type message_type =
   (* Model Parallel: Param *)
   | PS_Get | PS_Set | PS_Schedule | PS_Push
   (* P2P Parallel: Peer *)
-  | P2P_Reg
+  | P2P_Reg | P2P_Ping | P2P_Join
 
 type message_rec = {
   bar : int;
@@ -54,7 +54,7 @@ type data_rec = {
 type service_rec = {
   id : string;
   master : string;
-  mutable worker : string list;
+  mutable worker : string array;
 }
 
 (** types of user-defined functions in model parallel module *)

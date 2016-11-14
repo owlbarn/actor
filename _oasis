@@ -11,7 +11,7 @@ Library "omap"
   BuildTools: ocamlbuild, ocamldoc
   Modules:    Types, Utils, Config, Memory, Dag, Service, Storage, Logger,
               Manager, Worker
-  BuildDepends: str, unix, uint, ZMQ, ocamlgraph, dolog
+  BuildDepends: str, unix, uint, ZMQ, ocamlgraph, dolog, owl
 
 Library "core"
   Path:       lib/core

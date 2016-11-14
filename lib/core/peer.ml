@@ -14,10 +14,13 @@ let start jid url =
   _context.myself_addr <- _addr;
   _context.myself_sock <- _router;
   _context.ztx <- _ztx;
-  (* depends on the role, start server or client *)
+  (* equivalent role, both server and client *)
   let m = of_msg (ZMQ.Socket.recv req) in
   match m.typ with
-    | Job_Master -> Paramserver.init m _context
-    | Job_Worker -> Paramclient.init m _context
+    | OK -> (
+      (* start server in the current process *)
+      Peerserver.init m _context;
+      (* start client in another process *)
+      )
     | _ -> Logger.info "%s" "unknown command";
   ZMQ.Socket.close req
