@@ -8,6 +8,9 @@ let _context = ref (Utils.empty_context ())
 (* routing table module *)
 module Route = struct
 
+  let _client : [`Dealer] ZMQ.Socket.t ref =
+    ref (ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer)
+
   let add addr sock = !_context.workers <- (StrMap.add addr sock !_context.workers)
 
   let exists addr = StrMap.mem addr !_context.workers
@@ -50,8 +53,17 @@ let service_loop () =
     | P2P_Forward -> (
       let addr = m.par.(0) in
       let next = Route.next_hop addr in
-      if next = !_context.myself_addr then ( Logger.debug "%s -> %s" addr next)
+      if next = !_context.myself_addr then ( Logger.debug "%s -> %s" addr next )
       else Route.forward next [|addr; m.par.(1)|]
+      )
+    | P2P_Connect -> (
+      let addr = m.par.(0) in
+      Route.(_client := connect addr)
+      )
+    | P2P_Get -> (
+      let k = Marshal.from_string m.par.(0) 0 in
+      let v = Marshal.to_string (k ^ k) [] in
+      Utils.send Route.(!_client) OK [|v|]
       )
     | _ -> ( Logger.error "unknown mssage type" )
   done with Failure e -> (
