@@ -65,6 +65,9 @@ let service_loop () =
       let v = Marshal.to_string (k ^ k) [] in
       Utils.send Route.(!_client) OK [|v|]
       )
+    | P2P_Set -> (
+      
+      )
     | _ -> ( Logger.error "unknown mssage type" )
   done with Failure e -> (
     Logger.warn "%s" e;
