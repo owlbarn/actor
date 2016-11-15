@@ -10,7 +10,7 @@ let service_loop () =
   (* loop to process messages *)
   try while true do
     Unix.sleep 5;
-    Utils.send !_context.master_sock P2P_Forward [|!_context.myself_addr; "hello"|];
+    Utils.send !_context.master_sock P2P_Forward [|!_context.master_addr; "hello"|];
   done with Failure e -> (
     Logger.warn "%s" e;
     ZMQ.Socket.close !_context.myself_sock;
@@ -18,6 +18,7 @@ let service_loop () =
 
 let init m context =
   _context := context;
+  !_context.ztx <- ZMQ.Context.create ();
   !_context.master_addr <- context.myself_addr;
   !_context.myself_addr <- "p2p_client";
   (* connect to local p2p server *)

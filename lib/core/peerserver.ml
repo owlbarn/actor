@@ -50,8 +50,7 @@ let service_loop () =
     | P2P_Forward -> (
       let addr = m.par.(0) in
       let next = Route.next_hop addr in
-      Logger.debug "next --> %s" next;
-      if next = !_context.myself_addr then ( Logger.debug "oh, that's for me")
+      if next = !_context.myself_addr then ( Logger.debug "%s -> %s" addr next)
       else Route.forward next [|addr; m.par.(1)|]
       )
     | _ -> ( Logger.error "unknown mssage type" )
