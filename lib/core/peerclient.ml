@@ -11,7 +11,10 @@ let _get k =
   let _, m = Utils.recv !_context.myself_sock in
   Marshal.from_string m.par.(0) 0
 
-let set k v = None
+let _set k v =
+  let s = Marshal.to_string (k, v) [] in
+  Utils.send !_context.master_sock P2P_Set [|s|];
+  ignore(Utils.recv !_context.myself_sock)
 
 let service_loop () =
   Logger.debug "p2p_client @ %s" !_context.master_addr;

@@ -4,6 +4,7 @@ open Types
 
 (* the global context: master, worker, etc. *)
 let _context = ref (Utils.empty_context ())
+let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 
 (* routing table module *)
 module Route = struct
@@ -61,12 +62,14 @@ let service_loop () =
       Route.(_client := connect addr)
       )
     | P2P_Get -> (
+      (* TODO *)
       let k = Marshal.from_string m.par.(0) 0 in
       let v = Marshal.to_string (k ^ k) [] in
       Utils.send Route.(!_client) OK [|v|]
       )
     | P2P_Set -> (
-      
+      (* TODO *)
+      Utils.send Route.(!_client) OK [||]
       )
     | _ -> ( Logger.error "unknown mssage type" )
   done with Failure e -> (
