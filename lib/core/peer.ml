@@ -18,9 +18,9 @@ let start jid url =
   let m = of_msg (ZMQ.Socket.recv req) in
   match m.typ with
     | OK -> (
-      (* start server in the current process *)
-      Peerserver.init m _context;
-      (* start client in another process *)
+      match Unix.fork () with
+      | 0 -> Peerclient.init m _context
+      | p -> Peerserver.init m _context
       )
     | _ -> Logger.info "%s" "unknown command";
   ZMQ.Socket.close req

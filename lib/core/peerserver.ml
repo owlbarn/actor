@@ -11,7 +11,7 @@ module Route = struct
   let add addr sock = !_context.workers <- (StrMap.add addr sock !_context.workers)
 
   let exists addr = StrMap.mem addr !_context.workers
-  
+
   let connect addr =
     let sock = ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer in
     ZMQ.Socket.set_send_high_water_mark sock Config.high_warter_mark;
@@ -50,6 +50,7 @@ let service_loop () =
     | P2P_Forward -> (
       let addr = m.par.(0) in
       let next = Route.next_hop addr in
+      Logger.debug "next --> %s" next;
       if next = !_context.myself_addr then ( Logger.debug "oh, that's for me")
       else Route.forward next [|addr; m.par.(1)|]
       )
