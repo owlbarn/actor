@@ -8,21 +8,29 @@ let _context = ref (Utils.empty_context ())
 (* routing table module *)
 module Route = struct
 
-  let _range = ref (0, 0)
-
   let add addr sock = !_context.workers <- (StrMap.add addr sock !_context.workers)
 
+  let exists addr = StrMap.mem addr !_context.workers
+  
   let connect addr =
     let sock = ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer in
     ZMQ.Socket.set_send_high_water_mark sock Config.high_warter_mark;
     ZMQ.Socket.connect sock addr;
     sock
 
-  let exists addr = StrMap.mem addr !_context.workers
+  let next_hop x =
+    let x = Hashtbl.hash x in
+    let d = ref max_int in
+    let n = ref "" in
+    List.iteri (fun i y ->
+      let d' = Hashtbl.hash y - x |> abs in
+      if d' < !d then ( d := d'; n := y )
+    ) (StrMap.keys !_context.workers @ [!_context.myself_addr]);
+    !n
 
-  let forward msg = ()
-
-  let is_mine msg = ()
+  let forward n msg =
+    let s = StrMap.find n !_context.workers in
+    Utils.send s P2P_Forward msg
 
 end
 
@@ -38,6 +46,12 @@ let service_loop () =
       Logger.debug "%s pings" m.par.(0);
       let addr = m.par.(0) in
       if Route.exists addr = false then Route.(connect addr |> add addr)
+      )
+    | P2P_Forward -> (
+      let addr = m.par.(0) in
+      let next = Route.next_hop addr in
+      if next = !_context.myself_addr then ( Logger.debug "oh, that's for me")
+      else Route.forward next [|addr; m.par.(1)|]
       )
     | _ -> ( Logger.error "unknown mssage type" )
   done with Failure e -> (
