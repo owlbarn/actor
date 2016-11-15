@@ -5,24 +5,35 @@ open Types
 (* the global context: master, worker, etc. *)
 let _context = ref (Utils.empty_context ())
 
+(* default schedule function *)
+let _default_schedule = fun worker_id -> [ ]
+let _schedule = ref (Marshal.to_string _default_schedule [ Marshal.Closures ])
+
+(* default push function *)
+let _default_push = fun worker_id vars -> []
+let _push = ref (Marshal.to_string _default_push [ Marshal.Closures ])
+
 let _get k =
   let k = Marshal.to_string k [] in
-  Utils.send !_context.master_sock P2P_Get [|k|];
+  Utils.send !_context.master_sock P2P_Client_Get [|k|];
   let _, m = Utils.recv !_context.myself_sock in
-  Marshal.from_string m.par.(0) 0
+  Marshal.from_string m.par.(1) 0
 
 let _set k v =
   let s = Marshal.to_string (k, v) [] in
-  Utils.send !_context.master_sock P2P_Set [|s|];
-  ignore(Utils.recv !_context.myself_sock)
+  Utils.send !_context.master_sock P2P_Set [|s|]
+  (* ignore(Utils.recv !_context.myself_sock) *)
 
 let service_loop () =
   Logger.debug "p2p_client @ %s" !_context.master_addr;
+  (* unmarshal the schedule and push function *)
+  let schedule : string -> 'a list = Marshal.from_string !_schedule 0 in
+  let push : string -> 'a list -> 'b list = Marshal.from_string !_push 0 in
   (* loop to process messages *)
   try while true do
-    Unix.sleep 5;
-    let v = _get "abc " in
-    Logger.debug "get : %s" v
+    schedule !_context.myself_addr
+    |> push !_context.myself_addr
+    |> List.iteri (fun i p -> ())
   done with Failure e -> (
     Logger.warn "%s" e;
     ZMQ.Socket.close !_context.myself_sock;

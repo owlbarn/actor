@@ -5,6 +5,7 @@ open Types
 (* the global context: master, worker, etc. *)
 let _context = ref (Utils.empty_context ())
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
+let _step = ref 0
 
 (* routing table module *)
 module Route = struct
@@ -38,6 +39,20 @@ module Route = struct
 
 end
 
+let _get k =
+  Logger.debug "get @ %s" !_context.myself_addr;
+  let k' = Obj.repr k in
+  let v, t = Hashtbl.find _param k' in
+  Obj.obj v, t
+
+let _set k v t =
+  Logger.debug "set @ %s" !_context.myself_addr;
+  let k' = Obj.repr k in
+  let v' = Obj.repr v in
+  match Hashtbl.mem _param k' with
+  | true  -> Hashtbl.replace _param k' (v',t)
+  | false -> Hashtbl.add _param k' (v',t)
+
 let service_loop () =
   Logger.debug "p2p server @ %s" !_context.myself_addr;
   (* loop to process messages *)
@@ -51,25 +66,62 @@ let service_loop () =
       let addr = m.par.(0) in
       if Route.exists addr = false then Route.(connect addr |> add addr)
       )
-    | P2P_Forward -> (
-      let addr = m.par.(0) in
-      let next = Route.next_hop addr in
-      if next = !_context.myself_addr then ( Logger.debug "%s -> %s" addr next )
-      else Route.forward next [|addr; m.par.(1)|]
-      )
     | P2P_Connect -> (
       let addr = m.par.(0) in
       Route.(_client := connect addr)
       )
-    | P2P_Get -> (
-      (* TODO *)
+    | P2P_Forward -> (
+      let addr = m.par.(0) in
+      let next = Route.next_hop addr in
+      match next = !_context.myself_addr with
+      | true  -> Utils.send Route.(!_client) OK m.par
+      | false -> (
+          let s = StrMap.find next !_context.workers in
+          Utils.send s P2P_Forward m.par
+        )
+      )
+    | P2P_Client_Get -> (
       let k = Marshal.from_string m.par.(0) 0 in
-      let v = Marshal.to_string (k ^ k) [] in
-      Utils.send Route.(!_client) OK [|v|]
+      let next = Route.next_hop k in
+      match next = !_context.myself_addr with
+      | true  -> (
+          let v, t' = _get k in
+          Utils.send Route.(!_client) OK [|next; v|]
+        )
+      | false -> (
+          let s = StrMap.find next !_context.workers in
+          Utils.send s P2P_Get [|m.par.(0); !_context.myself_addr|]
+        )
       )
     | P2P_Set -> (
-      (* TODO *)
-      Utils.send Route.(!_client) OK [||]
+      let k, v = Marshal.from_string m.par.(0) 0 in
+      let next = Route.next_hop k in
+      match next = !_context.myself_addr with
+      | true  -> (
+          let k, v = Marshal.from_string m.par.(0) 0 in
+          let t = !_step in
+          _set k v t
+        )
+      | false -> (
+          let s = StrMap.find next !_context.workers in
+          Utils.send s P2P_Set m.par
+        )
+      )
+    | P2P_Get -> (
+      let k = Marshal.from_string m.par.(0) 0 in
+      let next = Route.next_hop k in
+      match next = !_context.myself_addr with
+      | true  -> (
+          let v, t' = _get k in
+          let addr = m.par.(1) in
+          let next = Route.next_hop addr in
+          let s = StrMap.find next !_context.workers in
+          Utils.send s P2P_Forward [|addr; v|]
+        )
+      | false -> (
+          let s = StrMap.find next !_context.workers in
+          Utils.send s P2P_Get m.par
+        )
       )
     | _ -> ( Logger.error "unknown mssage type" )
   done with Failure e -> (
