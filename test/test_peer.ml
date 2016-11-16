@@ -1,14 +1,13 @@
-(** [ Test parameter server ]  *)
+(** [ Test P2P parallel ]  *)
 
-open Owl
-module MX = Dense.Real
+module P2P = Peer
 
-let data_x = MX.uniform 1000 3
-let data_y = let p = MX.of_array [|0.3;0.5;0.7;0.4;0.9;0.2|] 3 2 in MX.(data_x $@ p)
-let model = MX.of_array [|0.1;0.1;0.1;0.1;0.1;0.1|] 3 2
-let gradfn = Owl_optimise.square_grad
-let lossfn = Owl_optimise.square_loss
+let schedule id =
+  Logger.debug "%s: scheduling ..." id;
+  Unix.sleep 5; []
 
-let _ =
-  Peer_sgd1.init data_x data_y model gradfn lossfn;
-  Peer_sgd1.start Sys.argv.(1)
+let test_context () =
+  P2P.register_schedule schedule;
+  P2P.start Sys.argv.(1) Config.manager_addr
+
+let _ = test_context ()

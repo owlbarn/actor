@@ -46,6 +46,8 @@ module Route = struct
     let s = StrMap.find nxt !_context.workers in
     Utils.send s typ msg
 
+  let init_table () = None
+
 end
 
 let _get k =
@@ -80,6 +82,9 @@ let service_loop () =
       Logger.debug "%s pings" m.par.(0);
       let addr = m.par.(0) in
       if Route.exists addr = false then Route.(connect addr |> add addr)
+      )
+    | P2P_Join -> (
+      (* TODO: forward and reallocate params *)
       )
     | P2P_Connect -> (
       Logger.debug "%s connects" m.par.(0);

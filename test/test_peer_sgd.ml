@@ -1,4 +1,4 @@
-(** [ Test parameter server ]  *)
+(** [ Test P2P parallel ]  *)
 
 open Owl
 module MX = Dense.Real

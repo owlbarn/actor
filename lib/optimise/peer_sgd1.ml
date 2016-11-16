@@ -29,6 +29,8 @@ let calculate_gradient b x y m g l =
   Logger.debug "loss = %.10f" (l yt yt' |> MX.sum);
   d
 
+let update_local_model = None
+
 let schedule id =
   Logger.debug "%s: scheduling ..." id;
   let n = MX.col_num !_model in
