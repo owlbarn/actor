@@ -33,9 +33,9 @@ module Route = struct
     ) (StrMap.keys !_context.workers @ [!_context.myself_addr]);
     !n
 
-  let forward n msg =
-    let s = StrMap.find n !_context.workers in
-    Utils.send s P2P_Forward msg
+  let forward nxt typ msg =
+    let s = StrMap.find nxt !_context.workers in
+    Utils.send s typ msg
 
 end
 
@@ -75,10 +75,7 @@ let service_loop () =
       let next = Route.next_hop addr in
       match next = !_context.myself_addr with
       | true  -> Utils.send Route.(!_client) OK m.par
-      | false -> (
-          let s = StrMap.find next !_context.workers in
-          Utils.send s P2P_Forward m.par
-        )
+      | false -> Route.forward next P2P_Forward m.par
       )
     | P2P_Get -> (
       Logger.debug "client get @ %s" !_context.myself_addr;
@@ -92,14 +89,10 @@ let service_loop () =
           | false -> (
               let addr = m.par.(1) in
               let next = Route.next_hop addr in
-              let s = StrMap.find next !_context.workers in
-              Utils.send s P2P_Forward [|addr; v|]
+              Route.forward next P2P_Forward [|addr; v|]
             )
         )
-      | false -> (
-          let s = StrMap.find next !_context.workers in
-          Utils.send s P2P_Get m.par
-        )
+      | false -> Route.forward next P2P_Get m.par
       )
     | P2P_Set -> (
       Logger.debug "set @ %s" !_context.myself_addr;
@@ -108,13 +101,9 @@ let service_loop () =
       match next = !_context.myself_addr with
       | true  -> (
           let k, v = Marshal.from_string m.par.(0) 0 in
-          let t = !_step in
-          _set k v t
+          let t = !_step in _set k v t
         )
-      | false -> (
-          let s = StrMap.find next !_context.workers in
-          Utils.send s P2P_Set m.par
-        )
+      | false -> Route.forward next P2P_Set m.par
       )
     | _ -> ( Logger.error "unknown mssage type" )
   done with Failure e -> (
