@@ -25,6 +25,12 @@ let start jid url =
   | _ -> Logger.info "%s" "unknown command";
   ZMQ.Socket.close req
 
+let register_barrier (f : 'a list -> bool) =
+  Peerserver._barrier := Marshal.to_string f [ Marshal.Closures ]
+
+let register_pull (f : 'a list -> 'b list) =
+  Peerserver._pull := Marshal.to_string f [ Marshal.Closures ]
+
 let register_schedule (f : string -> 'a list) =
   Peerclient._schedule := Marshal.to_string f [ Marshal.Closures ]
 

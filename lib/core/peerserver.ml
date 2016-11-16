@@ -102,6 +102,7 @@ let service_loop () =
       | true  -> (
           let v, t = _get k in
           let s = Marshal.to_string (k, v, t) [] in
+          (* check whether this is from local client *)
           match m.par.(1) = !_context.myself_addr with
           | true  -> Utils.send Route.(!_client) OK [|next; s|]
           | false -> (
@@ -115,6 +116,7 @@ let service_loop () =
     | P2P_Set -> (
       Logger.debug "set @ %s" !_context.myself_addr;
       let k, v, t = Marshal.from_string m.par.(0) 0 in
+      (* check whether this is from local client *)
       let t = if t < 0 then (
         let s = Marshal.to_string (k, v, !_step) [] in
         m.par <- [|s|]; !_step
