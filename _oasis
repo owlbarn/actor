@@ -75,16 +75,23 @@ Executable test_coordinate
   MainIs:         test_coordinate.ml
   BuildDepends:   core
 
-Executable test_sgd
+Executable test_param_sgd
   Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
-  MainIs:         test_sgd.ml
+  MainIs:         test_param_sgd.ml
   BuildDepends:   core, optimise
 
-Executable test_p2p
+Executable test_peer_sgd
   Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
-  MainIs:         test_p2p.ml
+  MainIs:         test_peer_sgd.ml
+  BuildDepends:   core, optimise
+
+Executable test_peer
+  Path:           test
+  BuildTools:     ocamlbuild
+  CompiledObject: byte
+  MainIs:         test_peer.ml
   BuildDepends:   core, optimise
