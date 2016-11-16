@@ -23,7 +23,7 @@ Library "core"
 Library "optimise"
   Path:       lib/optimise
   BuildTools: ocamlbuild, ocamldoc
-  Modules:    Param_sgd, Peer_sgd
+  Modules:    Param_sgd, Peer_sgd0, Peer_sgd1
   BuildDepends: core, owl
 
 Executable manager
