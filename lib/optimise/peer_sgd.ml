@@ -58,6 +58,8 @@ let pull updates =
     k, v1, t
   ) updates
 
+let stop () = false
+
 let start jid =
   (* register schedule, push, pull functions *)
   P2P.register_barrier barrier;

@@ -17,6 +17,9 @@ val register_schedule : (string -> 'a list) -> unit
 (** register user-defined push function at p2p client *)
 val register_push : (string -> 'a list -> 'b list) -> unit
 
+(** register stopping criterion function *)
+val register_stop : (unit -> bool) -> unit
+
 (** given a key, get its value and timestamp *)
 val get : 'a -> 'b * int
 

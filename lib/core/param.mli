@@ -14,6 +14,9 @@ val register_pull : ('a, 'b, 'c) ps_pull_typ -> unit
 (** register user-defined push function executed at worker *)
 val register_push : ('a, 'b, 'c) ps_push_typ -> unit
 
+(** register stopping criterion function *)
+val register_stop : (unit -> bool) -> unit
+
 (** given a key, get its value and timestamp *)
 val get : 'a -> 'b * int
 

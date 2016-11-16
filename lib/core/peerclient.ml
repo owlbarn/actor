@@ -13,6 +13,10 @@ let _schedule = ref (Marshal.to_string _default_schedule [ Marshal.Closures ])
 let _default_push = fun server_id vars -> []
 let _push = ref (Marshal.to_string _default_push [ Marshal.Closures ])
 
+(* default stopping function *)
+let _default_stop = fun () -> false
+let _stop = ref (Marshal.to_string _default_stop [ Marshal.Closures ])
+
 let _get k =
   let k = Marshal.to_string k [] in
   let s = [|k; !_context.master_addr|] in
@@ -31,8 +35,9 @@ let service_loop () =
   (* unmarshal the schedule and push function *)
   let schedule : string -> 'a list = Marshal.from_string !_schedule 0 in
   let push : string -> 'a list -> 'b list = Marshal.from_string !_push 0 in
+  let stop : unit -> bool = Marshal.from_string !_stop 0 in
   (* loop to process messages *)
-  try while true do
+  try while not (stop ()) do
     schedule !_context.master_addr
     |> push !_context.master_addr
     |> List.iteri (fun i (k,v) -> _set k v)

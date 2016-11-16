@@ -39,6 +39,9 @@ let register_schedule (f : string -> 'a list) =
 let register_push (f : string -> 'a list -> 'b list) =
   Peerclient._push := Marshal.to_string f [ Marshal.Closures ]
 
+let register_stop (f : unit -> bool) =
+  Paramserver._stop := Marshal.to_string f [ Marshal.Closures ]
+
 (* some helper functions for various strategies *)
 
 let is_server () = Peerclient.(!_context.job_id) = ""
