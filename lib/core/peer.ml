@@ -17,12 +17,12 @@ let start jid url =
   (* equivalent role, both server and client *)
   let m = of_msg (ZMQ.Socket.recv req) in
   match m.typ with
-    | OK -> (
-      match Unix.fork () with
-      | 0 -> Peerclient.init m _context
-      | p -> Peerserver.init m _context
-      )
-    | _ -> Logger.info "%s" "unknown command";
+  | OK -> (
+    match Unix.fork () with
+    | 0 -> Peerclient.init m _context
+    | p -> Peerserver.init m _context
+    )
+  | _ -> Logger.info "%s" "unknown command";
   ZMQ.Socket.close req
 
 let register_schedule (f : string -> 'a list) =

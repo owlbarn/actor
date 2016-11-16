@@ -17,9 +17,9 @@ let start jid url =
   (* depends on the role, start server or client *)
   let m = of_msg (ZMQ.Socket.recv req) in
   match m.typ with
-    | Job_Master -> Paramserver.init m _context
-    | Job_Worker -> Paramclient.init m _context
-    | _ -> Logger.info "%s" "unknown command";
+  | Job_Master -> Paramserver.init m _context
+  | Job_Worker -> Paramclient.init m _context
+  | _ -> Logger.info "%s" "unknown command";
   ZMQ.Socket.close req
 
 (* scheduler funciton at master *)

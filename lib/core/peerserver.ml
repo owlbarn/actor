@@ -40,13 +40,11 @@ module Route = struct
 end
 
 let _get k =
-  Logger.debug "get @ %s" !_context.myself_addr;
   let k' = Obj.repr k in
   let v, t = Hashtbl.find _param k' in
   Obj.obj v, t
 
 let _set k v t =
-  Logger.debug "set @ %s" !_context.myself_addr;
   let k' = Obj.repr k in
   let v' = Obj.repr v in
   match Hashtbl.mem _param k' with
@@ -67,10 +65,12 @@ let service_loop () =
       if Route.exists addr = false then Route.(connect addr |> add addr)
       )
     | P2P_Connect -> (
+      Logger.debug "%s connects" m.par.(0);
       let addr = m.par.(0) in
       Route.(_client := connect addr)
       )
     | P2P_Forward -> (
+      Logger.debug "forward to %s" m.par.(0);
       let addr = m.par.(0) in
       let next = Route.next_hop addr in
       match next = !_context.myself_addr with
@@ -80,20 +80,29 @@ let service_loop () =
           Utils.send s P2P_Forward m.par
         )
       )
-    | P2P_Client_Get -> (
+    | P2P_Get -> (
+      Logger.debug "client get @ %s" !_context.myself_addr;
       let k = Marshal.from_string m.par.(0) 0 in
       let next = Route.next_hop k in
       match next = !_context.myself_addr with
       | true  -> (
           let v, t' = _get k in
-          Utils.send Route.(!_client) OK [|next; v|]
+          match m.par.(1) = !_context.myself_addr with
+          | true  -> Utils.send Route.(!_client) OK [|next; v|]
+          | false -> (
+              let addr = m.par.(1) in
+              let next = Route.next_hop addr in
+              let s = StrMap.find next !_context.workers in
+              Utils.send s P2P_Forward [|addr; v|]
+            )
         )
       | false -> (
           let s = StrMap.find next !_context.workers in
-          Utils.send s P2P_Get [|m.par.(0); !_context.myself_addr|]
+          Utils.send s P2P_Get m.par
         )
       )
     | P2P_Set -> (
+      Logger.debug "set @ %s" !_context.myself_addr;
       let k, v = Marshal.from_string m.par.(0) 0 in
       let next = Route.next_hop k in
       match next = !_context.myself_addr with
@@ -105,22 +114,6 @@ let service_loop () =
       | false -> (
           let s = StrMap.find next !_context.workers in
           Utils.send s P2P_Set m.par
-        )
-      )
-    | P2P_Get -> (
-      let k = Marshal.from_string m.par.(0) 0 in
-      let next = Route.next_hop k in
-      match next = !_context.myself_addr with
-      | true  -> (
-          let v, t' = _get k in
-          let addr = m.par.(1) in
-          let next = Route.next_hop addr in
-          let s = StrMap.find next !_context.workers in
-          Utils.send s P2P_Forward [|addr; v|]
-        )
-      | false -> (
-          let s = StrMap.find next !_context.workers in
-          Utils.send s P2P_Get m.par
         )
       )
     | _ -> ( Logger.error "unknown mssage type" )

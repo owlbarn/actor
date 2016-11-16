@@ -10,7 +10,8 @@ let schedule id =
 let push id params =
   Logger.debug "%s: working ..." id;
   Unix.sleep 1;
-  []
+  let k = Random.int 100 in
+  [ (k,0.) ]
 
 let test_context () =
   P2P.register_schedule schedule;

@@ -15,7 +15,8 @@ let _push = ref (Marshal.to_string _default_push [ Marshal.Closures ])
 
 let _get k =
   let k = Marshal.to_string k [] in
-  Utils.send !_context.master_sock P2P_Client_Get [|k|];
+  let s = [|k; !_context.master_addr|] in
+  Utils.send !_context.master_sock P2P_Get s;
   let _, m = Utils.recv !_context.myself_sock in
   Marshal.from_string m.par.(1) 0
 
@@ -33,7 +34,7 @@ let service_loop () =
   try while true do
     schedule !_context.myself_addr
     |> push !_context.myself_addr
-    |> List.iteri (fun i p -> ())
+    |> List.iteri (fun i (k,v) -> _set k v)
   done with Failure e -> (
     Logger.warn "%s" e;
     ZMQ.Socket.close !_context.myself_sock;
