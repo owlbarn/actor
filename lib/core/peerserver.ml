@@ -5,11 +5,11 @@ open Types
 (* the global context: master, worker, etc. *)
 let _context = ref (Utils.empty_context ())
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
-let _pmbuf = ref []
-let _step = ref 0
+let _pmbuf = ref []   (* buffer of the model updates *)
+let _step = ref 0     (* local step for barrier control *)
 
 (* default pull function *)
-let _default_pull = fun updates -> updates
+let _default_pull = List.map (fun o -> let _, k, v, t = Obj.obj o in k, v, t)
 let _pull = ref (Marshal.to_string _default_pull [ Marshal.Closures ])
 
 (* default barrier function *)
@@ -63,15 +63,12 @@ let _set k v t =
 let service_loop () =
   Logger.debug "p2p server @ %s" !_context.myself_addr;
   let barrier : 'a list -> bool = Marshal.from_string !_barrier 0 in
-  let pull : 'a list -> 'a list = Marshal.from_string !_pull 0 in
+  let pull : 'a list -> 'b list = Marshal.from_string !_pull 0 in
   (* loop to process messages *)
   try while true do
     (* barrier control *)
     if barrier !_pmbuf = true then (
-      pull !_pmbuf |> List.iter (fun o ->
-        let _, k, v, t = Obj.obj o in
-        _set k v t
-      );
+      pull !_pmbuf |> List.iter (fun (k,v,t) -> _set k v t);
       _step := !_step + 1;
       _pmbuf := [];
     );
@@ -103,13 +100,14 @@ let service_loop () =
       let next = Route.next_hop k in
       match next = !_context.myself_addr with
       | true  -> (
-          let v, t' = _get k in
+          let v, t = _get k in
+          let s = Marshal.to_string (k, v, t) [] in
           match m.par.(1) = !_context.myself_addr with
-          | true  -> Utils.send Route.(!_client) OK [|next; v|]
+          | true  -> Utils.send Route.(!_client) OK [|next; s|]
           | false -> (
               let addr = m.par.(1) in
               let next = Route.next_hop addr in
-              Route.forward next P2P_Forward [|addr; v|]
+              Route.forward next P2P_Forward [|addr; s|]
             )
         )
       | false -> Route.forward next P2P_Get m.par
