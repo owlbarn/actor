@@ -60,13 +60,13 @@ let update_steps t w =
     Hashtbl.add step_worker t w )
   | false -> ()
 
-let get k =
+let _get k =
   Logger.debug "get @ %s" !_context.myself_addr;
   let k' = Obj.repr k in
   let v, t = Hashtbl.find _param k' in
   Obj.obj v, t
 
-let set k v t =
+let _set k v t =
   Logger.debug "set @ %s" !_context.myself_addr;
   let k' = Obj.repr k in
   let v' = Obj.repr v in
@@ -110,7 +110,7 @@ let service_loop () =
     match m.typ with
     | PS_Get -> (
       let k = Marshal.from_string m.par.(0) 0 in
-      let v, t' = get k in
+      let v, t' = _get k in
       let s = to_msg t' OK [| Marshal.to_string v [] |] in
       ZMQ.Socket.send_all ~block:false !_context.myself_sock [i;s];
       Logger.debug "get <- dt = %i, %s" (t - t') i
@@ -118,12 +118,12 @@ let service_loop () =
     | PS_Set -> (
       let k = Marshal.from_string m.par.(0) 0 in
       let v = Marshal.from_string m.par.(1) 0 in
-      let _ = set k v t in
+      let _ = _set k v t in
       Logger.debug "set <- t:%i, %s" t i
       )
     | PS_Push -> (
       let updates = Marshal.from_string m.par.(0) 0 |> pull in
-      List.iter (fun (k,v) -> set k v t) updates;
+      List.iter (fun (k,v) -> _set k v t) updates;
       update_steps t i;
       Logger.debug "push <- t:%i, %s" t i
       )

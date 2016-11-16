@@ -12,14 +12,14 @@ let _step = ref 0
 let _default_push = fun worker_id vars -> []
 let _push = ref (Marshal.to_string _default_push [ Marshal.Closures ])
 
-let get k =
+let _get k =
   Logger.debug "get -> %s" !_context.master_addr;
   let k' = Marshal.to_string k [] in
   Utils.send ~bar:!_step !_context.master_sock PS_Get [|k'|];
   let m = of_msg (ZMQ.Socket.recv ~block:true !_context.master_sock) in
   Marshal.from_string m.par.(0) 0, m.bar
 
-let set k v t =
+let _set k v t =
   Logger.debug "set -> %s" !_context.master_addr;
   let k' = Marshal.to_string k [] in
   let v' = Marshal.to_string v [] in

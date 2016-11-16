@@ -1,7 +1,6 @@
 (** [ Test stochastic gradient descent ]  *)
 
 open Owl
-
 module MX = Dense.Real
 
 let data_x = MX.uniform 1000 3

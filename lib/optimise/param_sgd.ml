@@ -68,7 +68,7 @@ let start jid =
   PS.register_push push;
   (* pre-cache the model in the server's kv store *)
   (* FIXME: need to fix this hack *)
-  MX.iteri_cols (fun k v -> Paramserver.set k v 0) !_model;
+  MX.iteri_cols (fun k v -> Paramserver._set k v 0) !_model;
   (* start running the ps *)
-  Logger.info "sdg algorithm starts running ...";
+  Logger.info "PS: sdg algorithm starts running ...";
   PS.start jid Config.manager_addr

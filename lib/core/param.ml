@@ -40,12 +40,12 @@ let register_stop (f : unit -> bool) =
 
 let get k =
   match Paramserver.(!_context.job_id) = "" with
-  | true  -> Paramclient.get k
-  | false -> Paramserver.get k
+  | true  -> Paramclient._get k
+  | false -> Paramserver._get k
 
 let set k v =
   match Paramserver.(!_context.job_id) = "" with
-  | true  -> Paramclient.(set k v !_step)
-  | false -> Paramserver.(set k v !_step)
+  | true  -> Paramclient.(_set k v !_step)
+  | false -> Paramserver.(_set k v !_step)
 
 let keys () = Hashtbl.fold (fun k v l -> l @ [ Obj.obj k ]) Paramserver._param []
