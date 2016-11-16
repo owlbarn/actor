@@ -41,4 +41,4 @@ let ssp = None
 
 
 (* P2P barrier : Bulk synchronous parallel *)
-let p2p_bsp = ()
+let p2p_bsp = None

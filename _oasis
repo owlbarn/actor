@@ -23,7 +23,7 @@ Library "core"
 Library "optimise"
   Path:       lib/optimise
   BuildTools: ocamlbuild, ocamldoc
-  Modules:    Sgd
+  Modules:    Param_sgd, Peer_sgd
   BuildDepends: core, owl
 
 Executable manager
@@ -87,4 +87,4 @@ Executable test_p2p
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_p2p.ml
-  BuildDepends:   core
+  BuildDepends:   core, optimise

@@ -6,11 +6,11 @@ open Types
 let _context = ref (Utils.empty_context ())
 
 (* default schedule function *)
-let _default_schedule = fun worker_id -> [ ]
+let _default_schedule = fun server_id -> [ ]
 let _schedule = ref (Marshal.to_string _default_schedule [ Marshal.Closures ])
 
 (* default push function *)
-let _default_push = fun worker_id vars -> []
+let _default_push = fun server_id vars -> []
 let _push = ref (Marshal.to_string _default_push [ Marshal.Closures ])
 
 let _get k =
@@ -19,7 +19,7 @@ let _get k =
   Utils.send !_context.master_sock P2P_Get s;
   let _, m = Utils.recv !_context.myself_sock in
   let k, v, t = Marshal.from_string m.par.(1) 0 in
-  v
+  v, t
 
 let _set k v =
   let s = Marshal.to_string (k, v, -1) [] in
@@ -33,8 +33,8 @@ let service_loop () =
   let push : string -> 'a list -> 'b list = Marshal.from_string !_push 0 in
   (* loop to process messages *)
   try while true do
-    schedule !_context.myself_addr
-    |> push !_context.myself_addr
+    schedule !_context.master_addr
+    |> push !_context.master_addr
     |> List.iteri (fun i (k,v) -> _set k v)
   done with Failure e -> (
     Logger.warn "%s" e;

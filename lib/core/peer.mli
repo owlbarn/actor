@@ -16,3 +16,9 @@ val register_schedule : (string -> 'a list) -> unit
 
 (** register user-defined push function at p2p client *)
 val register_push : (string -> 'a list -> 'b list) -> unit
+
+(** given a key, get its value and timestamp *)
+val get : 'a -> 'b * int
+
+(** given a key, set its value at master *)
+val set : 'a -> 'b -> unit

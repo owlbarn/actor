@@ -14,7 +14,7 @@ let start jid url =
   _context.myself_addr <- _addr;
   _context.myself_sock <- _router;
   _context.ztx <- _ztx;
-  (* equivalent role, both server and client *)
+  (* equivalent role, client is a new process *)
   let m = of_msg (ZMQ.Socket.recv req) in
   match m.typ with
   | OK -> (
@@ -24,6 +24,8 @@ let start jid url =
     )
   | _ -> Logger.info "%s" "unknown command";
   ZMQ.Socket.close req
+
+(* basic architectural functions for p2p parallel *)
 
 let register_barrier (f : 'a list -> bool) =
   Peerserver._barrier := Marshal.to_string f [ Marshal.Closures ]
@@ -36,3 +38,26 @@ let register_schedule (f : string -> 'a list) =
 
 let register_push (f : string -> 'a list -> 'b list) =
   Peerclient._push := Marshal.to_string f [ Marshal.Closures ]
+
+(* some helper functions for various strategies *)
+
+let is_server () = Peerclient.(!_context.job_id) = ""
+
+let get k =
+  match is_server () with
+  | true  -> Peerserver._get k
+  | false -> Peerclient._get k
+
+let set k v =
+  match is_server () with
+  | true  -> Peerserver.(_set k v !_step)
+  | false -> Peerclient.(_set k v)
+
+let get_server_id () =
+  match is_server () with
+  | true  -> Peerserver.(!_context.myself_addr)
+  | false -> Peerclient.(!_context.master_addr)
+
+let get_client_id = None
+
+let get_swarm_size = None
