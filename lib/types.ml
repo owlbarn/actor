@@ -25,9 +25,9 @@ type message_type =
   | P2P_Reg | P2P_Ping | P2P_Connect | P2P_Forward | P2P_Get | P2P_Set
 
 type message_rec = {
-  bar : int;
-  typ : message_type;
-  par : string array;
+  mutable bar : int;
+  mutable typ : message_type;
+  mutable par : string array;
 }
 
 type context = {

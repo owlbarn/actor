@@ -5,7 +5,16 @@ open Types
 (* the global context: master, worker, etc. *)
 let _context = ref (Utils.empty_context ())
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
+let _pmbuf = ref []
 let _step = ref 0
+
+(* default pull function *)
+let _default_pull = fun updates -> updates
+let _pull = ref (Marshal.to_string _default_pull [ Marshal.Closures ])
+
+(* default barrier function *)
+let _default_barrier = fun _ -> true
+let _barrier = ref (Marshal.to_string _default_barrier [ Marshal.Closures ])
 
 (* routing table module *)
 module Route = struct
@@ -53,9 +62,20 @@ let _set k v t =
 
 let service_loop () =
   Logger.debug "p2p server @ %s" !_context.myself_addr;
+  let barrier : 'a list -> bool = Marshal.from_string !_barrier 0 in
+  let pull : 'a list -> 'a list = Marshal.from_string !_pull 0 in
   (* loop to process messages *)
   try while true do
-    (** wait for another message arrival *)
+    (* barrier control *)
+    if barrier !_pmbuf = true then (
+      pull !_pmbuf |> List.iter (fun o ->
+        let _, k, v, t = Obj.obj o in
+        _set k v t
+      );
+      _step := !_step + 1;
+      _pmbuf := [];
+    );
+    (* wait for another message arrival *)
     let i, m = Utils.recv !_context.myself_sock in
     (* let t = m.bar in *)
     match m.typ with
@@ -96,13 +116,15 @@ let service_loop () =
       )
     | P2P_Set -> (
       Logger.debug "set @ %s" !_context.myself_addr;
-      let k, v = Marshal.from_string m.par.(0) 0 in
+      let k, v, t = Marshal.from_string m.par.(0) 0 in
+      let t = if t < 0 then (
+        let s = Marshal.to_string (k, v, !_step) [] in
+        m.par <- [|s|]; !_step
+      ) else t
+      in
       let next = Route.next_hop k in
       match next = !_context.myself_addr with
-      | true  -> (
-          let k, v = Marshal.from_string m.par.(0) 0 in
-          let t = !_step in _set k v t
-        )
+      | true  -> _pmbuf := !_pmbuf @ [Obj.repr (i, k, v, t)]
       | false -> Route.forward next P2P_Set m.par
       )
     | _ -> ( Logger.error "unknown mssage type" )
@@ -119,5 +141,5 @@ let init m context =
     let _ = Route.add x s in
     Utils.send s P2P_Ping [|!_context.myself_addr|];
   ) addrs;
-  (* enter into master service loop *)
+  (* enter into server service loop *)
   service_loop ()

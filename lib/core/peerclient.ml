@@ -21,7 +21,7 @@ let _get k =
   Marshal.from_string m.par.(1) 0
 
 let _set k v =
-  let s = Marshal.to_string (k, v) [] in
+  let s = Marshal.to_string (k, v, -1) [] in
   Utils.send !_context.master_sock P2P_Set [|s|]
   (* ignore(Utils.recv !_context.myself_sock) *)
 
@@ -55,5 +55,5 @@ let init m context =
   ZMQ.Socket.connect sock !_context.master_addr;
   !_context.master_sock <- sock;
   Utils.send !_context.master_sock P2P_Connect [|!_context.myself_addr|];
-  (* enter into worker service loop *)
+  (* enter into client service loop *)
   service_loop ()
