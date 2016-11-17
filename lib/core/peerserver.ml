@@ -22,6 +22,8 @@ module Route = struct
   let _client : [`Dealer] ZMQ.Socket.t ref =
     ref (ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer)
 
+  let hash x = Hashtbl.hash x
+
   let add addr sock = !_context.workers <- (StrMap.add addr sock !_context.workers)
 
   let exists addr = StrMap.mem addr !_context.workers
@@ -33,20 +35,48 @@ module Route = struct
     sock
 
   let next_hop x =
-    let x = Hashtbl.hash x in
     let d = ref max_int in
     let n = ref "" in
     List.iteri (fun i y ->
-      let d' = Hashtbl.hash y - x |> abs in
+      let d' = hash y - x |> abs in
       if d' < !d then ( d := d'; n := y )
     ) (StrMap.keys !_context.workers @ [!_context.myself_addr]);
+    !n
+
+  let next_hop_exclude x l =
+    let addrs = StrMap.keys !_context.workers @ [!_context.myself_addr]
+      |> List.filter (fun x -> not (List.mem x l))
+    in
+    let d = ref max_int in
+    let n = ref "" in
+    List.iteri (fun i y ->
+      let d' = hash y - x |> abs in
+      if d' < !d then ( d := d'; n := y )
+    ) addrs;
     !n
 
   let forward nxt typ msg =
     let s = StrMap.find nxt !_context.workers in
     Utils.send s typ msg
 
-  let init_table () = None
+  let init_table addrs =
+    (* contact initial random peers *)
+    Array.iter (fun x ->
+      let s = connect x in
+      let _ = add x s in
+      Utils.send s P2P_Ping [|!_context.myself_addr|];
+    ) addrs;
+    (* FIXME: given ONLY 30-bit address space *)
+    let myid = hash !_context.myself_addr in
+    let m = (2. ** 30.) |> int_of_float in
+    let _ = Array.init 30 (fun i ->
+      let d = 2. ** (float_of_int i) |> int_of_float in
+      let a = (d + myid) mod m in
+      let n = next_hop_exclude a [!_context.myself_addr] in
+      if String.length n <> 0 then
+        let s = Marshal.to_string a [] in
+        forward n P2P_Join [|!_context.myself_addr; s|]
+    ) in ()
 
 end
 
@@ -84,7 +114,16 @@ let service_loop () =
       if Route.exists addr = false then Route.(connect addr |> add addr)
       )
     | P2P_Join -> (
-      (* TODO: forward and reallocate params *)
+      let src = m.par.(0) in
+      let dst = Marshal.from_string m.par.(1) 0 in
+      let next = Route.next_hop_exclude dst [src] in
+      if next = !_context.myself_addr && Route.exists src = false then (
+        let s = Route.connect src in
+        let _ = Route.add src s in
+        Utils.send s P2P_Ping [|!_context.myself_addr|];
+      );
+      if next <> !_context.myself_addr && String.length next <> 0 then
+        Route.forward next P2P_Join m.par;
       )
     | P2P_Connect -> (
       Logger.debug "%s connects" m.par.(0);
@@ -94,7 +133,7 @@ let service_loop () =
     | P2P_Forward -> (
       Logger.debug "forward to %s" m.par.(0);
       let addr = m.par.(0) in
-      let next = Route.next_hop addr in
+      let next = Route.(hash addr |> next_hop) in
       match next = !_context.myself_addr with
       | true  -> Utils.send Route.(!_client) OK m.par
       | false -> Route.forward next P2P_Forward m.par
@@ -102,7 +141,7 @@ let service_loop () =
     | P2P_Get -> (
       Logger.debug "client get @ %s" !_context.myself_addr;
       let k = Marshal.from_string m.par.(0) 0 in
-      let next = Route.next_hop k in
+      let next = Route.(hash k |> next_hop) in
       match next = !_context.myself_addr with
       | true  -> (
           let v, t = _get k in
@@ -112,7 +151,7 @@ let service_loop () =
           | true  -> Utils.send Route.(!_client) OK [|next; s|]
           | false -> (
               let addr = m.par.(1) in
-              let next = Route.next_hop addr in
+              let next = Route.(hash addr |> next_hop) in
               Route.forward next P2P_Forward [|addr; s|]
             )
         )
@@ -127,7 +166,7 @@ let service_loop () =
         m.par <- [|s|]; !_step
       ) else t
       in
-      let next = Route.next_hop k in
+      let next = Route.(hash k |> next_hop) in
       match next = !_context.myself_addr with
       | true  -> _pmbuf := !_pmbuf @ [Obj.repr (i, k, v, t)]
       | false -> Route.forward next P2P_Set m.par
@@ -140,11 +179,6 @@ let service_loop () =
 let init m context =
   _context := context;
   (* contact allocated peers to join the swarm *)
-  let addrs = Marshal.from_string m.par.(0) 0 in
-  Array.iter (fun x ->
-    let s = Route.connect x in
-    let _ = Route.add x s in
-    Utils.send s P2P_Ping [|!_context.myself_addr|];
-  ) addrs;
+  Marshal.from_string m.par.(0) 0 |> Route.init_table;
   (* enter into server service loop *)
   service_loop ()
