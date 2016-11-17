@@ -12,9 +12,7 @@ type color = Red | Green | Blue
 
 type message_type =
   (* General messge types *)
-  | OK | Fail | Heartbeat
-  | User_Reg | Data_Reg
-  | Job_Reg | Job_Master | Job_Worker | Job_Create
+  | OK | Fail | Heartbeat | User_Reg | Job_Reg | Job_Master | Job_Worker | Job_Create
   (* Data parallel: Mapre *)
   | MapTask | FilterTask | ReduceByKeyTask | ShuffleTask | UnionTask
   | JoinTask | FlattenTask | ApplyTask | NopTask
@@ -23,6 +21,7 @@ type message_type =
   | PS_Get | PS_Set | PS_Schedule | PS_Push
   (* P2P Parallel: Peer *)
   | P2P_Reg | P2P_Connect | P2P_Ping | P2P_Join | P2P_Forward | P2P_Get | P2P_Set
+  | P2P_Copy
 
 type message_rec = {
   mutable bar : int;

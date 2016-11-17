@@ -19,10 +19,15 @@ let _barrier = ref (Marshal.to_string _default_barrier [ Marshal.Closures ])
 (* routing table module *)
 module Route = struct
 
+  (* FIXME: given ONLY 30-bit address space *)
+  let _space = 2. ** 30. |> int_of_float
+
   let _client : [`Dealer] ZMQ.Socket.t ref =
     ref (ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer)
 
   let hash x = Hashtbl.hash x
+
+  let distance x y = (x - y + _space) mod _space
 
   let add addr sock = !_context.workers <- (StrMap.add addr sock !_context.workers)
 
@@ -38,7 +43,7 @@ module Route = struct
     let d = ref max_int in
     let n = ref "" in
     List.iteri (fun i y ->
-      let d' = hash y - x |> abs in
+      let d' = distance (hash y) x in
       if d' < !d then ( d := d'; n := y )
     ) (StrMap.keys !_context.workers @ [!_context.myself_addr]);
     !n
@@ -50,7 +55,7 @@ module Route = struct
     let d = ref max_int in
     let n = ref "" in
     List.iteri (fun i y ->
-      let d' = hash y - x |> abs in
+      let d' = distance (hash y) x in
       if d' < !d then ( d := d'; n := y )
     ) addrs;
     !n
@@ -66,7 +71,6 @@ module Route = struct
       let _ = add x s in
       Utils.send s P2P_Ping [|!_context.myself_addr|];
     ) addrs;
-    (* FIXME: given ONLY 30-bit address space *)
     let myid = hash !_context.myself_addr in
     let m = (2. ** 30.) |> int_of_float in
     let _ = Array.init 30 (fun i ->
@@ -91,6 +95,8 @@ let _set k v t =
   match Hashtbl.mem _param k' with
   | true  -> Hashtbl.replace _param k' (v',t)
   | false -> Hashtbl.add _param k' (v',t)
+
+let _allocate_params k = ()
 
 let service_loop () =
   Logger.debug "p2p server @ %s" !_context.myself_addr;
@@ -117,10 +123,18 @@ let service_loop () =
       let src = m.par.(0) in
       let dst = Marshal.from_string m.par.(1) 0 in
       let next = Route.next_hop_exclude dst [src] in
-      if next = !_context.myself_addr && Route.exists src = false then (
-        let s = Route.connect src in
-        let _ = Route.add src s in
-        Utils.send s P2P_Ping [|!_context.myself_addr|];
+      if next = !_context.myself_addr then (
+        if Route.exists src = false then (
+          let s = Route.connect src in
+          let _ = Route.add src s in
+          Utils.send s P2P_Ping [|!_context.myself_addr|]
+        );
+        (* oh, hello neighbour, take my model *)
+        if (Route.hash src) = (dst - 1) then (
+          Logger.error "oh neighbour: %s <-> %s" next src;
+          _allocate_params (Route.hash src);
+        )
+        (* TODO: insert node ... *)
       );
       if next <> !_context.myself_addr && String.length next <> 0 then
         Route.forward next P2P_Join m.par;
@@ -144,6 +158,7 @@ let service_loop () =
       let next = Route.(hash k |> next_hop) in
       match next = !_context.myself_addr with
       | true  -> (
+          (* FIXME: what if i cannot find the k *)
           let v, t = _get k in
           let s = Marshal.to_string (k, v, t) [] in
           (* check whether this is from local client *)

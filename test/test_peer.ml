@@ -3,7 +3,7 @@
 module P2P = Peer
 
 let schedule id =
-  Logger.debug "%s: scheduling ..." id;
+  (* Logger.debug "%s: scheduling ..." id; *)
   Unix.sleep 5; []
 
 let test_context () =
