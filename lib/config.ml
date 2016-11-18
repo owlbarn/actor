@@ -12,7 +12,7 @@ let manager_id = "manager_0"
 let dfs_path = "storage.data"
 
 (** Log configs: path, level, color, etc. *)
-let level = Logger.INFO
+let level = Logger.DEBUG
 let logdir = "log/"
 let _ =  Logger.update_config level logdir ""
 

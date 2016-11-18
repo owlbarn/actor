@@ -30,6 +30,17 @@ let _set k v =
   Utils.send !_context.master_sock P2P_Set [|s|]
   (* ignore(Utils.recv !_context.myself_sock) *)
 
+let _push_model params =
+  let s = Marshal.to_string params [] in
+  Utils.send !_context.master_sock P2P_Push [|s|]
+
+let _pull_model params =
+  let s = Marshal.to_string params [] in
+  Utils.send !_context.master_sock P2P_Pull [|s|];
+  let _, m = Utils.recv !_context.myself_sock in
+  let kvs = Marshal.from_string m.par.(0) 0 in
+  kvs
+
 let service_loop () =
   Logger.debug "p2p_client @ %s" !_context.master_addr;
   (* unmarshal the schedule and push function *)
@@ -40,7 +51,7 @@ let service_loop () =
   try while not (stop ()) do
     schedule !_context.master_addr
     |> push !_context.master_addr
-    |> List.iteri (fun i (k,v) -> _set k v)
+    |> _push_model
   done with Failure e -> (
     Logger.warn "%s" e;
     ZMQ.Socket.close !_context.myself_sock;

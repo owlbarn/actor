@@ -52,7 +52,7 @@ let barrier updates =
 let pull updates =
   Logger.debug "pulling updates ...";
   List.map (fun o ->
-    let _, k, v, t = Obj.obj o in
+    let k, v, t = Obj.obj o in
     let v0, _ = P2P.get k in
     let v1 = MX.(v0 -@ v) in
     k, v1, t

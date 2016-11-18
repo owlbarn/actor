@@ -39,6 +39,5 @@ let dbp bar router workers msgbuf =
 (* Stale synchronous parallel *)
 let ssp = None
 
-
 (* P2P barrier : Bulk synchronous parallel *)
 let p2p_bsp updates = true

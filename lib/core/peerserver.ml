@@ -8,8 +8,11 @@ let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 let _pmbuf = ref []   (* buffer of the model updates *)
 let _step = ref 0     (* local step for barrier control *)
 
+(* buffer to handle pull request and reply *)
+let _plbuf : (Obj.t, Obj.t option) Hashtbl.t = Hashtbl.create 1_000
+
 (* default pull function *)
-let _default_pull = List.map (fun o -> let _, k, v, t = Obj.obj o in k, v, t)
+let _default_pull = List.map (fun o -> let k, v, t = Obj.obj o in k, v, t)
 let _pull = ref (Marshal.to_string _default_pull [ Marshal.Closures ])
 
 (* default barrier function *)
@@ -126,6 +129,8 @@ let _allocate_params x y =
     if (Route.distance y h) < (Route.distance x h) then l := !l @ [(k,v)]
   ) _param; !l
 
+let _shall_deliver_pull () = ()
+
 let service_loop () =
   Logger.debug "%s: p2p server" !_context.myself_addr;
   let barrier : 'a list -> bool = Marshal.from_string !_barrier 0 in
@@ -224,8 +229,62 @@ let service_loop () =
       in
       let next = Route.(hash k |> nearest) in
       match next = !_context.myself_addr with
-      | true  -> _pmbuf := !_pmbuf @ [Obj.repr (i, k, v, t)]
+      | true  -> _pmbuf := !_pmbuf @ [Obj.repr (k, v, t)]
       | false -> Route.forward next P2P_Set m.par
+      )
+    | P2P_Push -> (
+      Logger.debug "%s: receive local push" !_context.myself_addr;
+      Marshal.from_string m.par.(0) 0
+      |> List.iter (fun (k,v) ->
+        let next = Route.(hash k |> nearest) in
+        match next = !_context.myself_addr with
+        | true  -> _pmbuf := !_pmbuf @ [Obj.repr (k, v, !_step)]
+        | false -> (
+            let s = Marshal.to_string (k, v, !_step) [] in
+            Route.forward next P2P_Set [|s|]
+          )
+      )
+      )
+    | P2P_Pull -> (
+      Logger.debug "%s: receive local pull" !_context.myself_addr;
+      Marshal.from_string m.par.(0) 0
+      |> List.iter (fun k ->
+        let next = Route.(hash k |> nearest) in
+        match next = !_context.myself_addr with
+        | true  -> (
+            let v, t = _get k in
+            Hashtbl.add _plbuf (Obj.repr k) (Some (Obj.repr (k,v,t)))
+          )
+        | false -> (
+            let k = Marshal.to_string k [] in
+            let s = [|k; !_context.master_addr|] in
+            Route.forward next P2P_PullQ s;
+            Hashtbl.add _plbuf (Obj.repr k) None
+          )
+      );
+      _shall_deliver_pull ()
+      )
+    | P2P_PullQ -> (
+      Logger.debug "%s: receive pull query" !_context.myself_addr;
+      let k = Marshal.from_string m.par.(0) 0 in
+      let next = Route.(hash k |> nearest) in
+      match next = !_context.myself_addr with
+      | true  -> (
+          let v, t = _get k in
+          let s = Marshal.to_string (k, v, t) [] in
+          let addr = m.par.(1) in
+          let next = Route.(hash addr |> nearest) in
+          Route.forward next P2P_PullR [|s; addr|]
+        )
+      | false -> Route.forward next P2P_PullQ m.par
+      )
+    | P2P_PullR -> (
+      Logger.debug "%s: receive pull reply" !_context.myself_addr;
+      let addr = m.par.(1) in
+      let next = Route.(hash addr |> nearest) in
+      match next = !_context.myself_addr with
+      | true  -> _shall_deliver_pull ()
+      | false -> Route.forward next P2P_PullR m.par
       )
     | _ -> ( Logger.error "unknown mssage type" )
   done with Failure e -> (
