@@ -26,7 +26,7 @@ let calculate_gradient b x y m g l =
   let yt = MX.rows y i in
   let yt' = MX.(xt $@ m) in
   let d = g xt yt yt' in
-  Logger.debug "loss = %.10f" (l yt yt' |> MX.sum);
+  Logger.info "loss = %.10f" (l yt yt' |> MX.sum);
   d
 
 let update_local_model = None
@@ -47,9 +47,7 @@ let push id params =
     (k, d)
   ) params
 
-let barrier updates =
-  Logger.debug "checking barrier ...";
-  true
+let barrier updates = Barrier.p2p_bsp updates
 
 let pull updates =
   Logger.debug "pulling updates ...";

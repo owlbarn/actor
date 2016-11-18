@@ -216,7 +216,7 @@ let service_loop () =
     | P2P_Set -> (
       Logger.debug "%s: set operation" !_context.myself_addr;
       let k, v, t = Marshal.from_string m.par.(0) 0 in
-      (* check whether this is from local client *)
+      (* check whether this is from the local client *)
       let t = if t < 0 then (
         let s = Marshal.to_string (k, v, !_step) [] in
         m.par <- [|s|]; !_step
