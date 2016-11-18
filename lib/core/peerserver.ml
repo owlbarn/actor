@@ -190,16 +190,8 @@ let service_loop () =
         | false -> Hashtbl.add _param k v
       ) h
       )
-    | P2P_Forward -> (
-      Logger.debug "%s: forward to %s" !_context.myself_addr m.par.(0);
-      let addr = m.par.(0) in
-      let next = Route.(hash addr |> nearest) in
-      match next = !_context.myself_addr with
-      | true  -> Utils.send Route.(!_client) OK m.par
-      | false -> Route.forward next P2P_Forward m.par
-      )
     | P2P_Get -> (
-      Logger.debug "%s: get operation" !_context.myself_addr;
+      Logger.debug "%s: receive local get" !_context.myself_addr;
       let k = Marshal.from_string m.par.(0) 0 in
       let next = Route.(hash k |> nearest) in
       match next = !_context.myself_addr with
@@ -207,16 +199,31 @@ let service_loop () =
           (* FIXME: what if i cannot find the k *)
           let v, t = _get k in
           let s = Marshal.to_string (k, v, t) [] in
-          (* check whether this is from local client *)
-          match m.par.(1) = !_context.myself_addr with
-          | true  -> Utils.send Route.(!_client) OK [|next; s|]
-          | false -> (
-              let addr = m.par.(1) in
-              let next = Route.(hash addr |> nearest) in
-              Route.forward next P2P_Forward [|addr; s|]
-            )
+          Utils.send Route.(!_client) OK [|s; next|]
         )
-      | false -> Route.forward next P2P_Get m.par
+      | false -> Route.forward next P2P_Get_Q m.par
+      )
+    | P2P_Get_Q -> (
+      Logger.debug "%s: receive get query" !_context.myself_addr;
+      let k = Marshal.from_string m.par.(0) 0 in
+      let next = Route.(hash k |> nearest) in
+      match next = !_context.myself_addr with
+      | true  -> (
+          let v, t = _get k in
+          let s = Marshal.to_string (k, v, t) [] in
+          let addr = m.par.(1) in
+          let next = Route.(hash addr |> nearest) in
+          Route.forward next P2P_Get_R [|s; addr|]
+        )
+      | false -> Route.forward next P2P_Get_Q m.par
+      )
+    | P2P_Get_R -> (
+      Logger.debug "%s: receive get reply" !_context.myself_addr;
+      let addr = m.par.(1) in
+      let next = Route.(hash addr |> nearest) in
+      match next = !_context.myself_addr with
+      | true  -> Utils.send Route.(!_client) OK m.par
+      | false -> Route.forward next P2P_Get_R m.par
       )
     | P2P_Set -> (
       Logger.debug "%s: set operation" !_context.myself_addr;
@@ -258,13 +265,13 @@ let service_loop () =
         | false -> (
             let k = Marshal.to_string k [] in
             let s = [|k; !_context.master_addr|] in
-            Route.forward next P2P_PullQ s;
+            Route.forward next P2P_Pull_Q s;
             Hashtbl.add _plbuf (Obj.repr k) None
           )
       );
       _shall_deliver_pull ()
       )
-    | P2P_PullQ -> (
+    | P2P_Pull_Q -> (
       Logger.debug "%s: receive pull query" !_context.myself_addr;
       let k = Marshal.from_string m.par.(0) 0 in
       let next = Route.(hash k |> nearest) in
@@ -274,17 +281,17 @@ let service_loop () =
           let s = Marshal.to_string (k, v, t) [] in
           let addr = m.par.(1) in
           let next = Route.(hash addr |> nearest) in
-          Route.forward next P2P_PullR [|s; addr|]
+          Route.forward next P2P_Pull_R [|s; addr|]
         )
-      | false -> Route.forward next P2P_PullQ m.par
+      | false -> Route.forward next P2P_Pull_Q m.par
       )
-    | P2P_PullR -> (
+    | P2P_Pull_R -> (
       Logger.debug "%s: receive pull reply" !_context.myself_addr;
       let addr = m.par.(1) in
       let next = Route.(hash addr |> nearest) in
       match next = !_context.myself_addr with
       | true  -> _shall_deliver_pull ()
-      | false -> Route.forward next P2P_PullR m.par
+      | false -> Route.forward next P2P_Pull_R m.par
       )
     | _ -> ( Logger.error "unknown mssage type" )
   done with Failure e -> (

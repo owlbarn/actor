@@ -22,7 +22,7 @@ let _get k =
   let s = [|k; !_context.master_addr|] in
   Utils.send !_context.master_sock P2P_Get s;
   let _, m = Utils.recv !_context.myself_sock in
-  let k, v, t = Marshal.from_string m.par.(1) 0 in
+  let k, v, t = Marshal.from_string m.par.(0) 0 in
   v, t
 
 let _set k v =
