@@ -5,10 +5,11 @@ open Types
 (* the global context: master, worker, etc. *)
 let _context = ref (Utils.empty_context ())
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
-let _pmbuf = ref []   (* buffer of the model updates *)
-let _step = ref 0     (* local step for barrier control *)
+let _pmbuf = ref []       (* buffer of the model updates *)
+let _wait_bar = ref false (* is client blocked at barrier *)
+let _step = ref 0         (* local step for barrier control *)
 
-(* buffer to handle pull request and reply *)
+(* buffer of the requests and replies of pulling model parameters *)
 let _plbuf : (Obj.t, Obj.t option) Hashtbl.t = Hashtbl.create 1_000
 
 (* default pull function *)
@@ -146,20 +147,25 @@ let _shall_deliver_pull () =
     Hashtbl.reset _plbuf
   )
 
+let _barrier_control barrier pull =
+  if barrier !_wait_bar !_context !_pmbuf = true then (
+    List.map Obj.obj !_pmbuf |> pull |> List.iter (fun (k,v,t) -> _set k v t);
+    _step := !_step + 1;
+    _pmbuf := [];
+    if !_wait_bar = true then (
+      Utils.send Route.(!_client) OK [||];
+      _wait_bar := false
+    )
+  )
+
 let service_loop () =
   Logger.debug "%s: p2p server" !_context.myself_addr;
-  let barrier : 'a list -> bool = Marshal.from_string !_barrier 0 in
+  let barrier : bool -> context -> 'a list -> bool = Marshal.from_string !_barrier 0 in
   let pull : ('a * 'b * int) list -> ('a * 'b * int) list = Marshal.from_string !_pull 0 in
   (* loop to process messages *)
   try while true do
     (* barrier control *)
-    if barrier !_pmbuf = true then (
-      List.map Obj.obj !_pmbuf
-      |> pull
-      |> List.iter (fun (k,v,t) -> _set k v t);
-      _step := !_step + 1;
-      _pmbuf := [];
-    );
+    _barrier_control barrier pull;
     (* wait for another message arrival *)
     let i, m = Utils.recv !_context.myself_sock in
     (* let t = m.bar in *)
@@ -314,6 +320,10 @@ let service_loop () =
           _shall_deliver_pull ()
       )
       | false -> Route.forward next P2P_Pull_R m.par
+      )
+    | P2P_Bar -> (
+      Logger.debug "%s: barrier query" !_context.myself_addr;
+      _wait_bar := true
       )
     | _ -> ( Logger.error "unknown mssage type" )
   done with Failure e -> (

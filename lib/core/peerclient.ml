@@ -34,6 +34,9 @@ let _push_model params =
   let s = Marshal.to_string params [] in
   Utils.send !_context.master_sock P2P_Push [|s|]
 
+let _pull_model params =
+  List.map (fun k -> let v, _ = _get k in (k,v)) params
+
 let _pull_model_batch params =
   let s = Marshal.to_string params [] in
   Utils.send !_context.master_sock P2P_Pull [|s|];
@@ -41,8 +44,9 @@ let _pull_model_batch params =
   let kvs = Marshal.from_string m.par.(0) 0 in
   kvs
 
-let _pull_model params =
-  List.map (fun k -> let v, _ = _get k in (k,v)) params
+let _barrier () =
+  Utils.send !_context.master_sock P2P_Bar [||];
+  ignore(Utils.recv !_context.myself_sock)
 
 let service_loop () =
   Logger.debug "p2p_client @ %s" !_context.master_addr;
@@ -56,6 +60,7 @@ let service_loop () =
     |> _pull_model
     |> push !_context.master_addr
     |> _push_model
+    |> _barrier
   done with Failure e -> (
     Logger.warn "%s" e;
     ZMQ.Socket.close !_context.myself_sock;

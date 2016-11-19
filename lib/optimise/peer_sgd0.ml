@@ -44,7 +44,7 @@ let push id params =
     (k, d)
   ) params
 
-let barrier updates =
+let barrier wait_bar context updates =
   Logger.debug "checking barrier ...";
   true
 
