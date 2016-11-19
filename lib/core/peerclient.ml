@@ -41,6 +41,8 @@ let _pull_model params =
   let kvs = Marshal.from_string m.par.(0) 0 in
   kvs
 
+let _pull_model' params = List.map (fun k -> let v, _ = _get k in Obj.magic (k,v)) params
+
 let service_loop () =
   Logger.debug "p2p_client @ %s" !_context.master_addr;
   (* unmarshal the schedule and push function *)

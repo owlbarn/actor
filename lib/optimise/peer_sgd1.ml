@@ -31,6 +31,13 @@ let calculate_gradient b x y m g l =
 
 let update_local_model = None
 
+let schedule' id =
+  Logger.debug "%s: scheduling ..." id;
+  let n = MX.col_num !_model in
+  let k = Stats.Rnd.uniform_int ~a:0 ~b:(n - 1) () in
+  let v, _ = P2P.get k in
+  [ (k, v) ]
+
 let schedule id =
   Logger.debug "%s: scheduling ..." id;
   let n = MX.col_num !_model in
@@ -49,7 +56,7 @@ let push id params =
 let barrier updates = Barrier.p2p_bsp updates
 
 let pull updates =
-  Logger.debug "pulling updates ...";
+  Logger.debug "pulling %i updates ..." (List.length updates);
   List.map (fun o ->
     let k, v, t = Obj.obj o in
     let v0, _ = P2P.get k in

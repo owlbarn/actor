@@ -131,7 +131,7 @@ let _allocate_params x y =
 
 let _shall_deliver_pull () =
   let ready = ref true in
-  Hashtbl.iter (fun _ v ->
+  Hashtbl.iter (fun k v ->
     match v with Some _ -> () | None -> ready := false
   ) _plbuf;
   if !ready = true then (
@@ -173,6 +173,7 @@ let service_loop () =
       if Route.exists addr = false then Route.(connect addr |> add addr)
       )
     | P2P_Join -> (
+      Logger.debug "%s: receive join from %s" !_context.myself_addr m.par.(0);
       let src = m.par.(0) in
       let dst = Marshal.from_string m.par.(1) 0 in
       let next = Route.nearest_exclude dst [src] in
@@ -278,8 +279,8 @@ let service_loop () =
             Hashtbl.add _plbuf (Obj.repr k) (Some (Obj.repr (k,v,t)))
           )
         | false -> (
-            let k = Marshal.to_string k [] in
-            let s = [|k; !_context.master_addr|] in
+            let y = Marshal.to_string k [] in
+            let s = [|y; !_context.myself_addr|] in
             Route.forward next P2P_Pull_Q s;
             Hashtbl.add _plbuf (Obj.repr k) None
           )
@@ -287,7 +288,7 @@ let service_loop () =
       _shall_deliver_pull ()
       )
     | P2P_Pull_Q -> (
-      Logger.debug "%s: receive pull query" !_context.myself_addr;
+      Logger.debug "%s: pull query from %s" !_context.myself_addr m.par.(1);
       let k = Marshal.from_string m.par.(0) 0 in
       let next = Route.(hash k |> nearest) in
       match next = !_context.myself_addr with
@@ -301,13 +302,13 @@ let service_loop () =
       | false -> Route.forward next P2P_Pull_Q m.par
       )
     | P2P_Pull_R -> (
-      Logger.debug "%s: receive pull reply" !_context.myself_addr;
+      Logger.debug "%s: pull reply from %s" !_context.myself_addr m.par.(1);
       let addr = m.par.(1) in
       let next = Route.(hash addr |> nearest) in
       match next = !_context.myself_addr with
       | true  -> (
           let k, v, t = Marshal.from_string m.par.(0) 0 in
-          Hashtbl.add _plbuf (Obj.repr k) (Some (Obj.repr (k,v,t)));
+          Hashtbl.replace _plbuf (Obj.repr k) (Some (Obj.repr (k,v,t)));
           _shall_deliver_pull ()
       )
       | false -> Route.forward next P2P_Pull_R m.par
