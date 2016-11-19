@@ -129,7 +129,22 @@ let _allocate_params x y =
     if (Route.distance y h) < (Route.distance x h) then l := !l @ [(k,v)]
   ) _param; !l
 
-let _shall_deliver_pull () = ()
+let _shall_deliver_pull () =
+  let ready = ref true in
+  Hashtbl.iter (fun _ v ->
+    match v with Some _ -> () | None -> ready := false
+  ) _plbuf;
+  if !ready = true then (
+    let s = Hashtbl.fold (fun _ v l ->
+      match v with
+      | Some v -> let k,v,t = Obj.obj v in l @ [(k,v)]
+      | None -> l
+    ) _plbuf []
+    in
+    let s = Marshal.to_string s [] in
+    Utils.send Route.(!_client) OK [|s|];
+    Hashtbl.reset _plbuf
+  )
 
 let service_loop () =
   Logger.debug "%s: p2p server" !_context.myself_addr;
@@ -290,7 +305,11 @@ let service_loop () =
       let addr = m.par.(1) in
       let next = Route.(hash addr |> nearest) in
       match next = !_context.myself_addr with
-      | true  -> _shall_deliver_pull ()
+      | true  -> (
+          let k, v, t = Marshal.from_string m.par.(0) 0 in
+          Hashtbl.add _plbuf (Obj.repr k) (Some (Obj.repr (k,v,t)));
+          _shall_deliver_pull ()
+      )
       | false -> Route.forward next P2P_Pull_R m.par
       )
     | _ -> ( Logger.error "unknown mssage type" )

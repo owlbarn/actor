@@ -35,8 +35,7 @@ let schedule id =
   Logger.debug "%s: scheduling ..." id;
   let n = MX.col_num !_model in
   let k = Stats.Rnd.uniform_int ~a:0 ~b:(n - 1) () in
-  let v, _ = P2P.get k in
-  [ (k, v) ]
+  [ k ]
 
 let push id params =
   List.map (fun (k,v) ->

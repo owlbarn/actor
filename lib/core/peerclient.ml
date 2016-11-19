@@ -50,6 +50,7 @@ let service_loop () =
   (* loop to process messages *)
   try while not (stop ()) do
     schedule !_context.master_addr
+    |> _pull_model
     |> push !_context.master_addr
     |> _push_model
   done with Failure e -> (
