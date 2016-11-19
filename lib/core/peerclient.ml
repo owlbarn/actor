@@ -34,20 +34,21 @@ let _push_model params =
   let s = Marshal.to_string params [] in
   Utils.send !_context.master_sock P2P_Push [|s|]
 
-let _pull_model params =
+let _pull_model_batch params =
   let s = Marshal.to_string params [] in
   Utils.send !_context.master_sock P2P_Pull [|s|];
   let _, m = Utils.recv !_context.myself_sock in
   let kvs = Marshal.from_string m.par.(0) 0 in
   kvs
 
-let _pull_model' params = List.map (fun k -> let v, _ = _get k in Obj.magic (k,v)) params
+let _pull_model params =
+  List.map (fun k -> let v, _ = _get k in (k,v)) params
 
 let service_loop () =
   Logger.debug "p2p_client @ %s" !_context.master_addr;
   (* unmarshal the schedule and push function *)
   let schedule : string -> 'a list = Marshal.from_string !_schedule 0 in
-  let push : string -> 'a list -> 'b list = Marshal.from_string !_push 0 in
+  let push : string -> ('a * 'b) list -> ('a * 'b) list = Marshal.from_string !_push 0 in
   let stop : unit -> bool = Marshal.from_string !_stop 0 in
   (* loop to process messages *)
   try while not (stop ()) do

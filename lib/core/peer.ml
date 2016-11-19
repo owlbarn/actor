@@ -30,13 +30,13 @@ let start jid url =
 let register_barrier (f : 'a list -> bool) =
   Peerserver._barrier := Marshal.to_string f [ Marshal.Closures ]
 
-let register_pull (f : 'a list -> 'b list) =
+let register_pull (f : ('a * 'b * int) list -> ('a * 'b * int) list) =
   Peerserver._pull := Marshal.to_string f [ Marshal.Closures ]
 
 let register_schedule (f : string -> 'a list) =
   Peerclient._schedule := Marshal.to_string f [ Marshal.Closures ]
 
-let register_push (f : string -> 'a list -> 'b list) =
+let register_push (f : string -> ('a * 'b) list -> ('a * 'b) list) =
   Peerclient._push := Marshal.to_string f [ Marshal.Closures ]
 
 let register_stop (f : unit -> bool) =

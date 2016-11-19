@@ -12,7 +12,7 @@ let _step = ref 0     (* local step for barrier control *)
 let _plbuf : (Obj.t, Obj.t option) Hashtbl.t = Hashtbl.create 1_000
 
 (* default pull function *)
-let _default_pull = List.map (fun o -> let k, v, t = Obj.obj o in k, v, t)
+let _default_pull updates = updates
 let _pull = ref (Marshal.to_string _default_pull [ Marshal.Closures ])
 
 (* default barrier function *)
@@ -149,12 +149,14 @@ let _shall_deliver_pull () =
 let service_loop () =
   Logger.debug "%s: p2p server" !_context.myself_addr;
   let barrier : 'a list -> bool = Marshal.from_string !_barrier 0 in
-  let pull : 'a list -> 'b list = Marshal.from_string !_pull 0 in
+  let pull : ('a * 'b * int) list -> ('a * 'b * int) list = Marshal.from_string !_pull 0 in
   (* loop to process messages *)
   try while true do
     (* barrier control *)
     if barrier !_pmbuf = true then (
-      pull !_pmbuf |> List.iter (fun (k,v,t) -> _set k v t);
+      List.map Obj.obj !_pmbuf
+      |> pull
+      |> List.iter (fun (k,v,t) -> _set k v t);
       _step := !_step + 1;
       _pmbuf := [];
     );
