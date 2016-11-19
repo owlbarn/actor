@@ -41,3 +41,9 @@ let ssp = None
 
 (* P2P barrier : Bulk synchronous parallel *)
 let p2p_bsp wait_bar context updates = true
+
+let p2p_bsp' wait_bar context updates =
+  if wait_bar = false then false
+  else (
+    true
+  )

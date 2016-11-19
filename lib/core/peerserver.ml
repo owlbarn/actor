@@ -151,7 +151,6 @@ let _barrier_control barrier pull =
   let updates = List.map Obj.obj !_pmbuf in
   if barrier !_wait_bar !_context updates = true then (
     pull updates |> List.iter (fun (k,v,t) -> _set k v t);
-    _step := !_step + 1;
     _pmbuf := [];
     if !_wait_bar = true then (
       Utils.send Route.(!_client) OK [||];
@@ -165,10 +164,8 @@ let service_loop () =
   let pull : ('a, 'b) p2p_pull_typ = Marshal.from_string !_pull 0 in
   (* loop to process messages *)
   try while true do
-    (* barrier control *)
-    _barrier_control barrier pull;
     (* wait for another message arrival *)
-    let i, m = Utils.recv !_context.myself_sock in
+    let i, m = Utils.recv !_context.myself_sock in (
     (* let t = m.bar in *)
     match m.typ with
     | P2P_Connect -> (
@@ -324,9 +321,11 @@ let service_loop () =
       )
     | P2P_Bar -> (
       Logger.debug "%s: barrier query" !_context.myself_addr;
-      _wait_bar := true
+      _wait_bar := true; _step := !_step + 1;
       )
-    | _ -> ( Logger.error "unknown mssage type" )
+    | _ -> ( Logger.error "unknown mssage type" ) );
+    (* last thing to do, check the barrier control *)
+    _barrier_control barrier pull
   done with Failure e -> (
     Logger.warn "%s" e;
     ZMQ.Socket.close !_context.myself_sock )
