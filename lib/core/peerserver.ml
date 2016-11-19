@@ -148,8 +148,9 @@ let _shall_deliver_pull () =
   )
 
 let _barrier_control barrier pull =
-  if barrier !_wait_bar !_context !_pmbuf = true then (
-    List.map Obj.obj !_pmbuf |> pull |> List.iter (fun (k,v,t) -> _set k v t);
+  let updates = List.map Obj.obj !_pmbuf in
+  if barrier !_wait_bar !_context updates = true then (
+    pull updates |> List.iter (fun (k,v,t) -> _set k v t);
     _step := !_step + 1;
     _pmbuf := [];
     if !_wait_bar = true then (
@@ -160,7 +161,7 @@ let _barrier_control barrier pull =
 
 let service_loop () =
   Logger.debug "%s: p2p server" !_context.myself_addr;
-  let barrier : 'a p2p_barrier_typ = Marshal.from_string !_barrier 0 in
+  let barrier : ('a, 'b) p2p_barrier_typ = Marshal.from_string !_barrier 0 in
   let pull : ('a, 'b) p2p_pull_typ = Marshal.from_string !_pull 0 in
   (* loop to process messages *)
   try while true do

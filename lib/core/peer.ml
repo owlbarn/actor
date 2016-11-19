@@ -27,7 +27,7 @@ let start jid url =
 
 (* basic architectural functions for p2p parallel *)
 
-let register_barrier (f : 'a p2p_barrier_typ) =
+let register_barrier (f : ('a, 'b) p2p_barrier_typ) =
   Peerserver._barrier := Marshal.to_string f [ Marshal.Closures ]
 
 let register_pull (f : ('a, 'b) p2p_pull_typ) =

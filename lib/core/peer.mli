@@ -6,7 +6,7 @@ open Types
 val start : string -> string -> unit
 
 (** register user-defined barrier function at p2p server *)
-val register_barrier : 'a p2p_barrier_typ -> unit
+val register_barrier : ('a, 'b) p2p_barrier_typ -> unit
 
 (** register user-defined pull function at p2p server *)
 val register_pull : ('a, 'b) p2p_pull_typ -> unit
