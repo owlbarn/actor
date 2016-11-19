@@ -160,8 +160,8 @@ let _barrier_control barrier pull =
 
 let service_loop () =
   Logger.debug "%s: p2p server" !_context.myself_addr;
-  let barrier : bool -> context -> 'a list -> bool = Marshal.from_string !_barrier 0 in
-  let pull : ('a * 'b * int) list -> ('a * 'b * int) list = Marshal.from_string !_pull 0 in
+  let barrier : 'a p2p_barrier_typ = Marshal.from_string !_barrier 0 in
+  let pull : ('a, 'b) p2p_pull_typ = Marshal.from_string !_pull 0 in
   (* loop to process messages *)
   try while true do
     (* barrier control *)

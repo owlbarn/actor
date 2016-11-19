@@ -27,16 +27,16 @@ let start jid url =
 
 (* basic architectural functions for p2p parallel *)
 
-let register_barrier (f : bool -> context -> 'a list -> bool) =
+let register_barrier (f : 'a p2p_barrier_typ) =
   Peerserver._barrier := Marshal.to_string f [ Marshal.Closures ]
 
-let register_pull (f : ('a * 'b * int) list -> ('a * 'b * int) list) =
+let register_pull (f : ('a, 'b) p2p_pull_typ) =
   Peerserver._pull := Marshal.to_string f [ Marshal.Closures ]
 
-let register_schedule (f : string -> 'a list) =
+let register_schedule (f : 'a p2p_schedule_typ) =
   Peerclient._schedule := Marshal.to_string f [ Marshal.Closures ]
 
-let register_push (f : string -> ('a * 'b) list -> ('a * 'b) list) =
+let register_push (f : ('a, 'b) p2p_push_typ) =
   Peerclient._push := Marshal.to_string f [ Marshal.Closures ]
 
 let register_stop (f : unit -> bool) =

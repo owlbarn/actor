@@ -46,7 +46,7 @@ let push id params =
     (k, d)
   ) params
 
-let barrier wait_bar context updates = true
+let barrier wait_bar context updates = Barrier.p2p_bsp wait_bar context updates
 
 let pull updates =
   Logger.debug "pulling %i updates ..." (List.length updates);

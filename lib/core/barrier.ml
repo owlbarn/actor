@@ -40,4 +40,4 @@ let dbp bar router workers msgbuf =
 let ssp = None
 
 (* P2P barrier : Bulk synchronous parallel *)
-let p2p_bsp updates = true
+let p2p_bsp wait_bar context updates = true

@@ -65,6 +65,17 @@ type ('a, 'b, 'c) ps_pull_typ = ('a * 'b) list -> ('a * 'c) list
 
 type ('a, 'b, 'c) ps_push_typ = 'a -> ('b * 'c) list -> ('b * 'c) list
 
+(** types of user-defined functions in p2p parallel module *)
+
+type 'a p2p_schedule_typ = string -> 'a list
+
+type 'a p2p_barrier_typ = bool -> context -> 'a list -> bool
+
+type ('a, 'b) p2p_pull_typ = ('a * 'b * int) list -> ('a * 'b * int) list
+
+type ('a, 'b) p2p_push_typ = string -> ('a * 'b) list -> ('a * 'b) list
+
+
 (** two functions to translate between message rec and string *)
 
 let to_msg b t p =

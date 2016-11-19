@@ -51,8 +51,8 @@ let _barrier () =
 let service_loop () =
   Logger.debug "p2p_client @ %s" !_context.master_addr;
   (* unmarshal the schedule and push function *)
-  let schedule : string -> 'a list = Marshal.from_string !_schedule 0 in
-  let push : string -> ('a * 'b) list -> ('a * 'b) list = Marshal.from_string !_push 0 in
+  let schedule : 'a p2p_schedule_typ = Marshal.from_string !_schedule 0 in
+  let push : ('a, 'b) p2p_push_typ = Marshal.from_string !_push 0 in
   let stop : unit -> bool = Marshal.from_string !_stop 0 in
   (* loop to process messages *)
   try while not (stop ()) do
