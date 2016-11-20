@@ -75,6 +75,8 @@ type ('a, 'b) p2p_push_typ = string -> ('a * 'b) list -> ('a * 'b) list
 
 type ('a, 'b) p2p_barrier_typ = int -> (string, int) Hashtbl.t -> bool -> context -> ('a * 'b * int) list -> bool
 
+type p2p_stop_typ = context ref -> bool
+
 (** two functions to translate between message rec and string *)
 
 let to_msg b t p =

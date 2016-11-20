@@ -18,7 +18,7 @@ val register_schedule : 'a p2p_schedule_typ -> unit
 val register_push : ('a, 'b) p2p_push_typ -> unit
 
 (** register stopping criterion function *)
-val register_stop : (unit -> bool) -> unit
+val register_stop : p2p_stop_typ -> unit
 
 (** given a key, get its value and timestamp *)
 val get : 'a -> 'b * int

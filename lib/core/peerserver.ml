@@ -29,14 +29,18 @@ module Route = struct
   (* FIXME: given ONLY 30-bit address space *)
   let _space = 2. ** 30. |> int_of_float
 
-  let _client : [`Dealer] ZMQ.Socket.t ref =
+  let _client_sock : [`Dealer] ZMQ.Socket.t ref =
     ref (ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer)
+
+  let _client_addr = ref ""
 
   let hash x = Hashtbl.hash x
 
   let distance x y = (x - y + _space) mod _space
 
-  let add addr sock = !_context.workers <- (StrMap.add addr sock !_context.workers)
+  let add addr sock =
+    if Hashtbl.mem _step_buf addr = false then Hashtbl.add _step_buf addr 0;
+    !_context.workers <- (StrMap.add addr sock !_context.workers)
 
   let exists addr = StrMap.mem addr !_context.workers
 
@@ -147,7 +151,7 @@ let _shall_deliver_pull () =
     ) _plbuf []
     in
     let s = Marshal.to_string s [] in
-    Utils.send Route.(!_client) OK [|s|];
+    Utils.send Route.(!_client_sock) OK [|s|];
     Hashtbl.reset _plbuf
   )
 
@@ -157,7 +161,7 @@ let _barrier_control barrier pull =
     pull updates |> List.iter (fun (k,v,t) -> _set k v t);
     _pmbuf := [];
     if !_wait_bar = true then (
-      Utils.send Route.(!_client) OK [||];
+      Utils.send Route.(!_client_sock) OK [||];
       _wait_bar := false
     )
   )
@@ -169,20 +173,30 @@ let _update_step_buf addr step =
   )
   else Hashtbl.add _step_buf addr step
 
+let _notify_peers_step () =
+  List.iter (fun k ->
+    Route.forward k P2P_Ping [|!_context.myself_addr|]
+  ) (StrMap.keys !_context.workers)
+
+let _process_timeout () =
+  _notify_peers_step ();
+  Logger.warn "%s timeout" !_context.myself_addr
+
 let service_loop () =
   Logger.debug "%s: p2p server" !_context.myself_addr;
   let barrier : ('a, 'b) p2p_barrier_typ = Marshal.from_string !_barrier 0 in
   let pull : ('a, 'b) p2p_pull_typ = Marshal.from_string !_pull 0 in
   (* loop to process messages *)
+  ZMQ.Socket.set_receive_timeout !_context.myself_sock (1 * 1000);
   try while true do
-    (* wait for another message arrival *)
-    let i, m = Utils.recv !_context.myself_sock in (
-    _update_step_buf i m.bar;
+    (* first, wait and process arriving message *)
+    try let i, m = Utils.recv !_context.myself_sock in (
     match m.typ with
     | P2P_Connect -> (
-      Logger.debug "%s: client connects" !_context.myself_addr;
+      Logger.debug "%s: client connects %s" !_context.myself_addr m.par.(0);
       let addr = m.par.(0) in
-      Route.(_client := connect addr)
+      Route.(_client_addr := addr);
+      Route.(_client_sock := connect addr)
       )
     | P2P_Ping -> (
       Logger.debug "%s: ping from %s" !_context.myself_addr m.par.(0);
@@ -232,7 +246,7 @@ let service_loop () =
           (* FIXME: what if i cannot find the k *)
           let v, t = _get k in
           let s = Marshal.to_string (k, v, t) [] in
-          Utils.send Route.(!_client) OK [|s; next|]
+          Utils.send Route.(!_client_sock) OK [|s; next|]
         )
       | false -> Route.forward next P2P_Get_Q m.par
       )
@@ -255,7 +269,7 @@ let service_loop () =
       let addr = m.par.(1) in
       let next = Route.(hash addr |> nearest) in
       match next = !_context.myself_addr with
-      | true  -> Utils.send Route.(!_client) OK m.par
+      | true  -> Utils.send Route.(!_client_sock) OK m.par
       | false -> Route.forward next P2P_Get_R m.par
       )
     | P2P_Set -> (
@@ -334,15 +348,15 @@ let service_loop () =
       Logger.debug "%s: barrier query" !_context.myself_addr;
       _wait_bar := true;
       _step := !_step + 1;
-      (* inform all connected peers about my step *)
-      List.iter (fun k ->
-        Logger.error "%s: bar ping ===> %s" !_context.myself_addr k;
-        Route.forward k P2P_Ping [|!_context.myself_addr|]
-      ) (StrMap.keys !_context.workers)
+      _notify_peers_step ();
       )
     | _ -> ( Logger.error "unknown mssage type" ) );
-    (* last thing to do, check the barrier control *)
-    _barrier_control barrier pull
+    (* second, update the piggybacked step  *)
+    if Route.(i <> !_client_addr) then _update_step_buf i m.bar;
+    (* third, check the barrier control *)
+    _barrier_control barrier pull;
+    (* fourth, in case the process hangs *)
+    with Unix.Unix_error (_,_,_) -> _process_timeout ()
   done with Failure e -> (
     Logger.warn "%s" e;
     ZMQ.Socket.close !_context.myself_sock )
