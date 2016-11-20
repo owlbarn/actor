@@ -150,7 +150,7 @@ let _barrier_control barrier pull =
     pull updates |> List.iter (fun (k,v,t) -> _set k v t);
     !_context.mpbuf <- [];
     if !_context.block = true then (
-      Utils.send !_context.master_sock OK [||];
+      Utils.send ~bar:!_context.step !_context.master_sock OK [||];
       !_context.block <- false
     )
   )

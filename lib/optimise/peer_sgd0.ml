@@ -1,6 +1,8 @@
 (** [ Distributed Stochastic Gradient Decendent ] *)
 
 open Owl
+open Types
+
 module MX = Dense.Real
 module P2P = Peer
 
@@ -29,8 +31,8 @@ let calculate_gradient b x y m g l =
   Logger.debug "loss = %.10f" (l yt yt' |> MX.sum);
   d
 
-let schedule id =
-  Logger.debug "%s: scheduling ..." id;
+let schedule _context =
+  Logger.debug "%s: scheduling ..." !_context.myself_addr;
   let n = MX.col_num !_model in
   let k = Stats.Rnd.uniform_int ~a:0 ~b:(n - 1) () in
   [ k ]
@@ -56,14 +58,15 @@ let pull updates =
     k, v1, t
   ) updates
 
-let stop () = false
+let stop _context = false
 
 let start jid =
   (* register schedule, push, pull functions *)
   P2P.register_barrier barrier;
-  P2P.register_pull pull;
   P2P.register_schedule schedule;
   P2P.register_push push;
+  P2P.register_pull pull;
+  P2P.register_stop stop;
   (* start running the ps *)
   Logger.info "P2P: sdg algorithm starts running ...";
   P2P.start jid Config.manager_addr

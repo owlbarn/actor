@@ -45,7 +45,8 @@ let _pull_model_batch params =
 
 let _barrier () =
   Utils.send !_context.master_sock P2P_Bar [||];
-  ignore(Utils.recv !_context.myself_sock)
+  let _, m = Utils.recv !_context.myself_sock in
+  !_context.step <- m.bar
 
 let service_loop () =
   Logger.debug "p2p_client @ %s" !_context.master_addr;
@@ -55,7 +56,7 @@ let service_loop () =
   let stop : p2p_stop_typ = Marshal.from_string !_stop 0 in
   (* loop to process messages *)
   try while not (stop _context) do
-    schedule !_context.master_addr
+    schedule _context
     |> _pull_model
     |> push !_context.master_addr
     |> _push_model

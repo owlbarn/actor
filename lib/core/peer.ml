@@ -40,7 +40,7 @@ let register_push (f : ('a, 'b) p2p_push_typ) =
   Peerclient._push := Marshal.to_string f [ Marshal.Closures ]
 
 let register_stop (f : p2p_stop_typ) =
-  Paramserver._stop := Marshal.to_string f [ Marshal.Closures ]
+  Peerclient._stop := Marshal.to_string f [ Marshal.Closures ]
 
 (* some helper functions for various strategies *)
 

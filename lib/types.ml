@@ -71,7 +71,7 @@ type ('a, 'b, 'c) ps_push_typ = 'a -> ('b * 'c) list -> ('b * 'c) list
 
 (** types of user-defined functions in p2p parallel module *)
 
-type 'a p2p_schedule_typ = string -> 'a list
+type 'a p2p_schedule_typ = context ref -> 'a list
 
 type ('a, 'b) p2p_pull_typ = ('a * 'b * int) list -> ('a * 'b * int) list
 
