@@ -75,7 +75,7 @@ type 'a p2p_schedule_typ = context ref -> 'a list
 
 type ('a, 'b) p2p_pull_typ = ('a * 'b * int) list -> ('a * 'b * int) list
 
-type ('a, 'b) p2p_push_typ = string -> ('a * 'b) list -> ('a * 'b) list
+type ('a, 'b) p2p_push_typ = context ref -> ('a * 'b) list -> ('a * 'b) list
 
 type p2p_barrier_typ = context ref -> bool
 

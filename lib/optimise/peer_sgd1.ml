@@ -34,14 +34,14 @@ let calculate_gradient b x y m g l =
 let update_local_model = None
 
 let schedule _context =
-  Logger.debug "%s: scheduling ..." !_context.myself_addr;
+  Logger.debug "%s: scheduling ..." !_context.master_addr;
   let n = MX.col_num !_model in
   let k = Stats.Rnd.uniform_int ~a:0 ~b:(n - 1) () in
   [ k ]
 
-let push id params =
+let push _context params =
   List.map (fun (k,v) ->
-    Logger.debug "%s: working on %i ..." id k;
+    Logger.debug "%s: working on %i ..." !_context.master_addr k;
     let y = MX.col !data_y k in
     let d = calculate_gradient 10 !data_x y v !gradfn !lossfn in
     let d = MX.(d *$ !step_t) in

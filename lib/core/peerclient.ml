@@ -6,11 +6,11 @@ open Types
 let _context = ref (Utils.empty_context ())
 
 (* default schedule function *)
-let _default_schedule = fun server_id -> [ ]
+let _default_schedule = fun _ -> [ ]
 let _schedule = ref (Marshal.to_string _default_schedule [ Marshal.Closures ])
 
 (* default push function *)
-let _default_push = fun server_id vars -> []
+let _default_push = fun _ _ -> []
 let _push = ref (Marshal.to_string _default_push [ Marshal.Closures ])
 
 (* default stopping function *)
@@ -58,7 +58,7 @@ let service_loop () =
   try while not (stop _context) do
     schedule _context
     |> _pull_model
-    |> push !_context.master_addr
+    |> push _context
     |> _push_model
     |> _barrier
   done with Failure e -> (
