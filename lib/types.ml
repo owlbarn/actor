@@ -22,7 +22,7 @@ type message_type =
   (* P2P Parallel: Peer *)
   | P2P_Reg | P2P_Connect | P2P_Ping | P2P_Join | P2P_Forward | P2P_Set | P2P_Get
   | P2P_Get_Q | P2P_Get_R | P2P_Copy | P2P_Push | P2P_Pull | P2P_Pull_Q | P2P_Pull_R
-  | P2P_Bar | P2P_Bar_Q
+  | P2P_Bar
 
 type message_rec = {
   mutable bar : int;
@@ -73,7 +73,7 @@ type ('a, 'b) p2p_pull_typ = ('a * 'b * int) list -> ('a * 'b * int) list
 
 type ('a, 'b) p2p_push_typ = string -> ('a * 'b) list -> ('a * 'b) list
 
-type ('a, 'b) p2p_barrier_typ = int -> bool -> context -> ('a * 'b * int) list -> bool
+type ('a, 'b) p2p_barrier_typ = int -> (string, int) Hashtbl.t -> bool -> context -> ('a * 'b * int) list -> bool
 
 (** two functions to translate between message rec and string *)
 

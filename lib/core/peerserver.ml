@@ -91,7 +91,7 @@ module Route = struct
 
   let forward nxt typ msg =
     let s = StrMap.find nxt !_context.workers in
-    Utils.send s typ msg
+    Utils.send ~bar:!_step s typ msg
 
   let init_table addrs =
     (* contact initial random peers *)
@@ -153,7 +153,7 @@ let _shall_deliver_pull () =
 
 let _barrier_control barrier pull =
   let updates = List.map Obj.obj !_pmbuf in
-  if barrier !_step !_wait_bar !_context updates = true then (
+  if barrier !_step _step_buf !_wait_bar !_context updates = true then (
     pull updates |> List.iter (fun (k,v,t) -> _set k v t);
     _pmbuf := [];
     if !_wait_bar = true then (
@@ -161,6 +161,13 @@ let _barrier_control barrier pull =
       _wait_bar := false
     )
   )
+
+let _update_step_buf addr step =
+  if Hashtbl.mem _step_buf addr = true then (
+    let step = max step (Hashtbl.find _step_buf addr) in
+    Hashtbl.replace _step_buf addr step
+  )
+  else Hashtbl.add _step_buf addr step
 
 let service_loop () =
   Logger.debug "%s: p2p server" !_context.myself_addr;
@@ -170,8 +177,7 @@ let service_loop () =
   try while true do
     (* wait for another message arrival *)
     let i, m = Utils.recv !_context.myself_sock in (
-    (* let t = m.bar in *)
-    Logger.error "=====> %s" i;
+    _update_step_buf i m.bar;
     match m.typ with
     | P2P_Connect -> (
       Logger.debug "%s: client connects" !_context.myself_addr;
@@ -328,13 +334,11 @@ let service_loop () =
       Logger.debug "%s: barrier query" !_context.myself_addr;
       _wait_bar := true;
       _step := !_step + 1;
-      )
-    | P2P_Bar_Q -> (
-      Logger.debug "%s: barrier query from %s" !_context.myself_addr m.par.(0);
-      let addr = m.par.(0) in
-      let next = Route.(hash addr |> nearest) in
-      let s = Marshal.to_string !_step [] in
-      Route.forward next OK [|s|]
+      (* inform all connected peers about my step *)
+      List.iter (fun k ->
+        Logger.error "%s: bar ping ===> %s" !_context.myself_addr k;
+        Route.forward k P2P_Ping [|!_context.myself_addr|]
+      ) (StrMap.keys !_context.workers)
       )
     | _ -> ( Logger.error "unknown mssage type" ) );
     (* last thing to do, check the barrier control *)

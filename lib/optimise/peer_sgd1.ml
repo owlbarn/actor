@@ -46,7 +46,7 @@ let push id params =
     (k, d)
   ) params
 
-let barrier = Barrier.p2p_asp
+let barrier = Barrier.p2p_bsp
 
 let pull updates =
   Logger.debug "pulling %i updates ..." (List.length updates);
