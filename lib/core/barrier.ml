@@ -40,16 +40,16 @@ let dbp bar router workers msgbuf =
 let ssp = None
 
 (* P2P barrier: Asynchronous parallel *)
-let p2p_asp step step_buf wait_bar context updates = true
+let p2p_asp _context = true
 
 (* P2P barrier : Bulk synchronous parallel
    this one waits for the slowest one to catch up. *)
-let p2p_bsp step step_buf wait_bar context updates =
-  match wait_bar with
+let p2p_bsp _context =
+  match !_context.block with
   | true  -> (
       List.for_all (fun k ->
-        let t = Hashtbl.find step_buf k in
-        t >= step
-      ) (StrMap.keys context.workers)
+        let t = Hashtbl.find !_context.spbuf k in
+        t >= !_context.step
+      ) (StrMap.keys !_context.workers)
     )
   | false -> false

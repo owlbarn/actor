@@ -146,7 +146,7 @@ let _shall_deliver_pull () =
 
 let _barrier_control barrier pull =
   let updates = List.map Obj.obj !_context.mpbuf in
-  if barrier !_context.step !_context.spbuf !_context.block !_context updates = true then (
+  if barrier _context = true then (
     pull updates |> List.iter (fun (k,v,t) -> _set k v t);
     !_context.mpbuf <- [];
     if !_context.block = true then (
@@ -173,7 +173,7 @@ let _process_timeout () =
 
 let service_loop () =
   Logger.debug "%s: p2p server" !_context.myself_addr;
-  let barrier : ('a, 'b) p2p_barrier_typ = Marshal.from_string !_barrier 0 in
+  let barrier : p2p_barrier_typ = Marshal.from_string !_barrier 0 in
   let pull : ('a, 'b) p2p_pull_typ = Marshal.from_string !_pull 0 in
   (* loop to process messages *)
   ZMQ.Socket.set_receive_timeout !_context.myself_sock (1 * 1000);

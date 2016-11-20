@@ -77,7 +77,7 @@ type ('a, 'b) p2p_pull_typ = ('a * 'b * int) list -> ('a * 'b * int) list
 
 type ('a, 'b) p2p_push_typ = string -> ('a * 'b) list -> ('a * 'b) list
 
-type ('a, 'b) p2p_barrier_typ = int -> (string, int) Hashtbl.t -> bool -> context -> ('a * 'b * int) list -> bool
+type p2p_barrier_typ = context ref -> bool
 
 type p2p_stop_typ = context ref -> bool
 
