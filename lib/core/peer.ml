@@ -53,7 +53,7 @@ let get k =
 
 let set k v =
   match is_server () with
-  | true  -> Peerserver.(_set k v !_step)
+  | true  -> Peerserver.(_set k v !_context.step)
   | false -> Peerclient.(_set k v)
 
 let get_server_id () =

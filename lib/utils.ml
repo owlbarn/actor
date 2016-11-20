@@ -53,11 +53,15 @@ let addr_to_log x =
 let empty_context () =
   let ztx = ZMQ.Context.create () in
   {
-    job_id = "";
+    job_id      = "";
     master_addr = "";
     myself_addr = "";
     master_sock = ZMQ.Socket.(create ztx dealer);
     myself_sock = ZMQ.Socket.(create ztx router);
-    workers = StrMap.empty;
-    ztx = ztx;
+    workers     = StrMap.empty;
+    step        = 0;
+    block       = false;
+    mpbuf       = [];
+    spbuf       = Hashtbl.create 32;
+    ztx         = ztx;
   }

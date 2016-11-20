@@ -5,15 +5,9 @@ open Types
 (* the global context: master, worker, etc. *)
 let _context = ref (Utils.empty_context ())
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
-let _pmbuf = ref []       (* buffer of the model updates *)
-let _wait_bar = ref false (* is client blocked at barrier *)
-let _step = ref 0         (* local step for barrier control *)
 
 (* buffer of the requests and replies of pulling model parameters *)
 let _plbuf : (Obj.t, Obj.t option) Hashtbl.t = Hashtbl.create 1_000
-
-(* buffer of the step of connected neighbours, piggybacked in m.bar *)
-let _step_buf : (string, int) Hashtbl.t = Hashtbl.create 1_000
 
 (* default pull function *)
 let _default_pull updates = updates
@@ -29,17 +23,12 @@ module Route = struct
   (* FIXME: given ONLY 30-bit address space *)
   let _space = 2. ** 30. |> int_of_float
 
-  let _client_sock : [`Dealer] ZMQ.Socket.t ref =
-    ref (ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer)
-
-  let _client_addr = ref ""
-
   let hash x = Hashtbl.hash x
 
   let distance x y = (x - y + _space) mod _space
 
   let add addr sock =
-    if Hashtbl.mem _step_buf addr = false then Hashtbl.add _step_buf addr 0;
+    if Hashtbl.mem !_context.spbuf addr = false then Hashtbl.add !_context.spbuf addr 0;
     !_context.workers <- (StrMap.add addr sock !_context.workers)
 
   let exists addr = StrMap.mem addr !_context.workers
@@ -95,7 +84,7 @@ module Route = struct
 
   let forward nxt typ msg =
     let s = StrMap.find nxt !_context.workers in
-    Utils.send ~bar:!_step s typ msg
+    Utils.send ~bar:!_context.step s typ msg
 
   let init_table addrs =
     (* contact initial random peers *)
@@ -151,27 +140,27 @@ let _shall_deliver_pull () =
     ) _plbuf []
     in
     let s = Marshal.to_string s [] in
-    Utils.send Route.(!_client_sock) OK [|s|];
+    Utils.send !_context.master_sock OK [|s|];
     Hashtbl.reset _plbuf
   )
 
 let _barrier_control barrier pull =
-  let updates = List.map Obj.obj !_pmbuf in
-  if barrier !_step _step_buf !_wait_bar !_context updates = true then (
+  let updates = List.map Obj.obj !_context.mpbuf in
+  if barrier !_context.step !_context.spbuf !_context.block !_context updates = true then (
     pull updates |> List.iter (fun (k,v,t) -> _set k v t);
-    _pmbuf := [];
-    if !_wait_bar = true then (
-      Utils.send Route.(!_client_sock) OK [||];
-      _wait_bar := false
+    !_context.mpbuf <- [];
+    if !_context.block = true then (
+      Utils.send !_context.master_sock OK [||];
+      !_context.block <- false
     )
   )
 
 let _update_step_buf addr step =
-  if Hashtbl.mem _step_buf addr = true then (
-    let step = max step (Hashtbl.find _step_buf addr) in
-    Hashtbl.replace _step_buf addr step
+  if Hashtbl.mem !_context.spbuf addr = true then (
+    let step = max step (Hashtbl.find !_context.spbuf addr) in
+    Hashtbl.replace !_context.spbuf addr step
   )
-  else Hashtbl.add _step_buf addr step
+  else Hashtbl.add !_context.spbuf addr step
 
 let _notify_peers_step () =
   List.iter (fun k ->
@@ -195,8 +184,8 @@ let service_loop () =
     | P2P_Connect -> (
       Logger.debug "%s: client connects %s" !_context.myself_addr m.par.(0);
       let addr = m.par.(0) in
-      Route.(_client_addr := addr);
-      Route.(_client_sock := connect addr)
+      !_context.master_addr <- addr;
+      !_context.master_sock <- Route.connect addr
       )
     | P2P_Ping -> (
       Logger.debug "%s: ping from %s" !_context.myself_addr m.par.(0);
@@ -246,7 +235,7 @@ let service_loop () =
           (* FIXME: what if i cannot find the k *)
           let v, t = _get k in
           let s = Marshal.to_string (k, v, t) [] in
-          Utils.send Route.(!_client_sock) OK [|s; next|]
+          Utils.send !_context.master_sock OK [|s; next|]
         )
       | false -> Route.forward next P2P_Get_Q m.par
       )
@@ -269,7 +258,7 @@ let service_loop () =
       let addr = m.par.(1) in
       let next = Route.(hash addr |> nearest) in
       match next = !_context.myself_addr with
-      | true  -> Utils.send Route.(!_client_sock) OK m.par
+      | true  -> Utils.send !_context.master_sock OK m.par
       | false -> Route.forward next P2P_Get_R m.par
       )
     | P2P_Set -> (
@@ -277,13 +266,13 @@ let service_loop () =
       let k, v, t = Marshal.from_string m.par.(0) 0 in
       (* check whether this is from the local client *)
       let t = if t < 0 then (
-        let s = Marshal.to_string (k, v, !_step) [] in
-        m.par <- [|s|]; !_step
+        let s = Marshal.to_string (k, v, !_context.step) [] in
+        m.par <- [|s|]; !_context.step
       ) else t
       in
       let next = Route.(hash k |> nearest) in
       match next = !_context.myself_addr with
-      | true  -> _pmbuf := !_pmbuf @ [Obj.repr (k, v, t)]
+      | true  -> !_context.mpbuf <- !_context.mpbuf @ [Obj.repr (k, v, t)]
       | false -> Route.forward next P2P_Set m.par
       )
     | P2P_Push -> (
@@ -292,9 +281,9 @@ let service_loop () =
       |> List.iter (fun (k,v) ->
         let next = Route.(hash k |> nearest) in
         match next = !_context.myself_addr with
-        | true  -> _pmbuf := !_pmbuf @ [Obj.repr (k, v, !_step)]
+        | true  -> !_context.mpbuf <- !_context.mpbuf @ [Obj.repr (k, v, !_context.step)]
         | false -> (
-            let s = Marshal.to_string (k, v, !_step) [] in
+            let s = Marshal.to_string (k, v, !_context.step) [] in
             Route.forward next P2P_Set [|s|]
           )
       )
@@ -346,13 +335,13 @@ let service_loop () =
       )
     | P2P_Bar -> (
       Logger.debug "%s: barrier query" !_context.myself_addr;
-      _wait_bar := true;
-      _step := !_step + 1;
+      !_context.block <- true;
+      !_context.step <- !_context.step + 1;
       _notify_peers_step ();
       )
     | _ -> ( Logger.error "unknown mssage type" ) );
     (* second, update the piggybacked step  *)
-    if Route.(i <> !_client_addr) then _update_step_buf i m.bar;
+    if i <> !_context.master_addr then _update_step_buf i m.bar;
     (* third, check the barrier control *)
     _barrier_control barrier pull;
     (* fourth, in case the process hangs *)
