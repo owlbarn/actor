@@ -58,7 +58,7 @@ let pull updates =
     k, v1, t
   ) updates
 
-let stop _context = !_context.step > 1000
+let stop _context = !_context.step > 10000
 
 let start jid =
   (* register schedule, push, pull functions *)

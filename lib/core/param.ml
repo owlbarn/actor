@@ -45,7 +45,7 @@ let get k =
 
 let set k v =
   match Paramserver.(!_context.job_id) = "" with
-  | true  -> Paramclient.(_set k v !_step)
-  | false -> Paramserver.(_set k v !_step)
+  | true  -> Paramclient.(_set k v !_context.step)
+  | false -> Paramserver.(_set k v !_context.step)
 
 let keys () = Hashtbl.fold (fun k v l -> l @ [ Obj.obj k ]) Paramserver._param []

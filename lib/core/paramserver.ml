@@ -10,7 +10,6 @@ let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 let worker_busy : (string, int) Hashtbl.t = Hashtbl.create 1_000_000
 let worker_step : (string, int) Hashtbl.t = Hashtbl.create 1_000_000
 let step_worker : (int, string) Hashtbl.t = Hashtbl.create 1_000_000
-let _step = ref 0 (** actually represents the lowest barrier *)
 
 (* default schedule function *)
 let _default_schedule = fun workers -> [ ] (** TODO: fix scheduler ... *)
@@ -92,7 +91,7 @@ let service_loop () =
   (* loop to process messages *)
   try while not (stop ()) do
     (* synchronisation barrier check *)
-    let t, passed = bsp !_step in _step := t;
+    let t, passed = bsp !_context.step in !_context.step <- t;
     (* schecule the passed at every message arrival *)
     let tasks = schedule passed in
     List.iter (fun (worker, task) ->
@@ -103,7 +102,7 @@ let service_loop () =
       Utils.send ~bar:t w PS_Schedule [|s|]
     ) tasks;
     if List.length tasks > 0 then
-      Logger.debug "schedule t:%i -> %i workers" !_step (List.length tasks);
+      Logger.debug "schedule t:%i -> %i workers" !_context.step (List.length tasks);
     (** wait for another message arrival *)
     let i, m = Utils.recv !_context.myself_sock in
     let t = m.bar in
