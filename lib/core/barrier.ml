@@ -39,11 +39,20 @@ let dbp bar router workers msgbuf =
 (* Stale synchronous parallel *)
 let ssp = None
 
-(* P2P barrier : Bulk synchronous parallel *)
-let p2p_bsp wait_bar context updates = true
+(* P2P barrier: Asynchronous parallel *)
+let p2p_asp step wait_bar context updates = true
 
-let p2p_bsp' wait_bar context updates =
+(* P2P barrier : Bulk synchronous parallel *)
+(* FIXME : not working atm *)
+let p2p_bsp step wait_bar context updates =
   if wait_bar = false then false
   else (
-    true
+    Logger.error "=====++++";
+    StrMap.values context.workers
+    |> List.for_all (fun s ->
+      Utils.send s P2P_Bar_Q [|context.myself_addr|];
+      let _, m = Utils.recv context.myself_sock in
+      let t = Marshal.from_string m.par.(0) 0 in
+      t = step
+    )
   )

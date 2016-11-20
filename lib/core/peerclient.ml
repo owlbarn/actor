@@ -28,7 +28,6 @@ let _get k =
 let _set k v =
   let s = Marshal.to_string (k, v, -1) [] in
   Utils.send !_context.master_sock P2P_Set [|s|]
-  (* ignore(Utils.recv !_context.myself_sock) *)
 
 let _push_model params =
   let s = Marshal.to_string params [] in

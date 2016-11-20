@@ -12,6 +12,9 @@ let _step = ref 0         (* local step for barrier control *)
 (* buffer of the requests and replies of pulling model parameters *)
 let _plbuf : (Obj.t, Obj.t option) Hashtbl.t = Hashtbl.create 1_000
 
+(* buffer of the step of connected neighbours, piggybacked in m.bar *)
+let _step_buf : (string, int) Hashtbl.t = Hashtbl.create 1_000
+
 (* default pull function *)
 let _default_pull updates = updates
 let _pull = ref (Marshal.to_string _default_pull [ Marshal.Closures ])
@@ -40,6 +43,7 @@ module Route = struct
   let connect addr =
     let sock = ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer in
     ZMQ.Socket.set_send_high_water_mark sock Config.high_warter_mark;
+    ZMQ.Socket.set_identity sock !_context.myself_addr;
     ZMQ.Socket.connect sock addr;
     sock
 
@@ -149,7 +153,7 @@ let _shall_deliver_pull () =
 
 let _barrier_control barrier pull =
   let updates = List.map Obj.obj !_pmbuf in
-  if barrier !_wait_bar !_context updates = true then (
+  if barrier !_step !_wait_bar !_context updates = true then (
     pull updates |> List.iter (fun (k,v,t) -> _set k v t);
     _pmbuf := [];
     if !_wait_bar = true then (
@@ -167,6 +171,7 @@ let service_loop () =
     (* wait for another message arrival *)
     let i, m = Utils.recv !_context.myself_sock in (
     (* let t = m.bar in *)
+    Logger.error "=====> %s" i;
     match m.typ with
     | P2P_Connect -> (
       Logger.debug "%s: client connects" !_context.myself_addr;
@@ -321,7 +326,15 @@ let service_loop () =
       )
     | P2P_Bar -> (
       Logger.debug "%s: barrier query" !_context.myself_addr;
-      _wait_bar := true; _step := !_step + 1;
+      _wait_bar := true;
+      _step := !_step + 1;
+      )
+    | P2P_Bar_Q -> (
+      Logger.debug "%s: barrier query from %s" !_context.myself_addr m.par.(0);
+      let addr = m.par.(0) in
+      let next = Route.(hash addr |> nearest) in
+      let s = Marshal.to_string !_step [] in
+      Route.forward next OK [|s|]
       )
     | _ -> ( Logger.error "unknown mssage type" ) );
     (* last thing to do, check the barrier control *)
