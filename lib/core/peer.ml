@@ -9,7 +9,7 @@ let start jid url =
   ZMQ.Socket.connect req url;
   Utils.send req P2P_Reg [|_addr; jid|];
   (* create and initialise part of the context *)
-  let _context = Utils.empty_context () in
+  let _context = Utils.empty_peer_context () in
   _context.job_id <- jid;
   _context.myself_addr <- _addr;
   _context.myself_sock <- _router;

@@ -62,7 +62,8 @@ let pull vars =
     (k,v1)
   ) vars
 
-let stop _context = !_context.step > 10_000
+(* FIXME *)
+let stop (_context : param_context ref) = !_context.step > 10_000
 
 let start jid =
   (* register schedule, push, pull functions *)

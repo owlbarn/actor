@@ -3,7 +3,7 @@
 open Types
 
 (* the global context: master, worker, etc. *)
-let _context = ref (Utils.empty_context ())
+let _context = ref (Utils.empty_param_context ())
 
 (* default push function *)
 let _default_push = fun worker_id vars -> []

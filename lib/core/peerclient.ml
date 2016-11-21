@@ -3,7 +3,7 @@
 open Types
 
 (* the global context: master, worker, etc. *)
-let _context = ref (Utils.empty_context ())
+let _context = ref (Utils.empty_peer_context ())
 
 (* default schedule function *)
 let _default_schedule = fun _ -> [ ]

@@ -3,7 +3,7 @@
 open Types
 
 (* the global context: master, worker, etc. *)
-let _context = ref (Utils.empty_context ())
+let _context = ref (Utils.empty_param_context ())
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 
 (* record: whether busy; worker's current step; workers at a step *)
