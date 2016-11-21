@@ -89,6 +89,13 @@ Executable test_peer_sgd
   MainIs:         test_peer_sgd.ml
   BuildDepends:   core, optimise
 
+Executable test_peer_lda
+  Path:           test
+  BuildTools:     ocamlbuild
+  CompiledObject: byte
+  MainIs:         test_peer_lda.ml
+  BuildDepends:   core, optimise
+
 Executable test_peer
   Path:           test
   BuildTools:     ocamlbuild
