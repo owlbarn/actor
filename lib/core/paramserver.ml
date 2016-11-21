@@ -6,11 +6,6 @@ open Types
 let _context = ref (Utils.empty_param_context ())
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 
-(* record: whether busy; worker's current step; workers at a step *)
-let worker_busy : (string, int) Hashtbl.t = Hashtbl.create 10_000
-let worker_step : (string, int) Hashtbl.t = Hashtbl.create 10_000
-let step_worker : (int, string) Hashtbl.t = Hashtbl.create 10_000
-
 (* default schedule function *)
 let _default_schedule = fun _ -> [ ] (** TODO: fix scheduler ... *)
 let _schedule = ref (Marshal.to_string _default_schedule [ Marshal.Closures ])
@@ -24,43 +19,16 @@ let _default_stop = fun _ -> false
 let _stop = ref (Marshal.to_string _default_stop [ Marshal.Closures ])
 
 (* default barrier function *)
-let _default_barrier = fun _ -> true
+let _default_barrier = Barrier.param_bsp
 let _barrier = ref (Marshal.to_string _default_barrier [ Marshal.Closures ])
 
-(* bulk synchronous parallel *)
-let bsp t =
-  let num_finish = List.length (Hashtbl.find_all step_worker t) in
-  let num_worker = StrMap.cardinal !_context.workers in
-  match num_finish = num_worker with
-  | true  -> t + 1, (StrMap.keys !_context.workers)
-  | false -> t, []
-
-(* stale synchronous parallel *)
-let ssp t d =
-  let num_finish = List.length (Hashtbl.find_all step_worker t) in
-  let num_worker = StrMap.cardinal !_context.workers in
-  let t = match num_finish = num_worker with
-    | true  -> t + 1
-    | false -> t
-  in
-  let l = Hashtbl.fold (fun w t' l ->
-    let busy = Hashtbl.find worker_busy w in
-    match (busy = 0) && ((t' - t) < d) with
-    | true  -> l @ [ w ]
-    | false -> l
-  ) worker_step []
-  in (t, l)
-
-(* asynchronous parallel *)
-let asp t = ssp t max_int
-
 let update_steps t w =
-  let t' = Hashtbl.find worker_step w in
+  let t' = Hashtbl.find !_context.worker_step w in
   match t > t' with
   | true  -> (
-    Hashtbl.replace worker_busy w 0;
-    Hashtbl.replace worker_step w t;
-    Hashtbl.add step_worker t w )
+    Hashtbl.replace !_context.worker_busy w 0;
+    Hashtbl.replace !_context.worker_step w t;
+    Hashtbl.add !_context.step_worker t w )
   | false -> ()
 
 let _get k =
@@ -91,18 +59,19 @@ let service_loop () =
   (* unmarshal the schedule and pull functions *)
   let schedule : ('a, 'b, 'c) ps_schedule_typ = Marshal.from_string !_schedule 0 in
   let pull : ('a, 'b, 'c) ps_pull_typ = Marshal.from_string !_pull 0 in
+  let barrier : ps_barrier_typ = Marshal.from_string !_barrier 0 in
   let stop : ps_stop_typ = Marshal.from_string !_stop 0 in
   (* loop to process messages *)
   try while not (stop _context) do
     (* synchronisation barrier check *)
-    let t, passed = bsp !_context.step in !_context.step <- t;
+    let t, passed = barrier _context in !_context.step <- t;
     (* schecule the passed at every message arrival *)
     let tasks = schedule passed in
     List.iter (fun (worker, task) ->
       let w = StrMap.find worker !_context.workers in
       let s = Marshal.to_string task [] in
-      let t = Hashtbl.find worker_step worker + 1 in
-      let _ = Hashtbl.replace worker_busy worker 1 in
+      let t = Hashtbl.find !_context.worker_step worker + 1 in
+      let _ = Hashtbl.replace !_context.worker_busy worker 1 in
       Utils.send ~bar:t w PS_Schedule [|s|]
     ) tasks;
     if List.length tasks > 0 then
@@ -158,9 +127,9 @@ let init m context =
   done;
   (* initialise the step <--> work tables *)
   StrMap.iter (fun k v ->
-    Hashtbl.add worker_busy k 0;
-    Hashtbl.add worker_step k 0;
-    Hashtbl.add step_worker 0 k;
+    Hashtbl.add !_context.worker_busy k 0;
+    Hashtbl.add !_context.worker_step k 0;
+    Hashtbl.add !_context.step_worker 0 k;
   ) !_context.workers;
   (* enter into master service loop *)
   service_loop ()

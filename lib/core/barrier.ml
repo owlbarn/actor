@@ -36,8 +36,32 @@ let dbp bar router workers msgbuf =
   with exn -> Logger.info "%s" "timeout +++");
   Hashtbl.fold (fun k v l -> v :: l) h []
 
-(* P2P barrier: Asynchronous parallel *)
-let p2p_asp _context = true
+(* Param barrier: Bulk synchronous parallel *)
+let param_bsp _context =
+  let num_finish = List.length (Hashtbl.find_all !_context.step_worker !_context.step) in
+  let num_worker = StrMap.cardinal !_context.workers in
+  match num_finish = num_worker with
+  | true  -> !_context.step + 1, (StrMap.keys !_context.workers)
+  | false -> !_context.step, []
+
+(* Param barrier: Stale synchronous parallel *)
+let param_ssp _context d =
+  let num_finish = List.length (Hashtbl.find_all !_context.step_worker !_context.step) in
+  let num_worker = StrMap.cardinal !_context.workers in
+  let t = match num_finish = num_worker with
+    | true  -> !_context.step + 1
+    | false -> !_context.step
+  in
+  let l = Hashtbl.fold (fun w t' l ->
+    let busy = Hashtbl.find !_context.worker_busy w in
+    match (busy = 0) && ((t' - t) < d) with
+    | true  -> l @ [ w ]
+    | false -> l
+  ) !_context.worker_step []
+  in (t, l)
+
+(* Param barrier: Asynchronous parallel *)
+let param_asp _context = param_ssp _context max_int
 
 (* P2P barrier : Bulk synchronous parallel
    this one waits for the slowest one to catch up. *)
@@ -50,3 +74,6 @@ let p2p_bsp _context =
       ) (StrMap.keys !_context.workers)
     )
   | false -> false
+
+(* P2P barrier: Asynchronous parallel *)
+let p2p_asp _context = true

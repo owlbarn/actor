@@ -31,6 +31,7 @@ type message_rec = {
 }
 
 type context = {
+  mutable ztx         :  ZMQ.Context.t;                   (* all: zmq context for communication *)
   mutable job_id      : string;                           (* all: job id or swarm id, depends on paradigm *)
   mutable master_addr : string;                           (* all: different meaning in different paradigm *)
   mutable myself_addr : string;                           (* all: communication address of current process *)
@@ -39,10 +40,10 @@ type context = {
   mutable workers     : [`Dealer] ZMQ.Socket.t StrMap.t;  (* all: socket of workers or peers *)
   mutable step        : int;                              (* all: local step for barrier control *)
   mutable msbuf       : (int, string * message_rec) Hashtbl.t;  (* mapre: buffer of un-ordered messages *)
-  mutable ztx         :  ZMQ.Context.t;                   (* all: zmq context for communication *)
 }
 
 type param_context = {
+  mutable ztx         :  ZMQ.Context.t;                   (* all: zmq context for communication *)
   mutable job_id      : string;                           (* all: job id or swarm id, depends on paradigm *)
   mutable master_addr : string;                           (* all: different meaning in different paradigm *)
   mutable myself_addr : string;                           (* all: communication address of current process *)
@@ -50,10 +51,13 @@ type param_context = {
   mutable myself_sock : [`Router] ZMQ.Socket.t;           (* all: socket of myself_addr *)
   mutable workers     : [`Dealer] ZMQ.Socket.t StrMap.t;  (* all: socket of workers or peers *)
   mutable step        : int;                              (* all: local step for barrier control *)
-  mutable ztx         :  ZMQ.Context.t;                   (* all: zmq context for communication *)
+  mutable worker_busy : (string, int) Hashtbl.t;          (* lookup table of a worker busy or not *)
+  mutable worker_step : (string, int) Hashtbl.t;          (* lookup table of a worker's step *)
+  mutable step_worker : (int, string) Hashtbl.t;          (* lookup table of workers at a specific step *)
 }
 
 type peer_context = {
+  mutable ztx         :  ZMQ.Context.t;                   (* all: zmq context for communication *)
   mutable job_id      : string;                           (* all: job id or swarm id, depends on paradigm *)
   mutable master_addr : string;                           (* all: different meaning in different paradigm *)
   mutable myself_addr : string;                           (* all: communication address of current process *)
@@ -64,7 +68,6 @@ type peer_context = {
   mutable block       : bool;                             (* p2p: is client blocked at barrier *)
   mutable mpbuf       : Obj.t list;                       (* p2p: buffer of model parameter updates *)
   mutable spbuf       : (string, int) Hashtbl.t;          (* p2p: buffer of the step of connected peers, piggybacked in m.bar *)
-  mutable ztx         :  ZMQ.Context.t;                   (* all: zmq context for communication *)
 }
 
 type actor_rec = {
@@ -92,7 +95,7 @@ type ('a, 'b, 'c) ps_pull_typ = ('a * 'b) list -> ('a * 'c) list
 
 type ('a, 'b, 'c) ps_push_typ = 'a -> ('b * 'c) list -> ('b * 'c) list
 
-type ps_barrier_typ = param_context ref -> bool
+type ps_barrier_typ = param_context ref -> int * (string list)
 
 type ps_stop_typ = param_context ref -> bool
 

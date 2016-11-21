@@ -49,10 +49,10 @@ let addr_to_log x =
   let path = Str.(split (regexp "://")) x in
   List.nth path 1 |> Str.(global_replace (regexp "[:.]") "_")
 
-(* create an empty context *)
 let empty_mapre_context () =
   let ztx = ZMQ.Context.create () in
   {
+    ztx         = ztx;
     job_id      = "";
     master_addr = "";
     myself_addr = "";
@@ -61,12 +61,12 @@ let empty_mapre_context () =
     workers     = StrMap.empty;
     step        = 0;
     msbuf       = Hashtbl.create 256;
-    ztx         = ztx;
   }
 
 let empty_param_context () =
   let ztx = ZMQ.Context.create () in
   {
+    ztx         = ztx;
     job_id      = "";
     master_addr = "";
     myself_addr = "";
@@ -74,12 +74,15 @@ let empty_param_context () =
     myself_sock = ZMQ.Socket.(create ztx router);
     workers     = StrMap.empty;
     step        = 0;
-    ztx         = ztx;
+    worker_busy = Hashtbl.create 1_000;
+    worker_step = Hashtbl.create 1_000;
+    step_worker = Hashtbl.create 1_000;
   }
 
 let empty_peer_context () =
   let ztx = ZMQ.Context.create () in
   {
+    ztx         = ztx;
     job_id      = "";
     master_addr = "";
     myself_addr = "";
@@ -90,5 +93,4 @@ let empty_peer_context () =
     block       = false;
     mpbuf       = [];
     spbuf       = Hashtbl.create 32;
-    ztx         = ztx;
   }
