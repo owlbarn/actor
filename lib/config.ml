@@ -1,6 +1,4 @@
-(** [ Config module ]
-  contains all the configurations of the framework.
-*)
+(** [ Config ] contains the static configurations of the framework. *)
 
 (** Manager's address, all workders connect to this address *)
 let manager_addr = "tcp://127.0.0.1:5555"

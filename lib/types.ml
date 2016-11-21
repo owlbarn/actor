@@ -31,17 +31,18 @@ type message_rec = {
 }
 
 type context = {
-  mutable job_id      : string;                           (* job id or swarm id, depends on paradigm *)
-  mutable master_addr : string;                           (* different meaning in different paradigm *)
-  mutable myself_addr : string;                           (* communication address of current process *)
-  mutable master_sock : [`Dealer] ZMQ.Socket.t;
-  mutable myself_sock : [`Router] ZMQ.Socket.t;
-  mutable workers     : [`Dealer] ZMQ.Socket.t StrMap.t;
+  mutable job_id      : string;                           (* all: job id or swarm id, depends on paradigm *)
+  mutable master_addr : string;                           (* all: different meaning in different paradigm *)
+  mutable myself_addr : string;                           (* all: communication address of current process *)
+  mutable master_sock : [`Dealer] ZMQ.Socket.t;           (* all: socket of master_addr *)
+  mutable myself_sock : [`Router] ZMQ.Socket.t;           (* all: socket of myself_addr *)
+  mutable workers     : [`Dealer] ZMQ.Socket.t StrMap.t;  (* all: socket of workers or peers *)
   mutable step        : int;                              (* all: local step for barrier control *)
   mutable block       : bool;                             (* p2p: is client blocked at barrier *)
   mutable mpbuf       : Obj.t list;                       (* p2p: buffer of model parameter updates *)
   mutable spbuf       : (string, int) Hashtbl.t;          (* p2p: buffer of the step of connected peers, piggybacked in m.bar *)
-  mutable ztx         :  ZMQ.Context.t;
+  mutable msbuf       : (int, string * message_rec) Hashtbl.t;  (* mapre: buffer of un-ordered messages *)
+  mutable ztx         :  ZMQ.Context.t;                   (* all: zmq context for communication *)
 }
 
 type actor_rec = {

@@ -4,9 +4,8 @@ open Types
 
 (* the global context: master, worker, etc. *)
 let _context = ref (Utils.empty_context ())
-let _msgbuf = Hashtbl.create 1024
 
-let barrier bar = Barrier.bsp bar !_context.myself_sock !_context.workers _msgbuf
+let barrier bar = Barrier.bsp bar !_context.myself_sock !_context.workers !_context.msbuf
 
 let _broadcast_all t s =
   let bar = Random.int 536870912 in

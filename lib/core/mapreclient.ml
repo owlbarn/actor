@@ -4,9 +4,8 @@ open Types
 
 (* the global context: master, worker, etc. *)
 let _context = ref (Utils.empty_context ())
-let _msgbuf = Hashtbl.create 1024
 
-let barrier bar = Barrier.bsp bar !_context.myself_sock !_context.workers _msgbuf
+let barrier bar = Barrier.bsp bar !_context.myself_sock !_context.workers !_context.msbuf
 
 let shuffle bar x z =
   List.mapi (fun i k ->
@@ -138,7 +137,7 @@ let service_loop () =
       )
     | _ -> (
       Logger.debug "%s" ("Buffering " ^ !_context.myself_addr ^ " <- " ^ i ^ " m.bar : " ^ string_of_int (m.bar));
-      Hashtbl.add _msgbuf m.bar (i,m)
+      Hashtbl.add !_context.msbuf m.bar (i,m)
       )
   done with Failure e -> (
     Logger.warn "%s" e;

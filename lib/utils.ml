@@ -63,5 +63,6 @@ let empty_context () =
     block       = false;
     mpbuf       = [];
     spbuf       = Hashtbl.create 32;
+    msbuf       = Hashtbl.create 256;
     ztx         = ztx;
   }
