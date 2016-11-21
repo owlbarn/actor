@@ -55,12 +55,3 @@ let set k v =
   match is_server () with
   | true  -> Peerserver.(_set k v !_context.step)
   | false -> Peerclient.(_set k v)
-
-let get_server_id () =
-  match is_server () with
-  | true  -> Peerserver.(!_context.myself_addr)
-  | false -> Peerclient.(!_context.master_addr)
-
-let get_client_id = None
-
-let get_swarm_size = None

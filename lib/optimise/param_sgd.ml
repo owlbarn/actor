@@ -62,7 +62,6 @@ let pull vars =
     (k,v1)
   ) vars
 
-(* FIXME *)
 let stop (_context : param_context ref) = !_context.step > 10_000
 
 let start jid =
