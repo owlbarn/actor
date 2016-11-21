@@ -182,18 +182,18 @@ let service_loop () =
     try let i, m = Utils.recv !_context.myself_sock in (
     match m.typ with
     | P2P_Connect -> (
-      Logger.debug "%s: client connects %s" !_context.myself_addr m.par.(0);
+      Logger.debug "%s: p2p_connect %s" !_context.myself_addr m.par.(0);
       let addr = m.par.(0) in
       !_context.master_addr <- addr;
       !_context.master_sock <- Route.connect addr
       )
     | P2P_Ping -> (
-      Logger.debug "%s: ping from %s" !_context.myself_addr m.par.(0);
+      Logger.debug "%s: p2p_ping %s" !_context.myself_addr m.par.(0);
       let addr = m.par.(0) in
       if Route.exists addr = false then Route.(connect addr |> add addr)
       )
     | P2P_Join -> (
-      Logger.debug "%s: receive join from %s" !_context.myself_addr m.par.(0);
+      Logger.debug "%s: p2p_join %s" !_context.myself_addr m.par.(0);
       let src = m.par.(0) in
       let dst = Marshal.from_string m.par.(1) 0 in
       let next = Route.nearest_exclude dst [src] in
@@ -218,7 +218,7 @@ let service_loop () =
         Route.forward next P2P_Join m.par;
       )
     | P2P_Copy -> (
-      Logger.debug "%s: receive model params" !_context.myself_addr;
+      Logger.debug "%s: p2p_copy" !_context.myself_addr;
       let h = Marshal.from_string m.par.(0) 0 in
       List.iter (fun (k,v) ->
         match Hashtbl.mem _param k with
@@ -227,7 +227,7 @@ let service_loop () =
       ) h
       )
     | P2P_Get -> (
-      Logger.debug "%s: receive local get" !_context.myself_addr;
+      Logger.debug "%s: p2p_get" !_context.myself_addr;
       let k = Marshal.from_string m.par.(0) 0 in
       let next = Route.(hash k |> nearest) in
       match next = !_context.myself_addr with
@@ -240,7 +240,7 @@ let service_loop () =
       | false -> Route.forward next P2P_Get_Q m.par
       )
     | P2P_Get_Q -> (
-      Logger.debug "%s: receive get query" !_context.myself_addr;
+      Logger.debug "%s: p2p_get_q" !_context.myself_addr;
       let k = Marshal.from_string m.par.(0) 0 in
       let next = Route.(hash k |> nearest) in
       match next = !_context.myself_addr with
@@ -254,7 +254,7 @@ let service_loop () =
       | false -> Route.forward next P2P_Get_Q m.par
       )
     | P2P_Get_R -> (
-      Logger.debug "%s: receive get reply" !_context.myself_addr;
+      Logger.debug "%s: p2p_get_r" !_context.myself_addr;
       let addr = m.par.(1) in
       let next = Route.(hash addr |> nearest) in
       match next = !_context.myself_addr with
@@ -262,7 +262,7 @@ let service_loop () =
       | false -> Route.forward next P2P_Get_R m.par
       )
     | P2P_Set -> (
-      Logger.debug "%s: set operation" !_context.myself_addr;
+      Logger.debug "%s: p2p_get" !_context.myself_addr;
       let k, v, t = Marshal.from_string m.par.(0) 0 in
       (* check whether this is from the local client *)
       let t = if t < 0 then (
@@ -276,7 +276,7 @@ let service_loop () =
       | false -> Route.forward next P2P_Set m.par
       )
     | P2P_Push -> (
-      Logger.debug "%s: receive local push" !_context.myself_addr;
+      Logger.debug "%s: p2p_push" !_context.myself_addr;
       Marshal.from_string m.par.(0) 0
       |> List.iter (fun (k,v) ->
         let next = Route.(hash k |> nearest) in
@@ -289,7 +289,7 @@ let service_loop () =
       )
       )
     | P2P_Pull -> (
-      Logger.debug "%s: receive local pull" !_context.myself_addr;
+      Logger.debug "%s: p2p_pull" !_context.myself_addr;
       Marshal.from_string m.par.(0) 0
       |> List.iter (fun k ->
         let next = Route.(hash k |> nearest) in
@@ -308,7 +308,7 @@ let service_loop () =
       _shall_deliver_pull ()
       )
     | P2P_Pull_Q -> (
-      Logger.debug "%s: pull query from %s" !_context.myself_addr m.par.(1);
+      Logger.debug "%s: p2p_pull_q %s" !_context.myself_addr m.par.(1);
       let k = Marshal.from_string m.par.(0) 0 in
       let next = Route.(hash k |> nearest) in
       match next = !_context.myself_addr with
@@ -322,7 +322,7 @@ let service_loop () =
       | false -> Route.forward next P2P_Pull_Q m.par
       )
     | P2P_Pull_R -> (
-      Logger.debug "%s: pull reply from %s" !_context.myself_addr m.par.(1);
+      Logger.debug "%s: p2p_pull_r %s" !_context.myself_addr m.par.(1);
       let addr = m.par.(1) in
       let next = Route.(hash addr |> nearest) in
       match next = !_context.myself_addr with
@@ -334,7 +334,7 @@ let service_loop () =
       | false -> Route.forward next P2P_Pull_R m.par
       )
     | P2P_Bar -> (
-      Logger.debug "%s: barrier query" !_context.myself_addr;
+      Logger.debug "%s: p2p_bar" !_context.myself_addr;
       !_context.block <- true;
       !_context.step <- !_context.step + 1;
       _notify_peers_step ();

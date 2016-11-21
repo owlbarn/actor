@@ -7,9 +7,9 @@ let _context = ref (Utils.empty_context ())
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 
 (* record: whether busy; worker's current step; workers at a step *)
-let worker_busy : (string, int) Hashtbl.t = Hashtbl.create 1_000_000
-let worker_step : (string, int) Hashtbl.t = Hashtbl.create 1_000_000
-let step_worker : (int, string) Hashtbl.t = Hashtbl.create 1_000_000
+let worker_busy : (string, int) Hashtbl.t = Hashtbl.create 10_000
+let worker_step : (string, int) Hashtbl.t = Hashtbl.create 10_000
+let step_worker : (int, string) Hashtbl.t = Hashtbl.create 10_000
 
 (* default schedule function *)
 let _default_schedule = fun _ -> [ ] (** TODO: fix scheduler ... *)
