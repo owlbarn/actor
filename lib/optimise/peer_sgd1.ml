@@ -52,11 +52,18 @@ let barrier _context = Barrier.p2p_bsp _context
 
 let pull updates =
   Logger.debug "pulling %i updates ..." (List.length updates);
-  List.map (fun (k,v,t) ->
-    let v0, _ = P2P.get k in
-    let v1 = MX.(v0 -@ v) in
-    k, v1, t
-  ) updates
+  let h = Hashtbl.create 32 in
+  List.iter (fun (k,v,t) ->
+    if Hashtbl.mem h k = false then (
+      let v', t' = P2P.get k in
+      Hashtbl.add h k (v',t')
+    );
+    let v', t' = Hashtbl.find h k in
+    let v' = MX.(v' -@ v) in
+    let t' = max t' t in
+    Hashtbl.replace h k (v',t')
+  ) updates;
+  Hashtbl.fold (fun k (v,t) l -> l @ [(k,v,t)]) h []
 
 let stop _context = !_context.step > 10000
 
