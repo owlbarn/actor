@@ -5,31 +5,31 @@
 open Types
 
 (* Mapre barrier: Bulk synchronous parallel *)
-let mapre_bsp bar router workers msgbuf =
+let mapre_bsp bar _context =
   let h = Hashtbl.create 1024 in
   (* first check the buffer for those arrive early *)
   List.iter (fun (i,m) ->
-    if not (Hashtbl.mem h i) then Hashtbl.(add h i m; remove msgbuf bar)
-  ) (Hashtbl.find_all msgbuf bar);
+    if not (Hashtbl.mem h i) then Hashtbl.(add h i m; remove !_context.msbuf bar)
+  ) (Hashtbl.find_all !_context.msbuf bar);
   (* then wait for the rest of the messages *)
-  while (Hashtbl.length h) < (StrMap.cardinal workers) do
-    let i, m = Utils.recv router in
+  while (Hashtbl.length h) < (StrMap.cardinal !_context.workers) do
+    let i, m = Utils.recv !_context.myself_sock in
     if bar = m.bar && not (Hashtbl.mem h i) then Hashtbl.add h i m;
   done;
   Hashtbl.fold (fun k v l -> v :: l) h []
 
 (* Mapre barrier: Delay bounded parallel *)
-let mapre_dbp bar router workers msgbuf =
+let mapre_dbp bar _context =
   let h = Hashtbl.create 1024 in
   (* first check the buffer for those arrive early *)
   List.iter (fun (i,m) ->
-    if not (Hashtbl.mem h i) then Hashtbl.(add h i m; remove msgbuf bar)
-  ) (Hashtbl.find_all msgbuf bar);
+    if not (Hashtbl.mem h i) then Hashtbl.(add h i m; remove !_context.msbuf bar)
+  ) (Hashtbl.find_all !_context.msbuf bar);
   (* then wait for the rest of the messages *)
   let budget = 0.001 in
   let t0 = Unix.gettimeofday () in
-  (try while (Hashtbl.length h) < (StrMap.cardinal workers) do
-    let i, m = Utils.recv router in
+  (try while (Hashtbl.length h) < (StrMap.cardinal !_context.workers) do
+    let i, m = Utils.recv !_context.myself_sock in
     if bar = m.bar && not (Hashtbl.mem h i) then Hashtbl.add h i m;
     if budget < (Unix.gettimeofday () -. t0) then failwith "timeout"
   done

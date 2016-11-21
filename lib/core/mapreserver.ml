@@ -5,7 +5,7 @@ open Types
 (* the global context: master, worker, etc. *)
 let _context = ref (Utils.empty_mapre_context ())
 
-let barrier bar = Barrier.mapre_bsp bar !_context.myself_sock !_context.workers !_context.msbuf
+let barrier bar = Barrier.mapre_bsp bar _context
 
 let _broadcast_all t s =
   let bar = Random.int 536870912 in
