@@ -4,6 +4,7 @@
  *)
 
 open Owl
+open Types
 
 module MX = Dense.Real
 module PS = Param
@@ -61,11 +62,14 @@ let pull vars =
     (k,v1)
   ) vars
 
+let stop _context = !_context.step > 10_000
+
 let start jid =
   (* register schedule, push, pull functions *)
   PS.register_schedule schedule;
   PS.register_pull pull;
   PS.register_push push;
+  PS.register_stop stop;
   (* pre-cache the model in the server's kv store *)
   (* FIXME: need to fix this hack *)
   MX.iteri_cols (fun k v -> Paramserver._set k v 0) !_model;

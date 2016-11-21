@@ -12,7 +12,7 @@ let worker_step : (string, int) Hashtbl.t = Hashtbl.create 1_000_000
 let step_worker : (int, string) Hashtbl.t = Hashtbl.create 1_000_000
 
 (* default schedule function *)
-let _default_schedule = fun workers -> [ ] (** TODO: fix scheduler ... *)
+let _default_schedule = fun _ -> [ ] (** TODO: fix scheduler ... *)
 let _schedule = ref (Marshal.to_string _default_schedule [ Marshal.Closures ])
 
 (* default pull function *)
@@ -20,7 +20,7 @@ let _default_pull = fun updates -> updates
 let _pull = ref (Marshal.to_string _default_pull [ Marshal.Closures ])
 
 (* default stopping function *)
-let _default_stop = fun () -> false
+let _default_stop = fun _ -> false
 let _stop = ref (Marshal.to_string _default_stop [ Marshal.Closures ])
 
 (* bulk synchronous parallel *)
@@ -87,9 +87,9 @@ let service_loop () =
   (* unmarshal the schedule and pull functions *)
   let schedule : ('a, 'b, 'c) ps_schedule_typ = Marshal.from_string !_schedule 0 in
   let pull : ('a, 'b, 'c) ps_pull_typ = Marshal.from_string !_pull 0 in
-  let stop : unit -> bool = Marshal.from_string !_stop 0 in
+  let stop : ps_stop_typ = Marshal.from_string !_stop 0 in
   (* loop to process messages *)
-  try while not (stop ()) do
+  try while not (stop _context) do
     (* synchronisation barrier check *)
     let t, passed = bsp !_context.step in !_context.step <- t;
     (* schecule the passed at every message arrival *)

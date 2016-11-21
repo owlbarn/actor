@@ -65,7 +65,7 @@ let pull updates =
   ) updates;
   Hashtbl.fold (fun k (v,t) l -> l @ [(k,v,t)]) h []
 
-let stop _context = !_context.step > 10000
+let stop _context = !_context.step > 10_000
 
 let start jid =
   (* register schedule, push, pull functions *)

@@ -35,7 +35,7 @@ let register_push (f : ('a, 'b, 'c) ps_push_typ) =
   Paramclient._push := Marshal.to_string f [ Marshal.Closures ]
 
 (* stopping criterion for the scheduling loop *)
-let register_stop (f : unit -> bool) =
+let register_stop (f : ps_stop_typ) =
   Paramserver._stop := Marshal.to_string f [ Marshal.Closures ]
 
 let get k =
