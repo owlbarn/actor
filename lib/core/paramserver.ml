@@ -23,6 +23,10 @@ let _pull = ref (Marshal.to_string _default_pull [ Marshal.Closures ])
 let _default_stop = fun _ -> false
 let _stop = ref (Marshal.to_string _default_stop [ Marshal.Closures ])
 
+(* default barrier function *)
+let _default_barrier = fun _ -> true
+let _barrier = ref (Marshal.to_string _default_barrier [ Marshal.Closures ])
+
 (* bulk synchronous parallel *)
 let bsp t =
   let num_finish = List.length (Hashtbl.find_all step_worker t) in

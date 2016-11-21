@@ -70,6 +70,8 @@ type ('a, 'b, 'c) ps_pull_typ = ('a * 'b) list -> ('a * 'c) list
 
 type ('a, 'b, 'c) ps_push_typ = 'a -> ('b * 'c) list -> ('b * 'c) list
 
+type ps_barrier_typ = context ref -> bool
+
 type ps_stop_typ = context ref -> bool
 
 (** types of user-defined functions in p2p parallel module *)

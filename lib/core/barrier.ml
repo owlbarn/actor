@@ -4,7 +4,7 @@
 
 open Types
 
-(* Bulk synchronous parallel *)
+(* Mapre barrier: Bulk synchronous parallel *)
 let bsp bar router workers msgbuf =
   let h = Hashtbl.create 1024 in
   (* first check the buffer for those arrive early *)
@@ -18,7 +18,7 @@ let bsp bar router workers msgbuf =
   done;
   Hashtbl.fold (fun k v l -> v :: l) h []
 
-(* Delay bounded parallel *)
+(* Mapre barrier: Delay bounded parallel *)
 let dbp bar router workers msgbuf =
   let h = Hashtbl.create 1024 in
   (* first check the buffer for those arrive early *)
@@ -35,9 +35,6 @@ let dbp bar router workers msgbuf =
   done
   with exn -> Logger.info "%s" "timeout +++");
   Hashtbl.fold (fun k v l -> v :: l) h []
-
-(* Stale synchronous parallel *)
-let ssp = None
 
 (* P2P barrier: Asynchronous parallel *)
 let p2p_asp _context = true
