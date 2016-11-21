@@ -74,6 +74,7 @@ let empty_param_context () =
     myself_sock = ZMQ.Socket.(create ztx router);
     workers     = StrMap.empty;
     step        = 0;
+    stale       = 1;
     worker_busy = Hashtbl.create 1_000;
     worker_step = Hashtbl.create 1_000;
     step_worker = Hashtbl.create 1_000;

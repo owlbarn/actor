@@ -5,7 +5,7 @@
 open Types
 
 (* Mapre barrier: Bulk synchronous parallel *)
-let bsp bar router workers msgbuf =
+let mapre_bsp bar router workers msgbuf =
   let h = Hashtbl.create 1024 in
   (* first check the buffer for those arrive early *)
   List.iter (fun (i,m) ->
@@ -19,7 +19,7 @@ let bsp bar router workers msgbuf =
   Hashtbl.fold (fun k v l -> v :: l) h []
 
 (* Mapre barrier: Delay bounded parallel *)
-let dbp bar router workers msgbuf =
+let mapre_dbp bar router workers msgbuf =
   let h = Hashtbl.create 1024 in
   (* first check the buffer for those arrive early *)
   List.iter (fun (i,m) ->
@@ -45,7 +45,7 @@ let param_bsp _context =
   | false -> !_context.step, []
 
 (* Param barrier: Stale synchronous parallel *)
-let param_ssp _context d =
+let param_ssp _context =
   let num_finish = List.length (Hashtbl.find_all !_context.step_worker !_context.step) in
   let num_worker = StrMap.cardinal !_context.workers in
   let t = match num_finish = num_worker with
@@ -54,14 +54,14 @@ let param_ssp _context d =
   in
   let l = Hashtbl.fold (fun w t' l ->
     let busy = Hashtbl.find !_context.worker_busy w in
-    match (busy = 0) && ((t' - t) < d) with
+    match (busy = 0) && ((t' - t) < !_context.stale) with
     | true  -> l @ [ w ]
     | false -> l
   ) !_context.worker_step []
   in (t, l)
 
 (* Param barrier: Asynchronous parallel *)
-let param_asp _context = param_ssp _context max_int
+let param_asp _context = !_context.stale <- max_int; param_ssp _context
 
 (* P2P barrier : Bulk synchronous parallel
    this one waits for the slowest one to catch up. *)

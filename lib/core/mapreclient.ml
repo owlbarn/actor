@@ -5,7 +5,7 @@ open Types
 (* the global context: master, worker, etc. *)
 let _context = ref (Utils.empty_mapre_context ())
 
-let barrier bar = Barrier.bsp bar !_context.myself_sock !_context.workers !_context.msbuf
+let barrier bar = Barrier.mapre_bsp bar !_context.myself_sock !_context.workers !_context.msbuf
 
 let shuffle bar x z =
   List.mapi (fun i k ->
