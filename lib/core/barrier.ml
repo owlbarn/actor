@@ -77,3 +77,6 @@ let p2p_bsp _context =
 
 (* P2P barrier: Asynchronous parallel *)
 let p2p_asp _context = true
+
+(* P2P barrier: Asynchronous parallel but aligned with local client *)
+let p2p_asp_local _context = !_context.block

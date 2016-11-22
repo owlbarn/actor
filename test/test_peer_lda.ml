@@ -12,4 +12,5 @@ let t = 100
 
 let _ =
   Logger.info "#doc:%i #top:%i #voc:%i" (Array.length d) t (Hashtbl.length v);
-  Peer_lda.init t v d
+  Peer_lda.init t v d;
+  Peer_lda.start Sys.argv.(1)
