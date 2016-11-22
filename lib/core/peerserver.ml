@@ -10,7 +10,7 @@ let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 let _plbuf : (Obj.t, Obj.t option) Hashtbl.t = Hashtbl.create 1_000
 
 (* default pull function *)
-let _default_pull updates = updates
+let _default_pull _ updates = updates
 let _pull = ref (Marshal.to_string _default_pull [ Marshal.Closures ])
 
 (* default barrier function *)
@@ -147,7 +147,7 @@ let _shall_deliver_pull () =
 let _barrier_control barrier pull =
   let updates = List.map Obj.obj !_context.mpbuf in
   if barrier _context = true then (
-    pull updates |> List.iter (fun (k,v,t) -> _set k v t);
+    pull _context updates |> List.iter (fun (k,v,t) -> _set k v t);
     !_context.mpbuf <- [];
     if !_context.block = true then (
       Utils.send ~bar:!_context.step !_context.master_sock OK [||];

@@ -82,15 +82,17 @@ let sampling d =
     !t__z.(d).(i) <- !k;
   ) !data.(d)
 
-let schedule () = None
+let schedule _context =
+  let d = Array.make !n_v (fun i -> i) in
+  Stats.choose d (!n_v / 10) |> Array.to_list
 
-let pull = None
+let pull updates = []
 
-let push () = 
+let push _context params =
   for j = 0 to !n_d - 1 do
     sampling j
   done
 
-let barrier = None
+let barrier _context = Barrier.p2p_bsp _context
 
-let stop = None
+let stop _context = !_context.step > 1_000

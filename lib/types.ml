@@ -104,7 +104,7 @@ type ps_stop_typ = param_context ref -> bool
 
 type 'a p2p_schedule_typ = peer_context ref -> 'a list
 
-type ('a, 'b) p2p_pull_typ = ('a * 'b * int) list -> ('a * 'b * int) list
+type ('a, 'b) p2p_pull_typ = peer_context ref -> ('a * 'b * int) list -> ('a * 'b * int) list
 
 type ('a, 'b) p2p_push_typ = peer_context ref -> ('a * 'b) list -> ('a * 'b) list
 

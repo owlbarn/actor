@@ -1,4 +1,4 @@
-(** [ Test P2P parallel ]  *)
+(** [ Test SGD on P2P parallel ]  *)
 
 open Owl
 module MX = Dense.Real

@@ -50,7 +50,7 @@ let barrier _context =
   Logger.debug "checking barrier ...";
   true
 
-let pull updates =
+let pull _context updates =
   Logger.debug "pulling updates ...";
   List.map (fun (k,v,t) ->
     let v0, _ = P2P.get k in

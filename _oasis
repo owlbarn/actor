@@ -94,7 +94,7 @@ Executable test_peer_lda
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_peer_lda.ml
-  BuildDepends:   core, optimise
+  BuildDepends:   core, optimise, topic
 
 Executable test_peer
   Path:           test

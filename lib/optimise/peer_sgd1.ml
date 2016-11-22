@@ -48,7 +48,7 @@ let push _context params =
 
 let barrier _context = Barrier.p2p_bsp _context
 
-let pull updates =
+let pull _context updates =
   let h = Hashtbl.create 32 in
   List.iter (fun (k,v,t) ->
     if Hashtbl.mem h k = false then (
