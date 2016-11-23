@@ -150,7 +150,7 @@ let push _context params =
   ) params;
   !updates
 
-let barrier _context = Barrier.p2p_asp_local _context
+let barrier _context = Barrier.p2p_bsp _context
 
 let stop _context = !_context.step > 1_00
 
