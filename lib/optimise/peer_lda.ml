@@ -63,30 +63,34 @@ let init k v d =
     )
   ) d;
   (* init local model / kv store *)
-  for i = 0 to !n_v do
-    P2P.set i [||]
+  for i = 0 to !n_v - 1 do
+    let r = MS.row !t_wk i in
+    let a = Array.make (MS.nnz r) (0,0.) in
+    let j = ref 0 in
+    MS.iteri_nz (fun _ k c -> a.(!j) <- (k,c); j := !j + 1) r;
+    P2P.set i a
   done
 
-let sampling d =
+let sampling d h =
   let p = MD.zeros 1 !n_k in
   Array.iteri (fun i w ->
-    let k = !t__z.(d).(i) in
-    exclude_token w d k;
-    (* make cdf function *)
-    Logger.error "+++";
-    let x = ref 0. in
-    for j = 0 to !n_k - 1 do
-      x := !x +. (MS.get !t_dk d j +. !alpha_k) *. (MS.get !t_wk w j +. !beta) /. (MD.get !t__k 0 j +. !beta_v);
-      MD.set p 0 j !x;
-    done;
-    Logger.error "===";
-    (* draw a sample *)
-    let u = Stats.Rnd.uniform () *. !x in
-    let k = ref 0 in
-    while (MD.get p 0 !k) < u do Logger.error "--- %i %i %i" d i !k; k := !k + 1 done;
-    include_token w d !k;
-    !t__z.(d).(i) <- !k;
-      Logger.error "***";
+    if h.(w) = true then (
+      let k = !t__z.(d).(i) in
+      exclude_token w d k;
+      (* make cdf function *)
+      let x = ref 0. in
+      for j = 0 to !n_k - 1 do
+        (*Logger.error "+++ %.1f %.1f %.1f" (MS.get !t_dk d j) (MS.get !t_wk w j) (MD.get !t__k 0 j);*)
+        x := !x +. (MS.get !t_dk d j +. !alpha_k) *. (MS.get !t_wk w j +. !beta) /. (MD.get !t__k 0 j +. !beta_v);
+        MD.set p 0 j !x;
+      done;
+      (* draw a sample *)
+      let u = Stats.Rnd.uniform () *. !x in
+      let k = ref 0 in
+      while (MD.get p 0 !k) < u do k := !k + 1 done;
+      include_token w d !k;
+      !t__z.(d).(i) <- !k;
+    )
   ) !data.(d)
 
 let schedule _context =
@@ -94,27 +98,61 @@ let schedule _context =
   let d = Array.init !n_v (fun i -> i) in
   Stats.choose d (!n_v / 10) |> Array.to_list
 
+(* FIXME: naive update at the moment *)
 let pull _context updates =
-  Logger.info "pull @ %s, %i" !_context.myself_addr !_context.step;
-  updates
+  let num_updates = List.fold_right (fun (_,a,_) x -> Array.length a + x) updates 0 in
+  Logger.info "pull @ %s, updates:%i" !_context.myself_addr num_updates;
+  let updates' = ref [] in
+  List.iter (fun (w,a,t) ->
+    let v = ref [||] in
+    let a', t' = P2P.get w in
+    let h = Array.make !n_k false in
+    Array.iter (fun (k,c) -> h.(k) <- true) a';
+    Array.iter (fun (k,c) ->
+      h.(k) <- false;
+      if c <> 0 then v := Array.append !v [|(k,c)|]
+    ) a;
+    Array.iter (fun (k,c) ->
+      if h.(k) = true then v := Array.append !v [|(k,c)|]
+    ) a';
+    updates' := !updates' @ [ (w, !v, max t t') ];
+  ) updates;
+  !updates'
 
 let push _context params =
   Logger.info "push @ %s" !_context.master_addr;
-  (* reset and re-assemble local model *)
+  (* assemble local model and set bitmap of words *)
   t_wk := MS.zeros !n_v !n_k;
+  let h = Array.make !n_v false in
   List.iter (fun (w,a) ->
-    Array.iter (fun (k,c) -> MS.(set !t_wk w k c)) a
+    Array.iter (fun (k,c) -> MS.set !t_wk w k c) a;
+    h.(w) <- true;
   ) params;
   (* iterate all local docs *)
   for j = 0 to !n_d - 1 do
-    Logger.info "gibbs sampling #%i" j;
-    sampling j
+    sampling j h
   done;
-  [ ]
+  (* calculate model updates *)
+  let updates = ref [] in
+  List.iter (fun (w,a) ->
+    let h = Array.make !n_k false in
+    let a' = ref [||] in
+    Array.iter (fun (k,c) ->
+      h.(k) <- true;
+      let c' = MS.get !t_wk w k in
+      if c' <> c then a' := Array.append !a' [|(k,c')|]
+    ) a;
+    let r = MS.row !t_wk w in
+    MS.iteri_nz (fun _ k c ->
+      if h.(k) = false then a' := Array.append !a' [|(k,c)|]
+    ) r;
+    updates := !updates @ [(w,!a')]
+  ) params;
+  !updates
 
 let barrier _context = Barrier.p2p_asp_local _context
 
-let stop _context = !_context.step > 1_0
+let stop _context = !_context.step > 1_00
 
 let start jid =
   (* register schedule, push, pull functions *)

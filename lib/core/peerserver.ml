@@ -169,7 +169,7 @@ let _notify_peers_step () =
 
 let _process_timeout () =
   _notify_peers_step ();
-  Logger.warn "%s timeout" !_context.myself_addr
+  Logger.debug "%s: timeout" !_context.myself_addr
 
 let service_loop () =
   Logger.debug "%s: p2p server" !_context.myself_addr;
