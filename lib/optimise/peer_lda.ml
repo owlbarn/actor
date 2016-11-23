@@ -103,8 +103,7 @@ let schedule _context =
   let d = Array.init !n_v (fun i -> i) in
   Stats.choose d (!n_v / 10) |> Array.to_list
 
-(* FIXME: naive update at the moment *)
-let pull _context updates =
+let pull' _context updates =
   let num_updates = List.fold_right (fun (_,a,_) x -> Array.length a + x) updates 0 in
   Logger.info "pull @ %s, updates:%i" !_context.myself_addr num_updates;
   let updates' = ref [] in
@@ -122,6 +121,30 @@ let pull _context updates =
     ) a';
     updates' := !updates' @ [ (w, !v, max t t') ];
   ) updates;
+  !updates'
+
+let pull _context updates =
+  let num_updates = List.fold_right (fun (_,a,_) x -> Array.length a + x) updates 0 in
+  Logger.info "pull @ %s, updates:%i" !_context.myself_addr num_updates;
+  let h = Hashtbl.create 256 in
+  List.iter (fun (w,a,t) ->
+    if Hashtbl.mem h w = false then (
+      let r = MS.zeros 1 !n_k in
+      let a', t' = P2P.get w in
+      Array.iter (fun (k,c) -> MS.set r 0 k c) a';
+      Hashtbl.add h w (r,t')
+    );
+    let r, t' = Hashtbl.find h w in
+    Array.iter (fun (k,c) -> MS.(set r 0 k (get r 0 k +. c))) a;
+    Hashtbl.replace h w (r, max t t');
+  ) updates;
+  let updates' = ref [] in
+  Hashtbl.iter (fun w (r,t) ->
+    let a = Array.make (MS.nnz r) (0,0.) in
+    let j = ref 0 in
+    MS.iteri_nz (fun _ k c -> a.(!j) <- (k,c); j := !j + 1) r;
+    updates' := !updates' @ [(w,a,t)]
+  ) h;
   !updates'
 
 let push _context params =
@@ -145,11 +168,11 @@ let push _context params =
     Array.iter (fun (k,c) ->
       h.(k) <- true;
       let c' = MS.get !t_wk w k in
-      if c' <> c then a' := Array.append !a' [|(k,c')|]
+      if c' <> c then a' := Array.append !a' [|(k,c'-.c)|]
     ) a;
     let r = MS.row !t_wk w in
-    MS.iteri_nz (fun _ k c ->
-      if h.(k) = false then a' := Array.append !a' [|(k,c)|]
+    MS.iteri_nz (fun _ k c' ->
+      if h.(k) = false then a' := Array.append !a' [|(k,c')|]
     ) r;
     updates := !updates @ [(w,!a')]
   ) params;
