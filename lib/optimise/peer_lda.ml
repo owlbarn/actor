@@ -74,6 +74,7 @@ let init k v d =
 let sampling d h =
   let p = MD.zeros 1 !n_k in
   Array.iteri (fun i w ->
+    try
     if h.(w) = true then (
       let k = !t__z.(d).(i) in
       exclude_token w d k;
@@ -83,14 +84,29 @@ let sampling d h =
         (*Logger.error "+++ %.1f %.1f %.1f" (MS.get !t_dk d j) (MS.get !t_wk w j) (MD.get !t__k 0 j);*)
         x := !x +. (MS.get !t_dk d j +. !alpha_k) *. (MS.get !t_wk w j +. !beta) /. (MD.get !t__k 0 j +. !beta_v);
         MD.set p 0 j !x;
+        if !x < 0. then (
+          Logger.error ">>> %i %f %f %f %f %f" j (MS.get !t_wk w j) (MS.get !t_dk d j)
+          (MD.get !t__k 0 j) (MD.get p 0 j) (MS.(sum (row !t_wk w)));
+          exit 0;
+        )
       done;
       (* draw a sample *)
       let u = Stats.Rnd.uniform () *. !x in
       let k = ref 0 in
-      while (MD.get p 0 !k) < u do k := !k + 1 done;
+      while (MD.get p 0 !k) < u do
+        k := !k + 1;
+        (*
+        if (MD.get p 0 !k) < 0. then (
+          Logger.error ">>> %i %f %f %f %f" !k (MS.get !t_wk w !k) (MS.get !t_dk d !k) (MD.get !t__k 0 !k) (MD.get p 0 !k);
+          exit 0;
+        )
+        *)
+      done;
+      (*if !k = 100 then Logger.error ">>> %i %i %i %f" i w !k (MD.get p 0 99);*)
       include_token w d !k;
       !t__z.(d).(i) <- !k;
     )
+    with _ -> Logger.error "+++ %i" w
   ) !data.(d)
 
 let schedule _context =
@@ -122,12 +138,20 @@ let pull _context updates =
 let push _context params =
   Logger.info "push @ %s" !_context.master_addr;
   (* assemble local model and set bitmap of words *)
-  t_wk := MS.zeros !n_v !n_k;
+  (*t_wk := MS.zeros !n_v !n_k;*)
+  MS.save !t_wk ((Hashtbl.hash !_context.myself_addr |> string_of_int) ^ "_z0.mat");
   let h = Array.make !n_v false in
   List.iter (fun (w,a) ->
+    let x = MS.zeros 1 !n_k in
+    Array.iter (fun (k,c) -> MS.set x 0 k c) a;
+    let r = MS.row !t_wk w in
+    let y = MS.(r -@ x |> sum) in
+    if  y <> 0. then Logger.error ">>>>>> %f" y;
+
     Array.iter (fun (k,c) -> MS.set !t_wk w k c) a;
     h.(w) <- true;
   ) params;
+  MS.save !t_wk ((Hashtbl.hash !_context.myself_addr |> string_of_int) ^ "_z1.mat");
   (* iterate all local docs *)
   for j = 0 to !n_d - 1 do
     sampling j h
@@ -152,7 +176,7 @@ let push _context params =
 
 let barrier _context = Barrier.p2p_bsp _context
 
-let stop _context = !_context.step > 1_00
+let stop _context = !_context.step > 5_00
 
 let start jid =
   (* register schedule, push, pull functions *)
