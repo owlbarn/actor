@@ -7,23 +7,20 @@ module MS = Sparse.Real
 module MD = Dense.Real
 module P2P = Peer
 
-(* model variables *)
-
-let n_d = ref 0
-let n_k = ref 0
-let n_v = ref 0
-
+(* local model hyper-parameters *)
 let alpha = ref 0.
 let beta = ref 0.
 let alpha_k = ref 0.
 let beta_v = ref 0.
-
+(* local and global model variables *)
 let t_dk = ref (MS.zeros 1 1)
 let t_wk = ref (MS.zeros 1 1)
 let t__k = ref (MD.zeros 1 1)
 let t__z = ref [| [||] |]
-
-let n_iter = 1_000
+(* data set variables *)
+let n_d = ref 0
+let n_k = ref 0
+let n_v = ref 0
 let data = ref [| [||] |]
 let vocb : (string, int) Hashtbl.t ref = ref (Hashtbl.create 1)
 let b__m = ref [||]   (* track if local model has been merged *)
@@ -38,7 +35,6 @@ let exclude_token w d k =
   MS.(set !t_wk w k (get !t_wk w k -. 1.));
   MS.(set !t_dk d k (get !t_dk d k -. 1.))
 
-(* init the model based on: topics, vocabulary, tokens *)
 let init k v d =
   Log.info "init the model";
   data := d;
@@ -150,10 +146,11 @@ let push _context params =
   (* a workaround for t__k at the moment *)
   let t_k' = P2P.get (-1) |> fst in
   t__k := MD.clone t_k';
-  (* update local model and set bitmap of words *)
+  (* if there are words to be merged into global model, rebuild local one *)
   let shall_rebuild = ref false in
   Array.iter (fun b -> if b = false then shall_rebuild := true) !b__m;
   if !shall_rebuild then rebuild_local_model ();
+  (* update local model and set bitmap of words *)
   let h = Array.make !n_v false in
   List.iteri (fun i (w,a) ->
     if !b__m.(w) = true then (
@@ -168,10 +165,8 @@ let push _context params =
     );
     h.(w) <- true;
   ) params;
-  (* iterate all local docs *)
-  for j = 0 to !n_d - 1 do
-    sampling j h
-  done;
+  (* iterate all local docs, time-consuming *)
+  for j = 0 to !n_d - 1 do sampling j h done;
   (* calculate model updates *)
   let updates = ref [] in
   List.iter (fun (w,a) ->
