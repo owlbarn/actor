@@ -102,7 +102,7 @@ let sampling d h =
 let schedule _context =
   Logger.info "schedule @ %s, step:%i" !_context.master_addr !_context.step;
   let d = Array.init !n_v (fun i -> i) in
-  Stats.choose d (!n_v / 1) |> Array.to_list
+  Stats.choose d (!n_v / 10) |> Array.to_list
 
 let pull _context updates =
   let num_updates = List.fold_right (fun (_,a,_) x -> Array.length a + x) updates 0 in
