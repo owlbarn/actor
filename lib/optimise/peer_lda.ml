@@ -26,7 +26,7 @@ let t__z = ref [| [||] |]
 let n_iter = 1_000
 let data = ref [| [||] |]
 let vocb : (string, int) Hashtbl.t ref = ref (Hashtbl.create 1)
-let b__m = ref [||]
+let b__m = ref [||]   (* track if local model has been merged *)
 
 let include_token w d k =
   MD.(set !t__k 0 k (get !t__k 0 k +. 1.));
@@ -43,6 +43,7 @@ let init k v d =
   Log.info "init the model";
   data := d;
   vocb := v;
+  b__m := Array.make (Hashtbl.length v) false;
   (* set model parameters *)
   n_d  := Array.length d;
   n_v  := Hashtbl.length v;
@@ -55,8 +56,6 @@ let init k v d =
   alpha_k := !alpha /. (float_of_int !n_k);
   beta := 0.1;
   beta_v := (float_of_int !n_v) *. !beta;
-  (* track if local model has been merged *)
-  b__m := Array.make !n_v false;
   (* randomise the topic assignment for each token *)
   t__z := Array.mapi (fun i s ->
     Array.init (Array.length s) (fun j ->
@@ -66,25 +65,17 @@ let init k v d =
     )
   ) d;
   (* init local model / kv store *)
-  for w = 0 to !n_v - 1 do
-    (* let r = MS.row !t_wk i in
-    let a = Array.make (MS.nnz r) (0,0.) in
-    let j = ref 0 in
-    MS.iteri_nz (fun _ k c -> a.(!j) <- (k,c); j := !j + 1) r;
-    P2P.set i a *)
-    P2P.set w [||]
-  done
+  for w = 0 to !n_v - 1 do P2P.set w [||] done
 
-let add_to_global_model () =
-  let updates = ref [] in
-  for w = 0 to !n_v - 1 do
-    let r = MS.row !t_wk w in
-    let a = Array.make (MS.nnz r) (0,0.) in
-    let j = ref 0 in
-    MS.iteri_nz (fun _ k c -> a.(!j) <- (k,c); j := !j + 1) r;
-    updates := !updates @ [(w,a)]
-  done;
-  !updates
+let rebuild_local_model () =
+  Logger.warn "rebuild local model";
+  t_wk := MS.zeros !n_v !n_k;
+  Array.iteri (fun i d ->
+    Array.iteri (fun j k ->
+      let w = !data.(i).(j) in
+      MS.(set !t_wk w k (get !t_wk w k +. 1.));
+    ) d
+  ) !t__z
 
 let sampling d h =
   let p = MD.zeros 1 !n_k in
@@ -95,7 +86,6 @@ let sampling d h =
       (* make cdf function *)
       let x = ref 0. in
       for j = 0 to !n_k - 1 do
-        (*Logger.error "+++ %.1f %.1f %.1f" (MS.get !t_dk d j) (MS.get !t_wk w j) (MD.get !t__k 0 j);*)
         x := !x +. (MS.get !t_dk d j +. !alpha_k) *. (MS.get !t_wk w j +. !beta) /. (MD.get !t__k 0 j +. !beta_v);
         MD.set p 0 j !x;
         if !x < 0. then (
@@ -117,26 +107,6 @@ let schedule _context =
   Logger.info "schedule @ %s, step:%i" !_context.master_addr !_context.step;
   let d = Array.init !n_v (fun i -> i) in
   Stats.choose d (!n_v / 10) |> Array.to_list
-
-let pull' _context updates =
-  let num_updates = List.fold_right (fun (_,a,_) x -> Array.length a + x) updates 0 in
-  Logger.info "pull @ %s, updates:%i" !_context.myself_addr num_updates;
-  let updates' = ref [] in
-  List.iter (fun (w,a,t) ->
-    let v = ref [||] in
-    let a', t' = P2P.get w in
-    let h = Array.make !n_k false in
-    Array.iter (fun (k,c) -> h.(k) <- true) a';
-    Array.iter (fun (k,c) ->
-      h.(k) <- false;
-      if c <> 0 then v := Array.append !v [|(k,c)|]
-    ) a;
-    Array.iter (fun (k,c) ->
-      if h.(k) = true then v := Array.append !v [|(k,c)|]
-    ) a';
-    updates' := !updates' @ [ (w, !v, max t t') ];
-  ) updates;
-  !updates'
 
 let pull _context updates =
   let num_updates = List.fold_right (fun (_,a,_) x -> Array.length a + x) updates 0 in
@@ -164,39 +134,40 @@ let pull _context updates =
 
 let push _context params =
   Logger.info "push @ %s" !_context.master_addr;
-  if !_context.step = 0 then (
-    add_to_global_model ()
-  )
-  else (
-    (* assemble local model and set bitmap of words *)
-    t_wk := MS.zeros !n_v !n_k;
-    let h = Array.make !n_v false in
-    List.iteri (fun i (w,a) ->
-      Array.iter (fun (k,c) -> MS.set !t_wk w k c) a;
-      h.(w) <- true;
-    ) params;
-    (* iterate all local docs *)
-    for j = 0 to !n_d - 1 do
-      sampling j h
-    done;
-    (* calculate model updates *)
-    let updates = ref [] in
-    List.iter (fun (w,a) ->
-      let h = Array.make !n_k false in
-      let a' = ref [||] in
-      Array.iter (fun (k,c) ->
-        h.(k) <- true;
-        let c' = MS.get !t_wk w k in
-        if c' <> c then a' := Array.append !a' [|(k,c'-.c)|]
-      ) a;
-      let r = MS.row !t_wk w in
-      MS.iteri_nz (fun _ k c' ->
-        if h.(k) = false then a' := Array.append !a' [|(k,c')|]
-      ) r;
-      updates := !updates @ [(w,!a')]
-    ) params;
-    !updates
-  )
+  (* assemble local model and set bitmap of words *)
+  rebuild_local_model ();
+  let h = Array.make !n_v false in
+  List.iteri (fun i (w,a) ->
+    if !b__m.(w) = true then (
+      Array.iter (fun (k,c) -> MS.set !t_wk w k c) a
+    )
+    else (
+      Array.iter (fun (k,c) -> MS.(set !t_wk w k (get !t_wk w k +. c))) a;
+      !b__m.(w) <- true
+    );
+    h.(w) <- true;
+  ) params;
+  (* iterate all local docs *)
+  for j = 0 to !n_d - 1 do
+    sampling j h
+  done;
+  (* calculate model updates *)
+  let updates = ref [] in
+  List.iter (fun (w,a) ->
+    let h = Array.make !n_k false in
+    let a' = ref [||] in
+    Array.iter (fun (k,c) ->
+      h.(k) <- true;
+      let c' = MS.get !t_wk w k in
+      if c' <> c then a' := Array.append !a' [|(k,c'-.c)|]
+    ) a;
+    let r = MS.row !t_wk w in
+    MS.iteri_nz (fun _ k c' ->
+      if h.(k) = false then a' := Array.append !a' [|(k,c')|]
+    ) r;
+    updates := !updates @ [(w,!a')]
+  ) params;
+  !updates
 
 let barrier _context = Barrier.p2p_bsp _context
 
