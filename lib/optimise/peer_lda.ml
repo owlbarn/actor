@@ -79,6 +79,9 @@ let rebuild_local_model () =
   ) !t__z;
   Logger.warn "rebuild local model finished"
 
+let show_stats () =
+  Logger.info "t_wk = %.4f, t_dk = %.4f" (MS.density !t_wk) (MS.density !t_dk)
+
 let sampling d h =
   let p = MD.zeros 1 !n_k in
   Array.iteri (fun i w ->
@@ -89,12 +92,7 @@ let sampling d h =
       let x = ref 0. in
       for j = 0 to !n_k - 1 do
         x := !x +. (MS.get !t_dk d j +. !alpha_k) *. (MS.get !t_wk w j +. !beta) /. (MD.get !t__k 0 j +. !beta_v);
-        MD.set p 0 j !x;
-        if !x < 0. then (
-          Logger.error ">>> %i %f %f %f %f %f" j (MS.get !t_wk w j) (MS.get !t_dk d j)
-          (MD.get !t__k 0 j) (MD.get p 0 j) (MS.(sum (row !t_wk w)));
-          exit 0;
-        )
+        MD.set p 0 j !x
       done;
       (* draw a sample *)
       let u = Stats.Rnd.uniform () *. !x in
@@ -108,7 +106,7 @@ let sampling d h =
 let schedule _context =
   Logger.info "schedule @ %s, step:%i" !_context.master_addr !_context.step;
   let d = Array.init !n_v (fun i -> i) in
-  Stats.choose d (!n_v / 10) |> Array.to_list
+  Stats.choose d (!n_v / 1) |> Array.to_list
 
 let pull _context updates =
   let num_updates = List.fold_right (fun (_,a,_) x -> Array.length a + x) updates 0 in
@@ -148,11 +146,14 @@ let pull _context updates =
 
 let push _context params =
   Logger.info "push @ %s" !_context.master_addr;
+  show_stats ();
   (* a workaround for t__k at the moment *)
   let t_k' = P2P.get (-1) |> fst in
   t__k := MD.clone t_k';
   (* update local model and set bitmap of words *)
-  rebuild_local_model ();
+  let shall_rebuild = ref false in
+  Array.iter (fun b -> if b = false then shall_rebuild := true) !b__m;
+  if !shall_rebuild then rebuild_local_model ();
   let h = Array.make !n_v false in
   List.iteri (fun i (w,a) ->
     if !b__m.(w) = true then (
