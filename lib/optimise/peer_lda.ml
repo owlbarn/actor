@@ -117,8 +117,8 @@ let pull _context updates =
   let tk_updates = List.filter (fun (w,_,_) -> w = -1) updates in
   if List.length tk_updates > 0 then (
     let t_k', _ = P2P.get (-1) in
+    Logger.error "%s ==> %i %f" !_context.myself_addr (List.length tk_updates) (MD.sum t_k');
     List.iter (fun (_,a,t) ->
-      Logger.error "%s ==> %i %i %f" !_context.myself_addr (List.length tk_updates) (Array.length a) (MD.sum t_k');
       Array.iter (fun (k,c) -> MD.(set t_k' 0 k (get t_k' 0 k +. c))) a
     ) tk_updates;
     P2P.set (-1) t_k'
