@@ -65,17 +65,19 @@ let init k v d =
     )
   ) d;
   (* init local model / kv store *)
-  for w = 0 to !n_v - 1 do P2P.set w [||] done
+  for w = 0 to !n_v - 1 do P2P.set w [||] done;
+  P2P.set (-1) !t__k
 
 let rebuild_local_model () =
-  Logger.warn "rebuild local model";
+  Logger.warn "rebuild local model start";
   t_wk := MS.zeros !n_v !n_k;
   Array.iteri (fun i d ->
     Array.iteri (fun j k ->
       let w = !data.(i).(j) in
       MS.(set !t_wk w k (get !t_wk w k +. 1.));
     ) d
-  ) !t__z
+  ) !t__z;
+  Logger.warn "rebuild local model finished"
 
 let sampling d h =
   let p = MD.zeros 1 !n_k in
@@ -111,6 +113,18 @@ let schedule _context =
 let pull _context updates =
   let num_updates = List.fold_right (fun (_,a,_) x -> Array.length a + x) updates 0 in
   Logger.info "pull @ %s, updates:%i" !_context.myself_addr num_updates;
+  (* update t__k *)
+  let tk_updates = List.filter (fun (w,_,_) -> w = -1) updates in
+  if List.length tk_updates > 0 then (
+    let t_k', _ = P2P.get (-1) in
+    List.iter (fun (_,a,t) ->
+      Logger.error "%sL ==> %i %i %f" !_context.myself_addr (List.length tk_updates) (Array.length a) (MD.sum t_k');
+      Array.iter (fun (k,c) -> MD.(set t_k' 0 k (get t_k' 0 k +. c))) a
+    ) tk_updates;
+    P2P.set (-1) t_k'
+  );
+  (* update t_wk *)
+  let wk_updates = List.filter (fun (w,_,_) -> w > -1) updates in
   let h = Hashtbl.create 256 in
   List.iter (fun (w,a,t) ->
     if Hashtbl.mem h w = false then (
@@ -122,19 +136,22 @@ let pull _context updates =
     let r, t' = Hashtbl.find h w in
     Array.iter (fun (k,c) -> MS.(set r 0 k (get r 0 k +. c))) a;
     Hashtbl.replace h w (r, max t t');
-  ) updates;
-  let updates' = ref [] in
+  ) wk_updates;
+  let wk_updates' = ref [] in
   Hashtbl.iter (fun w (r,t) ->
     let a = Array.make (MS.nnz r) (0,0.) in
     let j = ref 0 in
     MS.iteri_nz (fun _ k c -> a.(!j) <- (k,c); j := !j + 1) r;
-    updates' := !updates' @ [(w,a,t)]
+    wk_updates' := !wk_updates' @ [(w,a,t)]
   ) h;
-  !updates'
+  !wk_updates'
 
 let push _context params =
   Logger.info "push @ %s" !_context.master_addr;
-  (* assemble local model and set bitmap of words *)
+  (* a workaround for t__k at the moment *)
+  let t_k' = P2P.get (-1) |> fst in
+  t__k := MD.clone t_k';
+  (* update local model and set bitmap of words *)
   rebuild_local_model ();
   let h = Array.make !n_v false in
   List.iteri (fun i (w,a) ->
@@ -142,7 +159,10 @@ let push _context params =
       Array.iter (fun (k,c) -> MS.set !t_wk w k c) a
     )
     else (
-      Array.iter (fun (k,c) -> MS.(set !t_wk w k (get !t_wk w k +. c))) a;
+      Array.iter (fun (k,c) ->
+        MS.(set !t_wk w k (get !t_wk w k +. c));
+        MD.(set !t__k 0 k (get !t__k 0 k +. c))
+      ) a;
       !b__m.(w) <- true
     );
     h.(w) <- true;
@@ -167,6 +187,12 @@ let push _context params =
     ) r;
     updates := !updates @ [(w,!a')]
   ) params;
+  (* calculate t__k updates *)
+  let a = ref [||] in
+  MD.iteri (fun _ k c ->
+    if c <> 0. then a := Array.append !a [|(k,c)|]
+  ) MD.(!t__k -@ t_k');
+  updates := !updates @ [(-1,!a)];
   !updates
 
 let barrier _context = Barrier.p2p_bsp _context
