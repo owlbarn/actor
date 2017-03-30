@@ -6,7 +6,7 @@
 open Owl
 open Types
 
-module MX = Dense.Real
+module MX = Mat
 module PS = Param
 
 (* variables used in distributed sgd *)

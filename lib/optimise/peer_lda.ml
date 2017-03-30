@@ -3,8 +3,8 @@
 open Owl
 open Types
 
-module MS = Sparse.Real
-module MD = Dense.Real
+module MS = Sparse.Dok_matrix
+module MD = Mat
 module P2P = Peer
 
 (* local model hyper-parameters *)
@@ -13,8 +13,8 @@ let beta = ref 0.
 let alpha_k = ref 0.
 let beta_v = ref 0.
 (* local and global model variables *)
-let t_dk = ref (MS.zeros 1 1)
-let t_wk = ref (MS.zeros 1 1)
+let t_dk = ref (MD.zeros 1 1)
+let t_wk = ref (MD.zeros 1 1)
 let t__k = ref (MD.zeros 1 1)
 let t__z = ref [| [||] |]
 (* data set variables *)
@@ -27,13 +27,13 @@ let b__m = ref [||]   (* track if local model has been merged *)
 
 let include_token w d k =
   MD.(set !t__k 0 k (get !t__k 0 k +. 1.));
-  MS.(set !t_wk w k (get !t_wk w k +. 1.));
-  MS.(set !t_dk d k (get !t_dk d k +. 1.))
+  MD.(set !t_wk w k (get !t_wk w k +. 1.));
+  MD.(set !t_dk d k (get !t_dk d k +. 1.))
 
 let exclude_token w d k =
   MD.(set !t__k 0 k (get !t__k 0 k -. 1.));
-  MS.(set !t_wk w k (get !t_wk w k -. 1.));
-  MS.(set !t_dk d k (get !t_dk d k -. 1.))
+  MD.(set !t_wk w k (get !t_wk w k -. 1.));
+  MD.(set !t_dk d k (get !t_dk d k -. 1.))
 
 let init k v d =
   Log.info "init the model";
@@ -44,8 +44,8 @@ let init k v d =
   n_d  := Array.length d;
   n_v  := Hashtbl.length v;
   n_k  := k;
-  t_dk := MS.zeros !n_d !n_k;
-  t_wk := MS.zeros !n_v !n_k;
+  t_dk := MD.zeros !n_d !n_k;
+  t_wk := MD.zeros !n_v !n_k;
   t__k := MD.zeros 1 !n_k;
   (* set model hyper-parameters *)
   alpha := 50.;
@@ -66,17 +66,17 @@ let init k v d =
 
 let rebuild_local_model () =
   Logger.warn "rebuild local model start";
-  t_wk := MS.zeros !n_v !n_k;
+  t_wk := MD.zeros !n_v !n_k;
   Array.iteri (fun i d ->
     Array.iteri (fun j k ->
       let w = !data.(i).(j) in
-      MS.(set !t_wk w k (get !t_wk w k +. 1.));
+      MD.(set !t_wk w k (get !t_wk w k +. 1.));
     ) d
   ) !t__z;
   Logger.warn "rebuild local model finished"
 
 let show_stats () =
-  Logger.info "t_wk = %.4f, t_dk = %.4f" (MS.density !t_wk) (MS.density !t_dk)
+  Logger.info "t_wk = %.4f, t_dk = %.4f" (MD.density !t_wk) (MD.density !t_dk)
 
 let sampling d h =
   let p = MD.zeros 1 !n_k in
@@ -87,7 +87,7 @@ let sampling d h =
       (* make cdf function *)
       let x = ref 0. in
       for j = 0 to !n_k - 1 do
-        x := !x +. (MS.get !t_dk d j +. !alpha_k) *. (MS.get !t_wk w j +. !beta) /. (MD.get !t__k 0 j +. !beta_v);
+        x := !x +. (MD.get !t_dk d j +. !alpha_k) *. (MD.get !t_wk w j +. !beta) /. (MD.get !t__k 0 j +. !beta_v);
         MD.set p 0 j !x
       done;
       (* draw a sample *)
@@ -122,20 +122,22 @@ let pull _context updates =
   let h = Hashtbl.create 256 in
   List.iter (fun (w,a,t) ->
     if Hashtbl.mem h w = false then (
-      let r = MS.zeros 1 !n_k in
+      let r = MD.zeros 1 !n_k in
       let a', t' = P2P.get w in
-      Array.iter (fun (k,c) -> MS.set r 0 k c) a';
+      Array.iter (fun (k,c) -> MD.set r 0 k c) a';
       Hashtbl.add h w (r,t')
     );
     let r, t' = Hashtbl.find h w in
-    Array.iter (fun (k,c) -> MS.(set r 0 k (get r 0 k +. c))) a;
+    Array.iter (fun (k,c) -> MD.(set r 0 k (get r 0 k +. c))) a;
     Hashtbl.replace h w (r, max t t');
   ) wk_updates;
   let wk_updates' = ref [] in
   Hashtbl.iter (fun w (r,t) ->
-    let a = Array.make (MS.nnz r) (0,0.) in
+    let a = Array.make (MD.nnz r) (0,0.) in
     let j = ref 0 in
-    MS.iteri_nz (fun _ k c -> a.(!j) <- (k,c); j := !j + 1) r;
+    MD.iteri (fun _ k c -> 
+      if c <> 0. then (a.(!j) <- (k,c); j := !j + 1)
+    ) r;
     wk_updates' := !wk_updates' @ [(w,a,t)]
   ) h;
   !wk_updates'
@@ -154,11 +156,11 @@ let push _context params =
   let h = Array.make !n_v false in
   List.iteri (fun i (w,a) ->
     if !b__m.(w) = true then (
-      Array.iter (fun (k,c) -> MS.set !t_wk w k c) a
+      Array.iter (fun (k,c) -> MD.set !t_wk w k c) a
     )
     else (
       Array.iter (fun (k,c) ->
-        MS.(set !t_wk w k (get !t_wk w k +. c));
+        MD.(set !t_wk w k (get !t_wk w k +. c));
         MD.(set !t__k 0 k (get !t__k 0 k +. c))
       ) a;
       !b__m.(w) <- true
@@ -174,12 +176,12 @@ let push _context params =
     let a' = ref [||] in
     Array.iter (fun (k,c) ->
       h.(k) <- true;
-      let c' = MS.get !t_wk w k in
+      let c' = MD.get !t_wk w k in
       if c' <> c then a' := Array.append !a' [|(k,c'-.c)|]
     ) a;
-    let r = MS.row !t_wk w in
-    MS.iteri_nz (fun _ k c' ->
-      if h.(k) = false then a' := Array.append !a' [|(k,c')|]
+    let r = MD.row !t_wk w in
+    MD.iteri (fun _ k c' ->
+      if h.(k) = false && c' <> 0. then a' := Array.append !a' [|(k,c')|]
     ) r;
     updates := !updates @ [(w,!a')]
   ) params;

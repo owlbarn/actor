@@ -3,7 +3,7 @@
 open Owl
 open Types
 
-module MX = Dense.Real
+module MX = Mat
 module P2P = Peer
 
 (* variables used in distributed sgd *)

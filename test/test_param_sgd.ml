@@ -1,7 +1,7 @@
 (** [ Test stochastic gradient descent ]  *)
 
 open Owl
-module MX = Dense.Real
+module MX = Mat
 
 let data_x = MX.uniform 1000 3
 (*let data_y = let p = MX.of_array [|0.3;0.5;0.7|] 3 1 in MX.(data_x $@ p)

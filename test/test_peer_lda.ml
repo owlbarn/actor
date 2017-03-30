@@ -4,10 +4,10 @@ open Owl
 open Types
 
 (* load stopwords, load data, build dict, tokenisation *)
-let s = Owl_topic_utils.load_stopwords "/Users/liang/code/owl/lib/topic/stopwords.txt"
-let x = Owl_topic_utils.load_data ~stopwords:s "/Users/liang/code/experimental-lda/data/nips.train"
+let s = Dataset.load_stopwords ()
+let x = Dataset.load_nips_train_data s
 let v = Owl_topic_utils.build_vocabulary x
-(* only choose 30% data to train 
+(* only choose 30% data to train
 let x = Stats.choose x (Array.length x / 3) *)
 let d = Owl_topic_utils.tokenisation v x
 let t = 100
