@@ -135,7 +135,7 @@ let pull _context updates =
   Hashtbl.iter (fun w (r,t) ->
     let a = Array.make (MD.nnz r) (0,0.) in
     let j = ref 0 in
-    MD.iteri (fun _ k c -> 
+    MD.iteri (fun _ k c ->
       if c <> 0. then (a.(!j) <- (k,c); j := !j + 1)
     ) r;
     wk_updates' := !wk_updates' @ [(w,a,t)]
@@ -189,7 +189,7 @@ let push _context params =
   let a = ref [||] in
   MD.iteri (fun _ k c ->
     if c <> 0. then a := Array.append !a [|(k,c)|]
-  ) MD.(!t__k -@ t_k');
+  ) MD.(!t__k - t_k');
   updates := !updates @ [(-1,!a)];
   !updates
 

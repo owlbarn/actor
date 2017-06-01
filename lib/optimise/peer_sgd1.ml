@@ -26,7 +26,7 @@ let init x y m g l =
 let calculate_gradient b x y m g l =
   let xt, i = MX.draw_rows x b in
   let yt = MX.rows y i in
-  let yt' = MX.(xt $@ m) in
+  let yt' = MX.(xt *@ m) in
   let d = g xt yt yt' in
   Logger.info "loss = %.10f" (l yt yt' |> MX.sum);
   d
@@ -56,7 +56,7 @@ let pull _context updates =
       Hashtbl.add h k (v',t')
     );
     let v', t' = Hashtbl.find h k in
-    let v' = MX.(v' -@ v) in
+    let v' = MX.(v' - v) in
     let t' = max t' t in
     Hashtbl.replace h k (v',t')
   ) updates;

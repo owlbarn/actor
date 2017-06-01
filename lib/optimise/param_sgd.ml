@@ -28,7 +28,7 @@ let init x y m g l =
 let calculate_gradient b x y m g l =
   let xt, i = MX.draw_rows x b in
   let yt = MX.rows y i in
-  let yt' = MX.(xt $@ m) in
+  let yt' = MX.(xt *@ m) in
   let d = g xt yt yt' in
   Logger.debug "loss = %.10f" (l yt yt' |> MX.sum);
   d
@@ -58,7 +58,7 @@ let push id vars =
 let pull vars =
   List.map (fun (k,d) ->
     let v0, _ = PS.get k in
-    let v1 = MX.(v0 -@ d) in
+    let v1 = MX.(v0 - d) in
     (k,v1)
   ) vars
 

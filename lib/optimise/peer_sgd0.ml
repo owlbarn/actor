@@ -26,7 +26,7 @@ let init x y m g l =
 let calculate_gradient b x y m g l =
   let xt, i = MX.draw_rows x b in
   let yt = MX.rows y i in
-  let yt' = MX.(xt $@ m) in
+  let yt' = MX.(xt *@ m) in
   let d = g xt yt yt' in
   Logger.debug "loss = %.10f" (l yt yt' |> MX.sum);
   d
@@ -54,7 +54,7 @@ let pull _context updates =
   Logger.debug "pulling updates ...";
   List.map (fun (k,v,t) ->
     let v0, _ = P2P.get k in
-    let v1 = MX.(v0 -@ v) in
+    let v1 = MX.(v0 - v) in
     k, v1, t
   ) updates
 
