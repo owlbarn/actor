@@ -9,8 +9,16 @@ Plugins:     META (0.4)
 Library "omap"
   Path:       lib
   BuildTools: ocamlbuild, ocamldoc
-  Modules:    Types, Utils, Config, Memory, Dag, Service, Storage, Logger,
-              Manager, Worker
+  Modules:    Actor_types,
+              Actor_utils,
+              Actor_config,
+              Actor_memory,
+              Actor_dag,
+              Actor_service,
+              Actor_storage,
+              Actor_logger,
+              Actor_manager,
+              Actor_worker
   BuildDepends: str, unix, uint, ZMQ, ocamlgraph, dolog, owl
 
 Library "core"
@@ -26,18 +34,18 @@ Library "optimise"
   Modules:    Param_sgd, Peer_sgd0, Peer_sgd1, Peer_lda
   BuildDepends: core, owl
 
-Executable manager
+Executable actor_manager
   Path:           lib
   BuildTools:     ocamlbuild
   CompiledObject: byte
-  MainIs:         manager.ml
+  MainIs:         actor_manager.ml
   BuildDepends:   omap
 
-Executable worker
+Executable actor_worker
   Path:           lib
   BuildTools:     ocamlbuild
   CompiledObject: byte
-  MainIs:         worker.ml
+  MainIs:         actor_worker.ml
   BuildDepends:   omap
 
 Executable test_wordcount

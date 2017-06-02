@@ -10,9 +10,9 @@ let manager_id = "manager_0"
 let dfs_path = "storage.data"
 
 (** Log configs: path, level, color, etc. *)
-let level = Logger.INFO
+let level = Actor_logger.INFO
 let logdir = "log/"
-let _ =  Logger.update_config level logdir ""
+let _ =  Actor_logger.update_config level logdir ""
 
 (** Max queue length of ZMQ send and receive *)
 let high_warter_mark = 10_000

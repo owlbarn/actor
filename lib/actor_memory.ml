@@ -2,7 +2,7 @@
   is a distributed file system for actors
 *)
 
-open Types
+open Actor_types
 
 let _data : (string, Obj.t) Hashtbl. t = Hashtbl.create 10_000_000
 

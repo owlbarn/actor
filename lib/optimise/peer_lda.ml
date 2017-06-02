@@ -1,7 +1,7 @@
 (** [ Peer LDA ] Latent Dirichlet Allocation *)
 
 open Owl
-open Types
+open Actor_types
 
 module MS = Sparse.Dok_matrix
 module MD = Mat
@@ -65,7 +65,7 @@ let init k v d =
   P2P.set (-1) !t__k
 
 let rebuild_local_model () =
-  Logger.warn "rebuild local model start";
+  Actor_logger.warn "rebuild local model start";
   t_wk := MD.zeros !n_v !n_k;
   Array.iteri (fun i d ->
     Array.iteri (fun j k ->
@@ -73,10 +73,10 @@ let rebuild_local_model () =
       MD.(set !t_wk w k (get !t_wk w k +. 1.));
     ) d
   ) !t__z;
-  Logger.warn "rebuild local model finished"
+  Actor_logger.warn "rebuild local model finished"
 
 let show_stats () =
-  Logger.info "t_wk = %.4f, t_dk = %.4f" (MD.density !t_wk) (MD.density !t_dk)
+  Actor_logger.info "t_wk = %.4f, t_dk = %.4f" (MD.density !t_wk) (MD.density !t_dk)
 
 let sampling d h =
   let p = MD.zeros 1 !n_k in
@@ -100,18 +100,18 @@ let sampling d h =
   ) !data.(d)
 
 let schedule _context =
-  Logger.info "schedule @ %s, step:%i" !_context.master_addr !_context.step;
+  Actor_logger.info "schedule @ %s, step:%i" !_context.master_addr !_context.step;
   let d = Array.init !n_v (fun i -> i) in
   Stats.choose d (!n_v / 10) |> Array.to_list
 
 let pull _context updates =
   let num_updates = List.fold_right (fun (_,a,_) x -> Array.length a + x) updates 0 in
-  Logger.info "pull @ %s, updates:%i" !_context.myself_addr num_updates;
+  Actor_logger.info "pull @ %s, updates:%i" !_context.myself_addr num_updates;
   (* update t__k *)
   let tk_updates = List.filter (fun (w,_,_) -> w = -1) updates in
   if List.length tk_updates > 0 then (
     let t_k', _ = P2P.get (-1) in
-    Logger.error "%s ==> %i %f" !_context.myself_addr (List.length tk_updates) (MD.sum t_k');
+    Actor_logger.error "%s ==> %i %f" !_context.myself_addr (List.length tk_updates) (MD.sum t_k');
     List.iter (fun (_,a,t) ->
       Array.iter (fun (k,c) -> MD.(set t_k' 0 k (get t_k' 0 k +. c))) a
     ) tk_updates;
@@ -143,7 +143,7 @@ let pull _context updates =
   !wk_updates'
 
 let push _context params =
-  Logger.info "push @ %s" !_context.master_addr;
+  Actor_logger.info "push @ %s" !_context.master_addr;
   show_stats ();
   (* a workaround for t__k at the moment *)
   let t_k' = P2P.get (-1) |> fst in
@@ -205,5 +205,5 @@ let start jid =
   P2P.register_pull pull;
   P2P.register_stop stop;
   (* start running the ps *)
-  Logger.info "P2P: lda algorithm starts running ...";
-  P2P.start jid Config.manager_addr
+  Actor_logger.info "P2P: lda algorithm starts running ...";
+  P2P.start jid Actor_config.manager_addr

@@ -1,6 +1,6 @@
 (** [ Model Parallel ] Parameter server module  *)
 
-open Types
+open Actor_types
 
 (** start running the model loop *)
 val start : string -> string -> unit

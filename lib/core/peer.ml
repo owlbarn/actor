@@ -1,15 +1,15 @@
 (** [ Peer-to-Peer Parallel ]  *)
 
-open Types
+open Actor_types
 
 let start jid url =
   let _ztx = ZMQ.Context.create () in
-  let _addr, _router = Utils.bind_available_addr _ztx in
+  let _addr, _router = Actor_utils.bind_available_addr _ztx in
   let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
   ZMQ.Socket.connect req url;
-  Utils.send req P2P_Reg [|_addr; jid|];
+  Actor_utils.send req P2P_Reg [|_addr; jid|];
   (* create and initialise part of the context *)
-  let _context = Utils.empty_peer_context () in
+  let _context = Actor_utils.empty_peer_context () in
   _context.job_id <- jid;
   _context.myself_addr <- _addr;
   _context.myself_sock <- _router;
@@ -22,7 +22,7 @@ let start jid url =
     | 0 -> Peerclient.init m _context
     | p -> Peerserver.init m _context
     )
-  | _ -> Logger.info "%s" "unknown command";
+  | _ -> Actor_logger.info "%s" "unknown command";
   ZMQ.Socket.close req
 
 (* basic architectural functions for p2p parallel *)

@@ -1,9 +1,9 @@
 (** [ Model Parallel ] Parameter server module  *)
 
-open Types
+open Actor_types
 
 (* the global context: master, worker, etc. *)
-let _context = ref (Utils.empty_param_context ())
+let _context = ref (Actor_utils.empty_param_context ())
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 
 (* default schedule function *)
@@ -44,7 +44,7 @@ let _set k v t =
   | false -> Hashtbl.add _param k' (v',t)
 
 let _broadcast_all t s =
-  StrMap.iter (fun k v -> Utils.send ~bar:!_context.step v t s) !_context.workers;
+  StrMap.iter (fun k v -> Actor_utils.send ~bar:!_context.step v t s) !_context.workers;
   !_context.step
 
 let terminate () =
@@ -52,7 +52,7 @@ let terminate () =
   Unix.sleep 1 (** FIXME: change to BSP *)
 
 let service_loop () =
-  Logger.debug "parameter server @ %s" !_context.myself_addr;
+  Actor_logger.debug "parameter server @ %s" !_context.myself_addr;
   (* unmarshal the schedule and pull functions *)
   let schedule : ('a, 'b, 'c) ps_schedule_typ = Marshal.from_string !_schedule 0 in
   let pull : ('a, 'b, 'c) ps_pull_typ = Marshal.from_string !_pull 0 in
@@ -69,36 +69,36 @@ let service_loop () =
       let s = Marshal.to_string task [] in
       let t = Hashtbl.find !_context.worker_step worker + 1 in
       let _ = Hashtbl.replace !_context.worker_busy worker 1 in
-      Utils.send ~bar:t w PS_Schedule [|s|]
+      Actor_utils.send ~bar:t w PS_Schedule [|s|]
     ) tasks;
     if List.length tasks > 0 then
-      Logger.debug "schedule t:%i -> %i workers" !_context.step (List.length tasks);
+      Actor_logger.debug "schedule t:%i -> %i workers" !_context.step (List.length tasks);
     (** wait for another message arrival *)
-    let i, m = Utils.recv !_context.myself_sock in
+    let i, m = Actor_utils.recv !_context.myself_sock in
     let t = m.bar in
     match m.typ with
     | PS_Get -> (
-      Logger.debug "%s: ps_get" !_context.myself_addr;
+      Actor_logger.debug "%s: ps_get" !_context.myself_addr;
       let k = Marshal.from_string m.par.(0) 0 in
       let v, t' = _get k in
       let s = to_msg t' OK [| Marshal.to_string v [] |] in
       ZMQ.Socket.send_all ~block:false !_context.myself_sock [i;s]
       )
     | PS_Set -> (
-      Logger.debug "%s: ps_set" !_context.myself_addr;
+      Actor_logger.debug "%s: ps_set" !_context.myself_addr;
       let k = Marshal.from_string m.par.(0) 0 in
       let v = Marshal.from_string m.par.(1) 0 in
       _set k v t
       )
     | PS_Push -> (
-      Logger.debug "%s: ps_push" !_context.myself_addr;
+      Actor_logger.debug "%s: ps_push" !_context.myself_addr;
       let updates = Marshal.from_string m.par.(0) 0 |> pull in
       List.iter (fun (k,v) -> _set k v t) updates;
       update_steps t i
       )
-    | _ -> ( Logger.debug "unknown mssage to PS" )
+    | _ -> ( Actor_logger.debug "unknown mssage to PS" )
   done with Failure e -> (
-    Logger.warn "%s" e;
+    Actor_logger.warn "%s" e;
     terminate ();
     ZMQ.Socket.close !_context.myself_sock )
 
@@ -111,14 +111,14 @@ let init m context =
     ZMQ.Socket.connect req x;
     let app = Filename.basename Sys.argv.(0) in
     let arg = Marshal.to_string Sys.argv [] in
-    Utils.send req Job_Create [|!_context.myself_addr; app; arg|]; req
+    Actor_utils.send req Job_Create [|!_context.myself_addr; app; arg|]; req
   ) addrs
   |> List.iter ZMQ.Socket.close;
   (* wait until all the allocated actors register *)
   while (StrMap.cardinal !_context.workers) < (List.length addrs) do
-    let i, m = Utils.recv !_context.myself_sock in
+    let i, m = Actor_utils.recv !_context.myself_sock in
     let s = ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer in
-    ZMQ.Socket.set_send_high_water_mark s Config.high_warter_mark;
+    ZMQ.Socket.set_send_high_water_mark s Actor_config.high_warter_mark;
     ZMQ.Socket.connect s m.par.(0);
     !_context.workers <- (StrMap.add m.par.(0) s !_context.workers);
   done;

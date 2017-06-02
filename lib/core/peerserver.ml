@@ -1,9 +1,9 @@
 (** [ Peer-to-Peer Parallel ] Server module *)
 
-open Types
+open Actor_types
 
 (* the global context: master, worker, etc. *)
-let _context = ref (Utils.empty_peer_context ())
+let _context = ref (Actor_utils.empty_peer_context ())
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
 
 (* buffer of the requests and replies of pulling model parameters *)
@@ -35,7 +35,7 @@ module Route = struct
 
   let connect addr =
     let sock = ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer in
-    ZMQ.Socket.set_send_high_water_mark sock Config.high_warter_mark;
+    ZMQ.Socket.set_send_high_water_mark sock Actor_config.high_warter_mark;
     ZMQ.Socket.set_identity sock !_context.myself_addr;
     ZMQ.Socket.connect sock addr;
     sock
@@ -84,14 +84,14 @@ module Route = struct
 
   let forward nxt typ msg =
     let s = StrMap.find nxt !_context.workers in
-    Utils.send ~bar:!_context.step s typ msg
+    Actor_utils.send ~bar:!_context.step s typ msg
 
   let init_table addrs =
     (* contact initial random peers *)
     Array.iter (fun x ->
       let s = connect x in
       let _ = add x s in
-      Utils.send s P2P_Ping [|!_context.myself_addr|];
+      Actor_utils.send s P2P_Ping [|!_context.myself_addr|];
     ) addrs;
     (* contact nodes of fixed distance *)
     let myid = hash !_context.myself_addr in
@@ -140,7 +140,7 @@ let _shall_deliver_pull () =
     ) _plbuf []
     in
     let s = Marshal.to_string s [] in
-    Utils.send !_context.master_sock OK [|s|];
+    Actor_utils.send !_context.master_sock OK [|s|];
     Hashtbl.reset _plbuf
   )
 
@@ -150,7 +150,7 @@ let _barrier_control barrier pull =
     pull _context updates |> List.iter (fun (k,v,t) -> _set k v t);
     !_context.mpbuf <- [];
     if !_context.block = true then (
-      Utils.send ~bar:!_context.step !_context.master_sock OK [||];
+      Actor_utils.send ~bar:!_context.step !_context.master_sock OK [||];
       !_context.block <- false
     )
   )
@@ -169,31 +169,31 @@ let _notify_peers_step () =
 
 let _process_timeout () =
   _notify_peers_step ();
-  Logger.debug "%s: timeout" !_context.myself_addr
+  Actor_logger.debug "%s: timeout" !_context.myself_addr
 
 let service_loop () =
-  Logger.debug "%s: p2p server" !_context.myself_addr;
+  Actor_logger.debug "%s: p2p server" !_context.myself_addr;
   let barrier : p2p_barrier_typ = Marshal.from_string !_barrier 0 in
   let pull : ('a, 'b) p2p_pull_typ = Marshal.from_string !_pull 0 in
   (* loop to process messages *)
   ZMQ.Socket.set_receive_timeout !_context.myself_sock (1 * 1000);
   try while true do
     (* first, wait and process arriving message *)
-    try let i, m = Utils.recv !_context.myself_sock in (
+    try let i, m = Actor_utils.recv !_context.myself_sock in (
     match m.typ with
     | P2P_Connect -> (
-      Logger.debug "%s: p2p_connect %s" !_context.myself_addr m.par.(0);
+      Actor_logger.debug "%s: p2p_connect %s" !_context.myself_addr m.par.(0);
       let addr = m.par.(0) in
       !_context.master_addr <- addr;
       !_context.master_sock <- Route.connect addr
       )
     | P2P_Ping -> (
-      Logger.debug "%s: p2p_ping %s" !_context.myself_addr m.par.(0);
+      Actor_logger.debug "%s: p2p_ping %s" !_context.myself_addr m.par.(0);
       let addr = m.par.(0) in
       if Route.exists addr = false then Route.(connect addr |> add addr)
       )
     | P2P_Join -> (
-      Logger.debug "%s: p2p_join %s" !_context.myself_addr m.par.(0);
+      Actor_logger.debug "%s: p2p_join %s" !_context.myself_addr m.par.(0);
       let src = m.par.(0) in
       let dst = Marshal.from_string m.par.(1) 0 in
       let next = Route.nearest_exclude dst [src] in
@@ -201,7 +201,7 @@ let service_loop () =
         if Route.exists src = false then (
           let s = Route.connect src in
           let _ = Route.add src s in
-          Utils.send s P2P_Ping [|!_context.myself_addr|]
+          Actor_utils.send s P2P_Ping [|!_context.myself_addr|]
         );
         (* oh, hello neighbour, maybe take my model *)
         if Route.hash src = dst - 1 then (
@@ -210,7 +210,7 @@ let service_loop () =
             Route.forward next P2P_Ping [|src|];
           let h = _allocate_params !_context.myself_addr src in
           let s = Marshal.to_string h [] in
-          Logger.debug "params: %s ===> %s size:%i" !_context.myself_addr src (String.length s);
+          Actor_logger.debug "params: %s ===> %s size:%i" !_context.myself_addr src (String.length s);
           Route.forward src P2P_Copy [|s|]
         )
       );
@@ -218,7 +218,7 @@ let service_loop () =
         Route.forward next P2P_Join m.par;
       )
     | P2P_Copy -> (
-      Logger.debug "%s: p2p_copy" !_context.myself_addr;
+      Actor_logger.debug "%s: p2p_copy" !_context.myself_addr;
       let h = Marshal.from_string m.par.(0) 0 in
       List.iter (fun (k,v) ->
         match Hashtbl.mem _param k with
@@ -227,7 +227,7 @@ let service_loop () =
       ) h
       )
     | P2P_Get -> (
-      Logger.debug "%s: p2p_get" !_context.myself_addr;
+      Actor_logger.debug "%s: p2p_get" !_context.myself_addr;
       let k = Marshal.from_string m.par.(0) 0 in
       let next = Route.(hash k |> nearest) in
       match next = !_context.myself_addr with
@@ -235,12 +235,12 @@ let service_loop () =
           (* FIXME: what if i cannot find the k *)
           let v, t = _get k in
           let s = Marshal.to_string (k, v, t) [] in
-          Utils.send !_context.master_sock OK [|s; next|]
+          Actor_utils.send !_context.master_sock OK [|s; next|]
         )
       | false -> Route.forward next P2P_Get_Q m.par
       )
     | P2P_Get_Q -> (
-      Logger.debug "%s: p2p_get_q" !_context.myself_addr;
+      Actor_logger.debug "%s: p2p_get_q" !_context.myself_addr;
       let k = Marshal.from_string m.par.(0) 0 in
       let next = Route.(hash k |> nearest) in
       match next = !_context.myself_addr with
@@ -254,15 +254,15 @@ let service_loop () =
       | false -> Route.forward next P2P_Get_Q m.par
       )
     | P2P_Get_R -> (
-      Logger.debug "%s: p2p_get_r" !_context.myself_addr;
+      Actor_logger.debug "%s: p2p_get_r" !_context.myself_addr;
       let addr = m.par.(1) in
       let next = Route.(hash addr |> nearest) in
       match next = !_context.myself_addr with
-      | true  -> Utils.send !_context.master_sock OK m.par
+      | true  -> Actor_utils.send !_context.master_sock OK m.par
       | false -> Route.forward next P2P_Get_R m.par
       )
     | P2P_Set -> (
-      Logger.debug "%s: p2p_get" !_context.myself_addr;
+      Actor_logger.debug "%s: p2p_get" !_context.myself_addr;
       let k, v, t = Marshal.from_string m.par.(0) 0 in
       (* check whether this is from the local client *)
       let t = if t < 0 then (
@@ -276,7 +276,7 @@ let service_loop () =
       | false -> Route.forward next P2P_Set m.par
       )
     | P2P_Push -> (
-      Logger.debug "%s: p2p_push" !_context.myself_addr;
+      Actor_logger.debug "%s: p2p_push" !_context.myself_addr;
       Marshal.from_string m.par.(0) 0
       |> List.iter (fun (k,v) ->
         let next = Route.(hash k |> nearest) in
@@ -289,7 +289,7 @@ let service_loop () =
       )
       )
     | P2P_Pull -> (
-      Logger.debug "%s: p2p_pull" !_context.myself_addr;
+      Actor_logger.debug "%s: p2p_pull" !_context.myself_addr;
       Marshal.from_string m.par.(0) 0
       |> List.iter (fun k ->
         let next = Route.(hash k |> nearest) in
@@ -308,7 +308,7 @@ let service_loop () =
       _shall_deliver_pull ()
       )
     | P2P_Pull_Q -> (
-      Logger.debug "%s: p2p_pull_q %s" !_context.myself_addr m.par.(1);
+      Actor_logger.debug "%s: p2p_pull_q %s" !_context.myself_addr m.par.(1);
       let k = Marshal.from_string m.par.(0) 0 in
       let next = Route.(hash k |> nearest) in
       match next = !_context.myself_addr with
@@ -322,7 +322,7 @@ let service_loop () =
       | false -> Route.forward next P2P_Pull_Q m.par
       )
     | P2P_Pull_R -> (
-      Logger.debug "%s: p2p_pull_r %s" !_context.myself_addr m.par.(1);
+      Actor_logger.debug "%s: p2p_pull_r %s" !_context.myself_addr m.par.(1);
       let addr = m.par.(1) in
       let next = Route.(hash addr |> nearest) in
       match next = !_context.myself_addr with
@@ -334,12 +334,12 @@ let service_loop () =
       | false -> Route.forward next P2P_Pull_R m.par
       )
     | P2P_Bar -> (
-      Logger.debug "%s: p2p_bar" !_context.myself_addr;
+      Actor_logger.debug "%s: p2p_bar" !_context.myself_addr;
       !_context.block <- true;
       !_context.step <- !_context.step + 1;
       _notify_peers_step ();
       )
-    | _ -> ( Logger.error "unknown mssage type" ) );
+    | _ -> ( Actor_logger.error "unknown mssage type" ) );
     (* second, update the piggybacked step  *)
     if i <> !_context.master_addr then _update_step_buf i m.bar;
     (* third, check the barrier control *)
@@ -347,7 +347,7 @@ let service_loop () =
     (* fourth, in case the process hangs *)
     with Unix.Unix_error (_,_,_) -> _process_timeout ()
   done with Failure e -> (
-    Logger.warn "%s" e;
+    Actor_logger.warn "%s" e;
     ZMQ.Socket.close !_context.myself_sock )
 
 let init m context =

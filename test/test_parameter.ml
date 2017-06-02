@@ -9,14 +9,14 @@ let schedule workers =
 
 let push id vars =
   let updates = List.map (fun (k,v) ->
-    Logger.info "working on %i" v;
+    Actor_logger.info "working on %i" v;
     (k,v) ) vars in
   updates
 
 let test_context () =
   PS.register_schedule schedule;
   PS.register_push push;
-  PS.start Sys.argv.(1) Config.manager_addr;
-  Logger.info "do some work at master node"
+  PS.start Sys.argv.(1) Actor_config.manager_addr;
+  Actor_logger.info "do some work at master node"
 
 let _ = test_context ()

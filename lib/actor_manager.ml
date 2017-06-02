@@ -2,7 +2,7 @@
   keeps running to manage a group of actors
 *)
 
-open Types
+open Actor_types
 
 module Workers = struct
   let _workers = ref StrMap.empty
@@ -20,45 +20,45 @@ module Workers = struct
   let addrs () = StrMap.fold (fun k v l -> l @ [v.addr]) !_workers []
 end
 
-let addr = Config.manager_addr
-let myid = Config.manager_id
+let addr = Actor_config.manager_addr
+let myid = Actor_config.manager_id
 
 let process r m =
   match m.typ with
   | User_Reg -> (
     let uid, addr = m.par.(0), m.par.(1) in
     if Workers.mem uid = false then
-      Logger.info "%s" (uid ^ " @ " ^ addr);
+      Actor_logger.info "%s" (uid ^ " @ " ^ addr);
       Workers.add uid addr;
-      Utils.send r OK [||];
+      Actor_utils.send r OK [||];
     )
   | Job_Reg -> (
     let master, jid = m.par.(0), m.par.(1) in
-    if Service.mem jid = false then (
-      Service.add jid master;
+    if Actor_service.mem jid = false then (
+      Actor_service.add jid master;
       (* FIXME: currently send back all nodes as workers *)
       let addrs = Marshal.to_string (Workers.addrs ()) [] in
-      Utils.send r Job_Master [|addrs|] )
+      Actor_utils.send r Job_Master [|addrs|] )
     else
-      let master = (Service.find jid).master in
-      Utils.send r Job_Worker [|master|]
+      let master = (Actor_service.find jid).master in
+      Actor_utils.send r Job_Worker [|master|]
     )
   | Heartbeat -> (
-    Logger.info "%s" ("heartbeat @ " ^ m.par.(0));
+    Actor_logger.info "%s" ("heartbeat @ " ^ m.par.(0));
     Workers.add m.par.(0) m.par.(1);
-    Utils.send r OK [||];
+    Actor_utils.send r OK [||];
     )
   | P2P_Reg -> (
     let addr, jid = m.par.(0), m.par.(1) in
-    Logger.info "p2p @ %s job:%s" addr jid;
-    if Service.mem jid = false then Service.add jid "";
-    let peers = Service.choose_workers jid 10 in
+    Actor_logger.info "p2p @ %s job:%s" addr jid;
+    if Actor_service.mem jid = false then Actor_service.add jid "";
+    let peers = Actor_service.choose_workers jid 10 in
     let peers = Marshal.to_string peers [] in
-    Service.add_worker jid addr;
-    Utils.send r OK [|peers|];
+    Actor_service.add_worker jid addr;
+    Actor_utils.send r OK [|peers|];
     )
   | _ -> (
-    Logger.error "unknown message type"
+    Actor_logger.error "unknown message type"
     )
 
 let run id addr =

@@ -2,7 +2,7 @@
   provides flexible synchronisation barrier controls.
 *)
 
-open Types
+open Actor_types
 
 (* Mapre barrier: Bulk synchronous parallel *)
 let mapre_bsp bar _context =
@@ -13,7 +13,7 @@ let mapre_bsp bar _context =
   ) (Hashtbl.find_all !_context.msbuf bar);
   (* then wait for the rest of the messages *)
   while (Hashtbl.length h) < (StrMap.cardinal !_context.workers) do
-    let i, m = Utils.recv !_context.myself_sock in
+    let i, m = Actor_utils.recv !_context.myself_sock in
     if bar = m.bar && not (Hashtbl.mem h i) then Hashtbl.add h i m;
   done;
   Hashtbl.fold (fun k v l -> v :: l) h []
@@ -29,11 +29,11 @@ let mapre_dbp bar _context =
   let budget = 0.001 in
   let t0 = Unix.gettimeofday () in
   (try while (Hashtbl.length h) < (StrMap.cardinal !_context.workers) do
-    let i, m = Utils.recv !_context.myself_sock in
+    let i, m = Actor_utils.recv !_context.myself_sock in
     if bar = m.bar && not (Hashtbl.mem h i) then Hashtbl.add h i m;
     if budget < (Unix.gettimeofday () -. t0) then failwith "timeout"
   done
-  with exn -> Logger.info "%s" "timeout +++");
+  with exn -> Actor_logger.info "%s" "timeout +++");
   Hashtbl.fold (fun k v l -> v :: l) h []
 
 (* Param barrier: Bulk synchronous parallel *)

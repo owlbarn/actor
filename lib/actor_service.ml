@@ -2,7 +2,7 @@
   defines basic functionality of services
 *)
 
-open Types
+open Actor_types
 
 let _services = ref StrMap.empty
 

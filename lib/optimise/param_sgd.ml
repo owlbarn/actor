@@ -4,7 +4,7 @@
  *)
 
 open Owl
-open Types
+open Actor_types
 
 module MX = Mat
 module PS = Param
@@ -30,7 +30,7 @@ let calculate_gradient b x y m g l =
   let yt = MX.rows y i in
   let yt' = MX.(xt *@ m) in
   let d = g xt yt yt' in
-  Logger.debug "loss = %.10f" (l yt yt' |> MX.sum);
+  Actor_logger.debug "loss = %.10f" (l yt yt' |> MX.sum);
   d
 
 let schedule workers =
@@ -74,5 +74,5 @@ let start jid =
   (* FIXME: need to fix this hack *)
   MX.iteri_cols (fun k v -> Paramserver._set k v 0) !_model;
   (* start running the ps *)
-  Logger.info "PS: sdg algorithm starts running ...";
-  PS.start jid Config.manager_addr
+  Actor_logger.info "PS: sdg algorithm starts running ...";
+  PS.start jid Actor_config.manager_addr

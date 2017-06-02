@@ -1,15 +1,15 @@
 (** [ Data Parallel ] Map-Reduce module *)
 
-open Types
+open Actor_types
 
 let init jid url =
   let _ztx = ZMQ.Context.create () in
-  let _addr, _router = Utils.bind_available_addr _ztx in
+  let _addr, _router = Actor_utils.bind_available_addr _ztx in
   let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
   ZMQ.Socket.connect req url;
-  Utils.send req Job_Reg [|_addr; jid|];
+  Actor_utils.send req Job_Reg [|_addr; jid|];
   (* create and initialise part of the context *)
-  let _context = Utils.empty_mapre_context () in
+  let _context = Actor_utils.empty_mapre_context () in
   _context.job_id <- jid;
   _context.myself_addr <- _addr;
   _context.myself_sock <- _router;
@@ -19,7 +19,7 @@ let init jid url =
   match m.typ with
   | Job_Master -> Mapreserver.init m _context
   | Job_Worker -> Mapreclient.init m _context
-  | _ -> Logger.info "%s" "unknown command";
+  | _ -> Actor_logger.info "%s" "unknown command";
   ZMQ.Socket.close req
 
 (* interface to mapreserver functions *)

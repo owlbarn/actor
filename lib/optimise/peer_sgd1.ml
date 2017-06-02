@@ -1,7 +1,7 @@
 (** [ Distributed Stochastic Gradient Decendent ] *)
 
 open Owl
-open Types
+open Actor_types
 
 module MX = Mat
 module P2P = Peer
@@ -28,7 +28,7 @@ let calculate_gradient b x y m g l =
   let yt = MX.rows y i in
   let yt' = MX.(xt *@ m) in
   let d = g xt yt yt' in
-  Logger.info "loss = %.10f" (l yt yt' |> MX.sum);
+  Actor_logger.info "loss = %.10f" (l yt yt' |> MX.sum);
   d
 
 let update_local_model = None
@@ -72,5 +72,5 @@ let start jid =
   P2P.register_pull pull;
   P2P.register_stop stop;
   (* start running the ps *)
-  Logger.info "P2P: sdg algorithm starts running ...";
-  P2P.start jid Config.manager_addr
+  Actor_logger.info "P2P: sdg algorithm starts running ...";
+  P2P.start jid Actor_config.manager_addr

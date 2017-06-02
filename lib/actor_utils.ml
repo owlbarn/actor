@@ -1,6 +1,6 @@
 (** Some shared helper functions *)
 
-open Types
+open Actor_types
 
 let recv s =
   let m = ZMQ.Socket.recv_all ~block:true s in
@@ -9,7 +9,7 @@ let recv s =
 let send ?(bar=0) v t s =
   try ZMQ.Socket.send ~block:false v (to_msg bar t s)
   with exn -> let hwm = ZMQ.Socket.get_send_high_water_mark v in
-  Logger.error "fail to send bar:%i hwm:%i" bar hwm
+  Actor_logger.error "fail to send bar:%i hwm:%i" bar hwm
 
 let rec _bind_available_addr addr sock ztx =
   addr := "tcp://127.0.0.1:" ^ (string_of_int (Random.int 10000 + 50000));
@@ -19,7 +19,7 @@ let rec _bind_available_addr addr sock ztx =
 let bind_available_addr ztx =
   let router : [`Router] ZMQ.Socket.t = ZMQ.Socket.create ztx ZMQ.Socket.router in
   let addr = ref "" in _bind_available_addr addr router ztx;
-  ZMQ.Socket.set_receive_high_water_mark router Config.high_warter_mark;
+  ZMQ.Socket.set_receive_high_water_mark router Actor_config.high_warter_mark;
   !addr, router
 
 (* the following 3 functions are for shuffle operations *)

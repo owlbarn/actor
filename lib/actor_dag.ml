@@ -2,7 +2,7 @@
   maintains a directed acyclic graph of computation.
 *)
 
-open Types
+open Actor_types
 
 type vlabel = { c : color; f : string }
 
