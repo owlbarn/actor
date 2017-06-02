@@ -3,6 +3,13 @@ all:
 oasis:
 	oasis setup
 	ocaml setup.ml -configure
+install:
+	ocaml setup.ml -uninstall
+	ocaml setup.ml -install
+uninstall:
+	ocamlfind remove omap
+	ocamlfind remove core
+	ocamlfind remove optimise
 clean:
 	rm -rf _build
 	rm -rf *.byte *.native
