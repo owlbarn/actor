@@ -12,5 +12,5 @@ let gradfn = Owl_optimise.square_grad
 let lossfn = Owl_optimise.square_loss
 
 let _ =
-  Param_sgd.init data_x data_y model gradfn lossfn;
-  Param_sgd.start Sys.argv.(1)
+  Actor_param_sgd.init data_x data_y model gradfn lossfn;
+  Actor_param_sgd.start Sys.argv.(1)

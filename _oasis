@@ -39,7 +39,10 @@ Library "core"
 Library "optimise"
   Path:       lib/optimise
   BuildTools: ocamlbuild, ocamldoc
-  Modules:    Param_sgd, Peer_sgd0, Peer_sgd1, Peer_lda
+  Modules:    Actor_param_sgd,
+              Actor_peer_sgd0,
+              Actor_peer_sgd1,
+              Actor_peer_lda
   BuildDepends: core, owl
 
 Executable actor_manager
