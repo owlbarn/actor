@@ -17,34 +17,34 @@ let start jid url =
   (* depends on the role, start server or client *)
   let m = of_msg (ZMQ.Socket.recv req) in
   match m.typ with
-  | Job_Master -> Paramserver.init m _context
-  | Job_Worker -> Paramclient.init m _context
+  | Job_Master -> Actor_paramserver.init m _context
+  | Job_Worker -> Actor_paramclient.init m _context
   | _ -> Actor_logger.info "%s" "unknown command";
   ZMQ.Socket.close req
 
 let register_barrier (f : ps_barrier_typ) =
-  Paramserver._barrier := Marshal.to_string f [ Marshal.Closures ]
+  Actor_paramserver._barrier := Marshal.to_string f [ Marshal.Closures ]
 
 let register_schedule (f : ('a, 'b, 'c) ps_schedule_typ) =
-  Paramserver._schedule := Marshal.to_string f [ Marshal.Closures ]
+  Actor_paramserver._schedule := Marshal.to_string f [ Marshal.Closures ]
 
 let register_pull (f : ('a, 'b, 'c) ps_pull_typ) =
-  Paramserver._pull := Marshal.to_string f [ Marshal.Closures ]
+  Actor_paramserver._pull := Marshal.to_string f [ Marshal.Closures ]
 
 let register_push (f : ('a, 'b, 'c) ps_push_typ) =
-  Paramclient._push := Marshal.to_string f [ Marshal.Closures ]
+  Actor_paramclient._push := Marshal.to_string f [ Marshal.Closures ]
 
 let register_stop (f : ps_stop_typ) =
-  Paramserver._stop := Marshal.to_string f [ Marshal.Closures ]
+  Actor_paramserver._stop := Marshal.to_string f [ Marshal.Closures ]
 
 let get k =
-  match Paramserver.(!_context.job_id) = "" with
-  | true  -> Paramclient._get k
-  | false -> Paramserver._get k
+  match Actor_paramserver.(!_context.job_id) = "" with
+  | true  -> Actor_paramclient._get k
+  | false -> Actor_paramserver._get k
 
 let set k v =
-  match Paramserver.(!_context.job_id) = "" with
-  | true  -> Paramclient.(_set k v !_context.step)
-  | false -> Paramserver.(_set k v !_context.step)
+  match Actor_paramserver.(!_context.job_id) = "" with
+  | true  -> Actor_paramclient.(_set k v !_context.step)
+  | false -> Actor_paramserver.(_set k v !_context.step)
 
-let keys () = Hashtbl.fold (fun k v l -> l @ [ Obj.obj k ]) Paramserver._param []
+let keys () = Hashtbl.fold (fun k v l -> l @ [ Obj.obj k ]) Actor_paramserver._param []

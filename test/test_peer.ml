@@ -1,6 +1,6 @@
 (** [ Test P2P parallel ]  *)
 
-module P2P = Peer
+module P2P = Actor_peer
 
 let schedule id =
   (* Logger.debug "%s: scheduling ..." id; *)

@@ -4,7 +4,7 @@ open Owl
 open Actor_types
 
 module MX = Mat
-module P2P = Peer
+module P2P = Actor_peer
 
 (* variables used in distributed sgd *)
 let data_x = ref (MX.empty 0 0)
@@ -46,7 +46,7 @@ let push _context params =
     (k, d)
   ) params
 
-let barrier _context = Barrier.p2p_bsp _context
+let barrier _context = Actor_barrier.p2p_bsp _context
 
 let pull _context updates =
   let h = Hashtbl.create 32 in

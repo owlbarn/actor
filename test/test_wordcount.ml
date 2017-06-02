@@ -2,7 +2,7 @@
   test the context module
 *)
 
-module Ctx = Mapre
+module Ctx = Actor_mapre
 
 let print_result x = List.iter (fun (k,v) -> Printf.printf "%s : %i\n" k v) x
 

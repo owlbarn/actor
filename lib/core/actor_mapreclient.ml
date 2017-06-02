@@ -5,7 +5,7 @@ open Actor_types
 (* the global context: master, worker, etc. *)
 let _context = ref (Actor_utils.empty_mapre_context ())
 
-let barrier bar = Barrier.mapre_bsp bar _context
+let barrier bar = Actor_barrier.mapre_bsp bar _context
 
 let shuffle bar x z =
   List.mapi (fun i k ->

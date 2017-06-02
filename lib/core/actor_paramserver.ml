@@ -19,7 +19,7 @@ let _default_stop = fun _ -> false
 let _stop = ref (Marshal.to_string _default_stop [ Marshal.Closures ])
 
 (* default barrier function *)
-let _default_barrier = Barrier.param_bsp
+let _default_barrier = Actor_barrier.param_bsp
 let _barrier = ref (Marshal.to_string _default_barrier [ Marshal.Closures ])
 
 let update_steps t w =

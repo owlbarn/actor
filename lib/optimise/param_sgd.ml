@@ -7,7 +7,7 @@ open Owl
 open Actor_types
 
 module MX = Mat
-module PS = Param
+module PS = Actor_param
 
 (* variables used in distributed sgd *)
 let data_x = ref (MX.empty 0 0)
@@ -72,7 +72,7 @@ let start jid =
   PS.register_stop stop;
   (* pre-cache the model in the server's kv store *)
   (* FIXME: need to fix this hack *)
-  MX.iteri_cols (fun k v -> Paramserver._set k v 0) !_model;
+  MX.iteri_cols (fun k v -> Actor_paramserver._set k v 0) !_model;
   (* start running the ps *)
   Actor_logger.info "PS: sdg algorithm starts running ...";
   PS.start jid Actor_config.manager_addr

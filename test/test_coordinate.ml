@@ -1,6 +1,6 @@
 (** [ Test coordinate descent ]  *)
 
-module PS = Param
+module PS = Actor_param
 
 let param = Array.(init 1000 (fun x -> x) |> to_list)
 

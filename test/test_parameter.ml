@@ -1,6 +1,6 @@
 (** [ Test parameter server ]  *)
 
-module PS = Param
+module PS = Actor_param
 
 let schedule workers =
   let tasks = List.map (fun x ->

@@ -19,8 +19,8 @@ let start jid url =
   match m.typ with
   | OK -> (
     match Unix.fork () with
-    | 0 -> Peerclient.init m _context
-    | p -> Peerserver.init m _context
+    | 0 -> Actor_peerclient.init m _context
+    | p -> Actor_peerserver.init m _context
     )
   | _ -> Actor_logger.info "%s" "unknown command";
   ZMQ.Socket.close req
@@ -28,32 +28,32 @@ let start jid url =
 (* basic architectural functions for p2p parallel *)
 
 let register_barrier (f : p2p_barrier_typ) =
-  Peerserver._barrier := Marshal.to_string f [ Marshal.Closures ]
+  Actor_peerserver._barrier := Marshal.to_string f [ Marshal.Closures ]
 
 let register_pull (f : ('a, 'b) p2p_pull_typ) =
-  Peerserver._pull := Marshal.to_string f [ Marshal.Closures ]
+  Actor_peerserver._pull := Marshal.to_string f [ Marshal.Closures ]
 
 let register_schedule (f : 'a p2p_schedule_typ) =
-  Peerclient._schedule := Marshal.to_string f [ Marshal.Closures ]
+  Actor_peerclient._schedule := Marshal.to_string f [ Marshal.Closures ]
 
 let register_push (f : ('a, 'b) p2p_push_typ) =
-  Peerclient._push := Marshal.to_string f [ Marshal.Closures ]
+  Actor_peerclient._push := Marshal.to_string f [ Marshal.Closures ]
 
 let register_stop (f : p2p_stop_typ) =
-  Peerclient._stop := Marshal.to_string f [ Marshal.Closures ]
+  Actor_peerclient._stop := Marshal.to_string f [ Marshal.Closures ]
 
 (* some helper functions for various strategies *)
 
-let is_server () = Peerclient.(!_context.job_id) = ""
+let is_server () = Actor_peerclient.(!_context.job_id) = ""
 
 let get k =
   match is_server () with
-  | true  -> Peerserver._get k
-  | false -> Peerclient._get k
+  | true  -> Actor_peerserver._get k
+  | false -> Actor_peerclient._get k
 
 let set k v =
   match is_server () with
-  | true  -> Peerserver.(_set k v !_context.step)
-  | false -> Peerclient.(_set k v)
+  | true  -> Actor_peerserver.(_set k v !_context.step)
+  | false -> Actor_peerclient.(_set k v)
 
 let swarm_size = None

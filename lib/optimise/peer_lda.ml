@@ -5,7 +5,7 @@ open Actor_types
 
 module MS = Sparse.Dok_matrix
 module MD = Mat
-module P2P = Peer
+module P2P = Actor_peer
 
 (* local model hyper-parameters *)
 let alpha = ref 0.
@@ -193,7 +193,7 @@ let push _context params =
   updates := !updates @ [(-1,!a)];
   !updates
 
-let barrier _context = Barrier.p2p_bsp _context
+let barrier _context = Actor_barrier.p2p_bsp _context
 
 let stop _context = !_context.step > 5_00
 

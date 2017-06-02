@@ -24,8 +24,16 @@ Library "omap"
 Library "core"
   Path:       lib/core
   BuildTools: ocamlbuild, ocamldoc
-  Modules:    Param, Paramserver, Paramclient, Mapre, Mapreserver, Mapreclient,
-              Peer, Peerserver, Peerclient, Barrier
+  Modules:    Actor_param,
+              Actor_paramserver,
+              Actor_paramclient,
+              Actor_mapre,
+              Actor_mapreserver,
+              Actor_mapreclient,
+              Actor_peer,
+              Actor_peerserver,
+              Actor_peerclient,
+              Actor_barrier
   BuildDepends: omap
 
 Library "optimise"
