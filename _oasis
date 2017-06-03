@@ -1,3 +1,7 @@
+# +-------------------------------------------------------------------+
+# | Package parameters                                                |
+# +-------------------------------------------------------------------+
+
 OASISFormat: 0.4
 Name:        actor
 Version:     0.1
@@ -5,6 +9,10 @@ Synopsis:    actor is a distributed data processing framework in OCaml.
 Authors:     Liang Wang
 License:     MIT
 Plugins:     META (0.4)
+
+# +-------------------------------------------------------------------+
+# | Libraries                                                         |
+# +-------------------------------------------------------------------+
 
 Library "actor"
   Path:       lib
@@ -38,87 +46,92 @@ Library "actor"
               Actor_peer_lda
   BuildDepends: str,
                 unix,
-                uint,
                 ZMQ,
                 ocamlgraph,
                 dolog,
                 owl
 
-
+# +-------------------------------------------------------------------+
+# | System Components                                                 |
+# +-------------------------------------------------------------------+
 
 Executable actor_manager
   Path:           lib
   BuildTools:     ocamlbuild
-  CompiledObject: byte
+  CompiledObject: best
   MainIs:         actor_manager.ml
   BuildDepends:   actor
 
 Executable actor_worker
   Path:           lib
   BuildTools:     ocamlbuild
-  CompiledObject: byte
+  CompiledObject: best
   MainIs:         actor_worker.ml
   BuildDepends:   actor
 
-Executable test_wordcount
-  Path:           test
-  BuildTools:     ocamlbuild
-  CompiledObject: byte
-  MainIs:         test_wordcount.ml
-  BuildDepends:   actor
+# +-------------------------------------------------------------------+
+# | Examples                                                          |
+# +-------------------------------------------------------------------+
 
-Executable test_context
-  Path:           test
-  BuildTools:     ocamlbuild
-  CompiledObject: byte
-  MainIs:         test_context.ml
-  BuildDepends:   actor
+# Executable test_wordcount
+#   Path:           test
+#   BuildTools:     ocamlbuild
+#   CompiledObject: best
+#   MainIs:         test_wordcount.ml
+#   BuildDepends:   actor
 
-Executable test_kmeans
-  Path:           test
-  BuildTools:     ocamlbuild
-  CompiledObject: byte
-  MainIs:         test_kmeans.ml
-  BuildDepends:   actor
+# Executable test_context
+#   Path:           test
+#   BuildTools:     ocamlbuild
+#   CompiledObject: best
+#   MainIs:         test_context.ml
+#   BuildDepends:   actor
 
-Executable test_parameter
-  Path:           test
-  BuildTools:     ocamlbuild
-  CompiledObject: byte
-  MainIs:         test_parameter.ml
-  BuildDepends:   actor
+# Executable test_kmeans
+#   Path:           test
+#   BuildTools:     ocamlbuild
+#   CompiledObject: best
+#   MainIs:         test_kmeans.ml
+#   BuildDepends:   actor
 
-Executable test_coordinate
-  Path:           test
-  BuildTools:     ocamlbuild
-  CompiledObject: byte
-  MainIs:         test_coordinate.ml
-  BuildDepends:   actor
+# Executable test_parameter
+#   Path:           test
+#   BuildTools:     ocamlbuild
+#   CompiledObject: best
+#   MainIs:         test_parameter.ml
+#   BuildDepends:   actor
 
-Executable test_param_sgd
-  Path:           test
-  BuildTools:     ocamlbuild
-  CompiledObject: byte
-  MainIs:         test_param_sgd.ml
-  BuildDepends:   actor
+# Executable test_coordinate
+#   Path:           test
+#   BuildTools:     ocamlbuild
+#   CompiledObject: best
+#   MainIs:         test_coordinate.ml
+#   BuildDepends:   actor
 
-Executable test_peer_sgd
-  Path:           test
-  BuildTools:     ocamlbuild
-  CompiledObject: byte
-  MainIs:         test_peer_sgd.ml
-  BuildDepends:   actor
+# Executable test_param_sgd
+#   Path:           test
+#   BuildTools:     ocamlbuild
+#   CompiledObject: best
+#   MainIs:         test_param_sgd.ml
+#   BuildDepends:   actor
 
-Executable test_peer_lda
-  Path:           test
-  BuildTools:     ocamlbuild
-  CompiledObject: byte
-  MainIs:         test_peer_lda.ml
-  BuildDepends:   actor, owl
+# Executable test_peer_sgd
+#   Path:           test
+#   BuildTools:     ocamlbuild
+#   CompiledObject: best
+#   MainIs:         test_peer_sgd.ml
+#   BuildDepends:   actor
 
-Executable test_peer
-  Path:           test
-  BuildTools:     ocamlbuild
-  CompiledObject: byte
-  MainIs:         test_peer.ml
-  BuildDepends:   actor
+# Executable test_peer_lda
+#   Path:           test
+#   BuildTools:     ocamlbuild
+#   CompiledObject: best
+#   MainIs:         test_peer_lda.ml
+#   BuildDepends:   actor, owl
+
+# Executable test_peer
+#   Path:           test
+#   BuildTools:     ocamlbuild
+#   CompiledObject: best
+#   MainIs:         test_peer.ml
+#   BuildDepends:   actor
