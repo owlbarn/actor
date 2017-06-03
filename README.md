@@ -25,13 +25,13 @@ Implement Coordinate Descent in model parallel ...
 To compile and build the system, you do not have to install all the software yourself. You can simply pull a ready-made container to set up development environment.
 
 ```bash
-docker pull ryanrhymes/omap
+docker pull ryanrhymes/actor
 ```
 
 Then you can start the container by
 
 ```bash
-docker run -t -i ryanrhymes/omap:latest /bin/bash
+docker run -t -i ryanrhymes/actor:latest /bin/bash
 ```
 
 After the container starts, go to the home director, clone the git repository.

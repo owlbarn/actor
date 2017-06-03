@@ -7,7 +7,7 @@ install:
 	ocaml setup.ml -uninstall
 	ocaml setup.ml -install
 uninstall:
-	ocamlfind remove omap
+	ocamlfind remove actor
 	ocamlfind remove core
 	ocamlfind remove optimise
 clean:

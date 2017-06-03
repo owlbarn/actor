@@ -1,15 +1,16 @@
 OASISFormat: 0.4
-Name:        omap
+Name:        actor
 Version:     0.1
-Synopsis:    omap is a distributed data processing framework in OCaml.
+Synopsis:    actor is a distributed data processing framework in OCaml.
 Authors:     Liang Wang
 License:     MIT
 Plugins:     META (0.4)
 
-Library "omap"
+Library "actor"
   Path:       lib
   BuildTools: ocamlbuild, ocamldoc
-  Modules:    Actor_types,
+  Modules:    # Communication & Utils
+              Actor_types,
               Actor_utils,
               Actor_config,
               Actor_memory,
@@ -18,13 +19,9 @@ Library "omap"
               Actor_storage,
               Actor_logger,
               Actor_manager,
-              Actor_worker
-  BuildDepends: str, unix, uint, ZMQ, ocamlgraph, dolog, owl
-
-Library "core"
-  Path:       lib/core
-  BuildTools: ocamlbuild, ocamldoc
-  Modules:    Actor_param,
+              Actor_worker,
+              # Core Engines
+              Actor_param,
               Actor_paramserver,
               Actor_paramclient,
               Actor_mapre,
@@ -33,91 +30,95 @@ Library "core"
               Actor_peer,
               Actor_peerserver,
               Actor_peerclient,
-              Actor_barrier
-  BuildDepends: omap
-
-Library "optimise"
-  Path:       lib/optimise
-  BuildTools: ocamlbuild, ocamldoc
-  Modules:    Actor_param_sgd,
+              Actor_barrier,
+              # Extended module
+              Actor_param_sgd,
               Actor_peer_sgd0,
               Actor_peer_sgd1,
               Actor_peer_lda
-  BuildDepends: core, owl
+  BuildDepends: str,
+                unix,
+                uint,
+                ZMQ,
+                ocamlgraph,
+                dolog,
+                owl
+
+
 
 Executable actor_manager
   Path:           lib
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         actor_manager.ml
-  BuildDepends:   omap
+  BuildDepends:   actor
 
 Executable actor_worker
   Path:           lib
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         actor_worker.ml
-  BuildDepends:   omap
+  BuildDepends:   actor
 
 Executable test_wordcount
   Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_wordcount.ml
-  BuildDepends:   core
+  BuildDepends:   actor
 
 Executable test_context
   Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_context.ml
-  BuildDepends:   core
+  BuildDepends:   actor
 
 Executable test_kmeans
   Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_kmeans.ml
-  BuildDepends:   core
+  BuildDepends:   actor
 
 Executable test_parameter
   Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_parameter.ml
-  BuildDepends:   core
+  BuildDepends:   actor
 
 Executable test_coordinate
   Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_coordinate.ml
-  BuildDepends:   core
+  BuildDepends:   actor
 
 Executable test_param_sgd
   Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_param_sgd.ml
-  BuildDepends:   core, optimise
+  BuildDepends:   actor
 
 Executable test_peer_sgd
   Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_peer_sgd.ml
-  BuildDepends:   core, optimise
+  BuildDepends:   actor
 
 Executable test_peer_lda
   Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_peer_lda.ml
-  BuildDepends:   core, optimise, owl
+  BuildDepends:   actor, owl
 
 Executable test_peer
   Path:           test
   BuildTools:     ocamlbuild
   CompiledObject: byte
   MainIs:         test_peer.ml
-  BuildDepends:   core, optimise
+  BuildDepends:   actor
