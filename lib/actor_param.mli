@@ -2,29 +2,47 @@
 
 open Actor_types
 
-(** start running the model loop *)
+
+(** core interfaces to parameter server *)
+
 val start : string -> string -> unit
+(** start running the model loop *)
 
-(** register user-defined barrier function at p2p server *)
 val register_barrier : ps_barrier_typ -> unit
+(** register user-defined barrier function at p2p server *)
 
-(** register user-defined scheduler *)
 val register_schedule : ('a, 'b, 'c) ps_schedule_typ -> unit
+(** register user-defined scheduler *)
 
-(** register user-defined pull function executed at master *)
 val register_pull : ('a, 'b, 'c) ps_pull_typ -> unit
+(** register user-defined pull function executed at master *)
 
-(** register user-defined push function executed at worker *)
 val register_push : ('a, 'b, 'c) ps_push_typ -> unit
+(** register user-defined push function executed at worker *)
 
-(** register stopping criterion function *)
 val register_stop : ps_stop_typ -> unit
+(** register stopping criterion function *)
 
-(** given a key, get its value and timestamp *)
 val get : 'a -> 'b * int
+(** given a key, get its value and timestamp *)
 
-(** given a key, set its value at master *)
 val set : 'a -> 'b -> unit
+(** given a key, set its value at master *)
 
-(** FIXME: reture all the keys in a parameter server *)
 val keys : unit -> 'a list
+(** FIXME: reture all the keys in a parameter server *)
+
+
+(* context and function types, duplicate from Actor_types *)
+
+type param_context = Actor_types.param_context
+
+type ('a, 'b, 'c) ps_schedule_typ = ('a, 'b, 'c) Actor_types.ps_schedule_typ
+
+type ('a, 'b, 'c) ps_pull_typ = ('a, 'b, 'c) Actor_types.ps_pull_typ
+
+type ('a, 'b, 'c) ps_push_typ = ('a, 'b, 'c) Actor_types.ps_push_typ
+
+type ps_barrier_typ = Actor_types.ps_barrier_typ
+
+type ps_stop_typ = Actor_types.ps_stop_typ

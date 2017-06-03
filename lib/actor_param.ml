@@ -1,6 +1,6 @@
 (** [ Model Parallel ] Parameter server module  *)
 
-open Actor_types
+include Actor_types
 
 let start jid url =
   let _ztx = ZMQ.Context.create () in

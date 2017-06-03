@@ -10,7 +10,7 @@ let manager_id = "manager_0"
 let dfs_path = "storage.data"
 
 (** Log configs: path, level, color, etc. *)
-let level = Actor_logger.INFO
+let level = Actor_logger.DEBUG
 let logdir = "log/"
 let _ =  Actor_logger.update_config level logdir ""
 

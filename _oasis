@@ -73,6 +73,13 @@ Executable actor_worker
 # | Examples                                                          |
 # +-------------------------------------------------------------------+
 
+Executable test_owl_parallel
+  Path:           test
+  BuildTools:     ocamlbuild
+  CompiledObject: best
+  MainIs:         test_owl_parallel.ml
+  BuildDepends:   actor, owl, owl_neural
+
 # Executable test_wordcount
 #   Path:           test
 #   BuildTools:     ocamlbuild
