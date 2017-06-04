@@ -88,7 +88,32 @@ let test_param () =
 
 (* test parameter server engine *)
 module M2 = Owl_neural_parallel.Make (Actor_param) (Owl_neural_feedforward)
-let test () = ()
+let test () =
+  let open Owl in
+  let open Owl_neural in
+  let open Owl_neural_feedforward in
+  let nn = input [|28;28;1|]
+    |> conv2d [|5;5;1;32|] [|1;1|] ~act_typ:Activation.Relu
+    |> max_pool2d [|2;2|] [|2;2|]
+    |> conv2d [|5;5;32;64|] [|1;1|] ~act_typ:Activation.Relu
+    |> max_pool2d [|2;2|] [|2;2|]
+    |> dropout 0.1
+    |> fully_connected 1024 ~act_typ:Activation.Relu
+    |> linear 10 ~act_typ:Activation.Softmax
+  in
+
+  let x, _, y = Dataset.load_mnist_train_data () in
+  let m = Dense.Matrix.S.row_num x in
+  let x = Dense.Matrix.S.to_ndarray x in
+  let x = Dense.Ndarray.S.reshape x [|m;28;28;1|] in
+
+  let params = Params.config
+    ~batch:(Batch.Mini 100) ~learning_rate:(Learning_Rate.Const 0.01) 0.05 in
+
+  let jid = "test_j1" in
+  let url = Actor_config.manager_addr in
+
+  M2.train ~params nn Algodiff.S.(Arr x) Algodiff.S.(Mat y) jid url
 
 
-let _ = test_param ()
+let _ = test ()
