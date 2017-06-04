@@ -16,10 +16,11 @@ let init jid url =
   _context.ztx <- _ztx;
   (* depends on the role, start server or client *)
   let m = of_msg (ZMQ.Socket.recv req) in
-  match m.typ with
-  | Job_Master -> Actor_mapreserver.init m _context
-  | Job_Worker -> Actor_mapreclient.init m _context
-  | _ -> Actor_logger.info "%s" "unknown command";
+  let _ = match m.typ with
+    | Job_Master -> Actor_mapreserver.init m _context
+    | Job_Worker -> Actor_mapreclient.init m _context
+    | _ -> Actor_logger.info "%s" "unknown command"
+  in
   ZMQ.Socket.close req
 
 (* interface to mapreserver functions *)

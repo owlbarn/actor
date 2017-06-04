@@ -16,13 +16,14 @@ let start jid url =
   _context.ztx <- _ztx;
   (* equivalent role, client is a new process *)
   let m = of_msg (ZMQ.Socket.recv req) in
-  match m.typ with
-  | OK -> (
-    match Unix.fork () with
-    | 0 -> Actor_peerclient.init m _context
-    | p -> Actor_peerserver.init m _context
-    )
-  | _ -> Actor_logger.info "%s" "unknown command";
+  let _ = match m.typ with
+    | OK -> (
+      match Unix.fork () with
+      | 0 -> Actor_peerclient.init m _context
+      | p -> Actor_peerserver.init m _context
+      )
+    | _ -> Actor_logger.info "%s" "unknown command"
+  in
   ZMQ.Socket.close req
 
 (* basic architectural functions for p2p parallel *)

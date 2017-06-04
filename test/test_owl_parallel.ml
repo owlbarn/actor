@@ -2,7 +2,7 @@
 
 module Ctx = Actor_mapre
 
-module M = Owl_parallel.Make (Ctx)
+module M = Owl_parallel.Make_Distributed (Ctx)
 
 let test_naive () =
   Ctx.init Sys.argv.(1) "tcp://localhost:5555";

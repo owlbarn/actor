@@ -72,19 +72,19 @@ type peer_context = {
 }
 
 type actor_rec = {
-  id : string;
-  addr : string;
+  id        : string;
+  addr      : string;
   last_seen : float;
 }
 
 type data_rec = {
-  id : string;
+  id    : string;
   owner : string;
 }
 
 type service_rec = {
-  id : string;
-  master : string;
+  id             : string;
+  master         : string;
   mutable worker : string array;
 }
 
