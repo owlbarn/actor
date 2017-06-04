@@ -40,3 +40,6 @@ val set : 'a -> 'b -> unit
 
 val keys : unit -> 'a list
 (** FIXME: reture all the keys in a parameter server *)
+
+val worker_num : unit -> int
+(** return the number of workders, only work at server side *)

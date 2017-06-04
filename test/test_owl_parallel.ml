@@ -107,13 +107,17 @@ let test () =
   let x = Dense.Matrix.S.to_ndarray x in
   let x = Dense.Ndarray.S.reshape x [|m;28;28;1|] in
 
+  (*
+  let params = Params.config
+    ~batch:(Batch.Mini 100) ~learning_rate:(Learning_Rate.Adagrad 0.002) 0.05 in
+  *)
+
   let params = Params.config
     ~batch:(Batch.Mini 100) ~learning_rate:(Learning_Rate.Const 0.01) 0.05 in
 
-  let jid = "test_j1" in
   let url = Actor_config.manager_addr in
-
-  M2.train ~params nn Algodiff.S.(Arr x) Algodiff.S.(Mat y) jid url
+  let jid = Sys.argv.(1) in
+  M2.train_cnn ~params nn x y jid url
 
 
 let _ = test ()

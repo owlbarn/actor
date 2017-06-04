@@ -61,3 +61,8 @@ let set k v =
   | false -> Actor_paramserver.(_set k v !_context.step)
 
 let keys () = Hashtbl.fold (fun k v l -> l @ [ Obj.obj k ]) Actor_paramserver._param []
+
+let worker_num () =
+  match Actor_paramserver.(!_context.job_id) = "" with
+  | true  -> failwith "actor_param:worker_num"
+  | false -> StrMap.cardinal Actor_paramserver.(!_context.workers)
