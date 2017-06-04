@@ -3,8 +3,19 @@
 open Actor_types
 
 type param_context = Actor_types.param_context
+type barrier = ASP | BSP | SSP | PSP
 
-let start jid url =
+let start ?barrier jid url =
+  (* reset the barrier control if specifed *)
+  let _barrier_str = match barrier with
+    | Some ASP -> Marshal.to_string Actor_barrier.param_asp [ Marshal.Closures ]
+    | Some BSP -> Marshal.to_string Actor_barrier.param_bsp [ Marshal.Closures ]
+    | Some SSP -> Marshal.to_string Actor_barrier.param_ssp [ Marshal.Closures ]
+    | Some PSP -> failwith "actor_param:start:psp"
+    | None     -> Actor_paramserver.(!_barrier)
+  in
+  Actor_paramserver._barrier := _barrier_str;
+  (* start preparing communication context *)
   let _ztx = ZMQ.Context.create () in
   let _addr, _router = Actor_utils.bind_available_addr _ztx in
   let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in

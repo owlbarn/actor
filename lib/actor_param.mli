@@ -5,10 +5,16 @@ open Actor_types
 (* context type, duplicate from Actor_types *)
 type param_context = Actor_types.param_context
 
+type barrier =
+  | ASP    (* Asynchronous Parallel *)
+  | BSP    (* Bulk Synchronous Parallel *)
+  | SSP    (* Stale Synchronous Parallel *)
+  | PSP    (* Probabilistic Synchronous Parallel *)
+
 
 (** core interfaces to parameter server *)
 
-val start : string -> string -> unit
+val start : ?barrier:barrier -> string -> string -> unit
 (** start running the model loop *)
 
 val register_barrier : ps_barrier_typ -> unit
