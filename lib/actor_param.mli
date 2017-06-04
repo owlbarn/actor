@@ -2,6 +2,9 @@
 
 open Actor_types
 
+(* context type, duplicate from Actor_types *)
+type param_context = Actor_types.param_context
+
 
 (** core interfaces to parameter server *)
 
@@ -31,18 +34,3 @@ val set : 'a -> 'b -> unit
 
 val keys : unit -> 'a list
 (** FIXME: reture all the keys in a parameter server *)
-
-
-(* context and function types, duplicate from Actor_types *)
-
-type param_context = Actor_types.param_context
-
-type ('a, 'b, 'c) ps_schedule_typ = ('a, 'b, 'c) Actor_types.ps_schedule_typ
-
-type ('a, 'b, 'c) ps_pull_typ = ('a, 'b, 'c) Actor_types.ps_pull_typ
-
-type ('a, 'b, 'c) ps_push_typ = ('a, 'b, 'c) Actor_types.ps_push_typ
-
-type ps_barrier_typ = Actor_types.ps_barrier_typ
-
-type ps_stop_typ = Actor_types.ps_stop_typ

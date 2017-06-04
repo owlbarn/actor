@@ -86,5 +86,9 @@ let test_param () =
   PS.start Sys.argv.(1) Actor_config.manager_addr;
   Actor_logger.info "do some work at master node"
 
+(* test parameter server engine *)
+module M2 = Owl_neural_parallel.Make (Actor_param) (Owl_neural_feedforward)
+let test () = ()
+
 
 let _ = test_param ()

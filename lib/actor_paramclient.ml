@@ -28,7 +28,7 @@ let update_param x t =
 let service_loop () =
   Actor_logger.debug "parameter worker @ %s" !_context.myself_addr;
   (* unmarshal the push function *)
-  let push : ('a, 'b, 'c) ps_push_typ = Marshal.from_string !_push 0 in
+  let push : 'a -> ('b * 'c) list -> ('b * 'c) list = Marshal.from_string !_push 0 in
   (* loop to process messages *)
   try while true do
     let i, m = Actor_utils.recv !_context.myself_sock in
