@@ -18,6 +18,7 @@ Library "actor"
   Path:       lib
   BuildTools: ocamlbuild, ocamldoc
   Modules:    # Communication & Utils
+              Actor,
               Actor_types,
               Actor_utils,
               Actor_config,

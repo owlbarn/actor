@@ -14,6 +14,8 @@ let add id d = Hashtbl.add _data id (Obj.repr d)
 
 let remove id = Hashtbl.remove _data id
 
-let find id = Obj.obj (Hashtbl.find _data id)
+let find id = match id with
+  | "" -> Obj.obj (Obj.repr [ None ])
+  | _  -> Obj.obj (Hashtbl.find _data id)
 
 let size id = Obj.size (find id)

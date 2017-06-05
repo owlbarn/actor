@@ -2,7 +2,7 @@
 
 module Ctx = Actor_mapre
 
-module M = Owl_parallel.Make_Distributed (Ctx)
+module M1 = Owl_parallel.Make_Distributed (Ctx)
 
 let test_naive () =
   Ctx.init Sys.argv.(1) "tcp://localhost:5555";
@@ -88,7 +88,7 @@ let test_param () =
 
 (* test parameter server engine *)
 module M2 = Owl_neural_parallel.Make (Actor_param) (Owl_neural_feedforward)
-let test () =
+let test_neural_parallel () =
   let open Owl in
   let open Owl_neural in
   let open Owl_neural_feedforward in
@@ -120,4 +120,12 @@ let test () =
   M2.train_cnn ~params nn x y jid url
 
 
-let _ = test ()
+let test_owl_distributed () =
+  Ctx.init Sys.argv.(1) "tcp://localhost:5555";
+  let x = Actor_mapre.map (fun _ -> "liang") "" in
+  let x = Actor_mapre.collect x in
+  List.iter (fun a -> Printf.printf "%s " (List.nth a 0)) x
+
+
+
+let _ = test_owl_distributed ()

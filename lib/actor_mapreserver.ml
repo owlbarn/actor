@@ -178,3 +178,11 @@ let init m context =
     ZMQ.Socket.connect s m.par.(0);
     !_context.workers <- (StrMap.add m.par.(0) s !_context.workers);
   done
+
+
+(* experimental functions *)
+
+
+
+
+(* ends here *)
