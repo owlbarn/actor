@@ -60,3 +60,12 @@ let apply = Actor_mapreserver.apply
 let load = Actor_mapreserver.load
 
 let save = Actor_mapreserver.save
+
+(* experimental functions  *)
+
+let workers = Actor_mapreserver.workers
+
+let myself () =
+  match Actor_mapreserver.(!_context.job_id) = "" with
+  | true  -> Actor_mapreclient.(!_context.myself_addr)
+  | false -> Actor_mapreserver.(!_context.myself_addr)

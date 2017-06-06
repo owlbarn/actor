@@ -2,8 +2,6 @@
 
 module Ctx = Actor_mapre
 
-module M1 = Owl_parallel.Make_Distributed (Ctx)
-
 let test_naive () =
   Ctx.init Sys.argv.(1) "tcp://localhost:5555";
   Ctx.load "default" |> Ctx.map (fun _ -> print_endline "hello") |> ignore;
@@ -120,12 +118,19 @@ let test_neural_parallel () =
   M2.train_cnn ~params nn x y jid url
 
 
+module M1 = Owl_parallel.Make_Distributed (Ctx) (Owl_dense_ndarray_d)
 let test_owl_distributed () =
   Ctx.init Sys.argv.(1) "tcp://localhost:5555";
-  let x = Actor_mapre.map (fun _ -> "liang") "" in
+  (* let x = Actor_mapre.map (fun _ -> "liang") "" in
   let x = Actor_mapre.collect x in
-  List.iter (fun a -> Printf.printf "%s " (List.nth a 0)) x
-
+  List.iter (fun a -> Printf.printf "%s " (List.nth a 0)) x *)
+  let x = M1.zeros [|2;3;4|] in
+  let y = Ctx.collect x.id in
+  List.iter (fun a ->
+    let me, arr = List.nth a 0 in
+    print_endline ("====> " ^ me);
+    Owl_dense_ndarray_d.print arr
+  ) y
 
 
 let _ = test_owl_distributed ()

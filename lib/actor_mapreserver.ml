@@ -182,7 +182,7 @@ let init m context =
 
 (* experimental functions *)
 
-
+let workers () = StrMap.keys !_context.workers
 
 
 (* ends here *)

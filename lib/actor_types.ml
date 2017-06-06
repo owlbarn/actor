@@ -31,7 +31,7 @@ type message_rec = {
 }
 
 type mapre_context = {
-  mutable ztx         :  ZMQ.Context.t;                   (* zmq context for communication *)
+  mutable ztx         : ZMQ.Context.t;                    (* zmq context for communication *)
   mutable job_id      : string;                           (* job id or swarm id, depends on paradigm *)
   mutable master_addr : string;                           (* different meaning in different paradigm *)
   mutable myself_addr : string;                           (* communication address of current process *)
@@ -43,7 +43,7 @@ type mapre_context = {
 }
 
 type param_context = {
-  mutable ztx         :  ZMQ.Context.t;                   (* zmq context for communication *)
+  mutable ztx         : ZMQ.Context.t;                    (* zmq context for communication *)
   mutable job_id      : string;                           (* job id or swarm id, depends on paradigm *)
   mutable master_addr : string;                           (* different meaning in different paradigm *)
   mutable myself_addr : string;                           (* communication address of current process *)
@@ -58,7 +58,7 @@ type param_context = {
 }
 
 type peer_context = {
-  mutable ztx         :  ZMQ.Context.t;                   (* zmq context for communication *)
+  mutable ztx         : ZMQ.Context.t;                    (* zmq context for communication *)
   mutable job_id      : string;                           (* job id or swarm id, depends on paradigm *)
   mutable master_addr : string;                           (* different meaning in different paradigm *)
   mutable myself_addr : string;                           (* communication address of current process *)
