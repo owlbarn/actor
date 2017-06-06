@@ -135,14 +135,18 @@ let test_owl_distributed () =
   Ctx.collect x.id |> print_info;
 
   let y = M1.ones [|2;3;4|] in
+  let _ = M1.set y [|1;2;3|] 0. in
   let y = M1.add x y in
   Ctx.collect y.id |> print_info;
 
+  let a = M1.get y [|1;2;2|] in
+  Printf.printf "get ===> %g\n" a;
+
   let x = M1.ones [|200;300;400|] in
   let x = M1.map (fun a -> a +. 1.) x in
-  let y = M1.fold (+.) x 0. in
-  Printf.printf "===> %g\n" y
-
+  let a = M1.fold (+.) x 0. in
+  let b = M1.sum x in
+  Printf.printf "fold vs. sum ===> %g, %g\n" a b
 
 
 
