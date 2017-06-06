@@ -85,7 +85,7 @@ let test_param () =
   Actor_logger.info "do some work at master node"
 
 (* test parameter server engine *)
-module M2 = Owl_neural_parallel.Make (Actor_param) (Owl_neural_feedforward)
+module M2 = Owl_neural_parallel.Make (Owl_neural_feedforward) (Actor_param)
 let test_neural_parallel () =
   let open Owl in
   let open Owl_neural in
@@ -118,19 +118,32 @@ let test_neural_parallel () =
   M2.train_cnn ~params nn x y jid url
 
 
-module M1 = Owl_parallel.Make_Distributed (Ctx) (Owl_dense_ndarray_d)
+module M1 = Owl_parallel.Make_Distributed (Owl_dense_ndarray_d) (Actor_mapre)
 let test_owl_distributed () =
+  let print_info x =
+    print_endline "+++++++info+++++++";
+    List.iter (fun a ->
+      let me, arr = List.nth a 0 in
+      print_endline ("====> " ^ me);
+      Owl_dense_ndarray_d.print arr
+    ) x;
+    flush_all ()
+  in
   Ctx.init Sys.argv.(1) "tcp://localhost:5555";
-  (* let x = Actor_mapre.map (fun _ -> "liang") "" in
-  let x = Actor_mapre.collect x in
-  List.iter (fun a -> Printf.printf "%s " (List.nth a 0)) x *)
-  let x = M1.zeros [|2;3;4|] in
-  let y = Ctx.collect x.id in
-  List.iter (fun a ->
-    let me, arr = List.nth a 0 in
-    print_endline ("====> " ^ me);
-    Owl_dense_ndarray_d.print arr
-  ) y
+  (* some tests ... *)
+  let x = M1.uniform [|2;3;4|] in
+  Ctx.collect x.id |> print_info;
+
+  let y = M1.ones [|2;3;4|] in
+  let y = M1.add x y in
+  Ctx.collect y.id |> print_info;
+
+  let x = M1.ones [|200;300;400|] in
+  let x = M1.map (fun a -> a +. 1.) x in
+  let y = M1.fold (+.) x 0. in
+  Printf.printf "===> %g\n" y
+
+
 
 
 let _ = test_owl_distributed ()

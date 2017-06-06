@@ -30,6 +30,11 @@ let process_pipeline s =
       let f : 'a -> 'b = Marshal.from_string m.par.(0) 0 in
       List.map f (Actor_memory.find m.par.(1)) |> Actor_memory.add m.par.(2)
       )
+    | MapPartTask -> (
+      Actor_logger.info "%s" ("map_partition @ " ^ !_context.myself_addr);
+      let f : 'a list -> 'b list = Marshal.from_string m.par.(0) 0 in
+      f (Actor_memory.find m.par.(1)) |> Actor_memory.add m.par.(2)
+      )
     | FilterTask -> (
       Actor_logger.info "%s" ("filter @ " ^ !_context.myself_addr);
       let f : 'a -> bool = Marshal.from_string m.par.(0) 0 in

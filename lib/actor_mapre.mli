@@ -4,6 +4,8 @@ val init : string -> string -> unit
 
 val map : ('a -> 'b) -> string -> string
 
+val map_partition : ('a list -> 'b list) -> string -> string
+
 val flatmap : ('a -> 'b list) -> string -> string
 
 val reduce : ('a -> 'a -> 'a) -> string -> 'a option

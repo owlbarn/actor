@@ -14,7 +14,7 @@ type message_type =
   (* General messge types *)
   | OK | Fail | Heartbeat | User_Reg | Job_Reg | Job_Master | Job_Worker | Job_Create
   (* Data parallel: Mapre *)
-  | MapTask | FilterTask | ReduceByKeyTask | ShuffleTask | UnionTask
+  | MapTask | MapPartTask | FilterTask | ReduceByKeyTask | ShuffleTask | UnionTask
   | JoinTask | FlattenTask | ApplyTask | NopTask
   | Pipeline | Collect | Count | Broadcast | Fold | Reduce | Terminate | Load | Save
   (* Model Parallel: Param *)

@@ -27,6 +27,8 @@ let init jid url =
 
 let map = Actor_mapreserver.map
 
+let map_partition = Actor_mapreserver.map_partition
+
 let flatmap = Actor_mapreserver.flatmap
 
 let reduce = Actor_mapreserver.reduce

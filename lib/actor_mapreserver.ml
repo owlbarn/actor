@@ -86,6 +86,12 @@ let map f x =
   let g = Marshal.to_string f [ Marshal.Closures ] in
   Actor_dag.add_edge (to_msg 0 MapTask [|g; x; y|]) x y Red; y
 
+let map_partition f x =
+  let y = Actor_memory.rand_id () in
+  Actor_logger.info "%s" ("map_partition " ^ x ^ " -> " ^ y ^ "\n");
+  let g = Marshal.to_string f [ Marshal.Closures ] in
+  Actor_dag.add_edge (to_msg 0 MapPartTask [|g; x; y|]) x y Red; y
+
 let filter f x =
   let y = Actor_memory.rand_id () in
   Actor_logger.info "%s" ("filter " ^ x ^ " -> " ^ y ^ "\n");
