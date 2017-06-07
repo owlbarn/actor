@@ -120,34 +120,29 @@ let test_neural_parallel () =
 
 module M1 = Owl_parallel.Make_Distributed (Owl_dense_ndarray_d) (Actor_mapre)
 let test_owl_distributed () =
-  let print_info x =
-    print_endline "+++++++info+++++++";
-    List.iter (fun a ->
-      let me, arr = List.nth a 0 in
-      print_endline ("====> " ^ me);
-      Owl_dense_ndarray_d.print arr
-    ) x;
-    flush_all ()
-  in
   Ctx.init Sys.argv.(1) "tcp://localhost:5555";
   (* some tests ... *)
   let x = M1.uniform [|2;3;4|] in
-  Ctx.collect x.id |> print_info;
+  Owl_dense_ndarray_d.print (M1.to_ndarray x); flush_all ();
 
-  let y = M1.ones [|2;3;4|] in
+  let y = M1.init [|2;3;4|] float_of_int in
   let _ = M1.set y [|1;2;3|] 0. in
   let y = M1.add x y in
-  Ctx.collect y.id |> print_info;
+  Owl_dense_ndarray_d.print (M1.to_ndarray y); flush_all ();
 
   let a = M1.get y [|1;2;2|] in
-  Printf.printf "get ===> %g\n" a;
+  Actor_logger.info "get ===> %g" a;
 
   let x = M1.ones [|200;300;400|] in
   let x = M1.map (fun a -> a +. 1.) x in
   let a = M1.fold (+.) x 0. in
   let b = M1.sum x in
-  Printf.printf "fold vs. sum ===> %g, %g\n" a b
+  Actor_logger.info "fold vs. sum ===> %g, %g" a b;
 
+  Actor_logger.info "start retrieving big x";
+  let x = M1.to_ndarray x in
+  Actor_logger.info "finsh retrieving big x";
+  Actor_logger.info "sum x = %g" (Owl.Arr.sum x)
 
 
 let _ = test_owl_distributed ()
