@@ -22,6 +22,9 @@ Implement Coordinate Descent in model parallel ...
 
 Enhance Mapreduce engine, incorporate with owl.
 
+Add techreport based on the barrier control.
+
+
 # How to compile & run it?
 
 To compile and build the system, you do not have to install all the software yourself. You can simply pull a ready-made container to set up development environment.
