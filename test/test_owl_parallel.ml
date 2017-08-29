@@ -9,17 +9,19 @@ let test_naive () =
 
 (** [ Test parameter server ]  *)
 
+(*
 module PS = Actor_param
 
 let retrieve_model () =
-  let open Owl_neural in
-  let open Owl_neural_feedforward in
+  let open Owl.Neural.S in
+  let open Graph in
   (* model has been initialised *)
   try PS.get "model"
   (* model does not exist, init *)
   with Not_found -> (
     Actor_logger.warn "model does not exists, init now ...";
-    let nn = input [|28;28;1|]
+    let nn =
+      input [|28;28;1|]
       |> conv2d [|5;5;1;32|] [|1;1|] ~act_typ:Activation.Relu
       |> max_pool2d [|2;2|] [|2;2|]
       |> conv2d [|5;5;32;64|] [|1;1|] ~act_typ:Activation.Relu
@@ -35,7 +37,7 @@ let retrieve_model () =
 
 let schedule workers =
   let model = retrieve_model () |> fst in
-  Owl_neural.Feedforward.print model; flush_all ();
+  Owl.Neural.S.Graph.print model; flush_all ();
   let tasks = List.map (fun x ->
     (x, [("model", model)])
   ) workers in tasks
@@ -49,17 +51,13 @@ let push id vars =
     Owl_neural.Feedforward.print model; flush_all ();
     Unix.sleep sleep_t;
     *)
-    let open Owl in
-    let open Owl_neural in
+    let open Owl.Neural.S in
 
-    let x, _, y = Dataset.load_mnist_train_data () in
-    let m = Dense.Matrix.S.row_num x in
-    let x = Dense.Matrix.S.to_ndarray x in
-    let x = Dense.Ndarray.S.reshape x [|m;28;28;1|] in
+    let x, _, y = Owl.Dataset.load_cifar_train_data 1 in
 
     let params = Params.config
-    ~batch:(Batch.Mini 100) ~learning_rate:(Learning_Rate.Adagrad 0.005) 1. in
-    Feedforward.train_cnn ~params model x y |> ignore;
+    ~batch:(Batch.Sample 100) ~learning_rate:(Learning_Rate.Adagrad 0.005) 0.01 in
+    Owl.Neural.S.Graph.train_cnn ~params model x y |> ignore;
 
     (k, model) ) vars in
   updates
@@ -83,52 +81,55 @@ let test_param () =
 
   PS.start Sys.argv.(1) Actor_config.manager_addr;
   Actor_logger.info "do some work at master node"
+*)
 
 (* test parameter server engine *)
-module M2 = Owl_neural_parallel.Make (Owl_neural_feedforward) (Actor_param)
+module M2 = Owl_neural_parallel.Make (Owl.Neural.S.Graph) (Actor_param)
 let test_neural_parallel () =
-  let open Owl in
-  let open Owl_neural in
-  let open Owl_neural_feedforward in
-  let nn = input [|28;28;1|]
-    |> conv2d [|5;5;1;32|] [|1;1|] ~act_typ:Activation.Relu
-    |> max_pool2d [|2;2|] [|2;2|]
-    |> conv2d [|5;5;32;64|] [|1;1|] ~act_typ:Activation.Relu
-    |> max_pool2d [|2;2|] [|2;2|]
+  let open Owl.Neural.S in
+  let open Graph in
+  let nn =
+    input [|32;32;3|]
+    |> normalisation ~decay:0.9
+    |> conv2d [|3;3;3;32|] [|1;1|] ~act_typ:Activation.Relu
+    |> conv2d [|3;3;32;32|] [|1;1|] ~act_typ:Activation.Relu ~padding:VALID
+    |> max_pool2d [|2;2|] [|2;2|] ~padding:VALID
     |> dropout 0.1
-    |> fully_connected 1024 ~act_typ:Activation.Relu
+    |> conv2d [|3;3;32;64|] [|1;1|] ~act_typ:Activation.Relu
+    |> conv2d [|3;3;64;64|] [|1;1|] ~act_typ:Activation.Relu ~padding:VALID
+    |> max_pool2d [|2;2|] [|2;2|] ~padding:VALID
+    |> dropout 0.1
+    |> fully_connected 512 ~act_typ:Activation.Relu
     |> linear 10 ~act_typ:Activation.Softmax
+    |> get_network
   in
 
-  let x, _, y = Dataset.load_mnist_train_data () in
-  let m = Dense.Matrix.S.row_num x in
-  let x = Dense.Matrix.S.to_ndarray x in
-  let x = Dense.Ndarray.S.reshape x [|m;28;28;1|] in
-
+  let x, _, y = Owl.Dataset.load_cifar_train_data 1 in
   (*
   let params = Params.config
     ~batch:(Batch.Mini 100) ~learning_rate:(Learning_Rate.Adagrad 0.002) 0.05 in
   *)
 
   let params = Params.config
-    ~batch:(Batch.Mini 100) ~learning_rate:(Learning_Rate.Const 0.01) 0.05 in
-
+    ~batch:(Batch.Sample 100) ~learning_rate:(Learning_Rate.Const 0.1)
+    ~checkpoint:(Checkpoint.Epoch 1.) 0.1
+  in
   let url = Actor_config.manager_addr in
   let jid = Sys.argv.(1) in
   M2.train_cnn ~params nn x y jid url
 
 
-module M1 = Owl_parallel.Make_Distributed (Owl_dense_ndarray_d) (Actor_mapre)
+module M1 = Owl_parallel.Make_Distributed (Owl.Dense.Ndarray.D) (Actor_mapre)
 let test_owl_distributed () =
   Ctx.init Sys.argv.(1) "tcp://localhost:5555";
   (* some tests ... *)
   let x = M1.uniform [|2;3;4|] in
-  Owl_dense_ndarray_d.print (M1.to_ndarray x); flush_all ();
+  Owl.Dense.Ndarray.D.print (M1.to_ndarray x); flush_all ();
 
   let y = M1.init [|2;3;4|] float_of_int in
   let _ = M1.set y [|1;2;3|] 0. in
   let y = M1.add x y in
-  Owl_dense_ndarray_d.print (M1.to_ndarray y); flush_all ();
+  Owl.Dense.Ndarray.D.print (M1.to_ndarray y); flush_all ();
 
   let a = M1.get y [|1;2;2|] in
   Actor_logger.info "get ===> %g" a;
@@ -145,4 +146,4 @@ let test_owl_distributed () =
   Actor_logger.info "sum x = %g" (Owl.Arr.sum x)
 
 
-let _ = test_owl_distributed ()
+let _ = test_neural_parallel ()

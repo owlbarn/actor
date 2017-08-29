@@ -41,9 +41,9 @@ Library "actor"
               Actor_peerclient,
               Actor_barrier,
               # Extended module
-              Actor_param_sgd,
-              Actor_peer_sgd0,
-              Actor_peer_sgd1,
+              # Actor_param_sgd,
+              # Actor_peer_sgd0,
+              # Actor_peer_sgd1,
               Actor_peer_lda
   BuildDepends: str,
                 unix,
@@ -79,7 +79,7 @@ Executable test_owl_parallel
   BuildTools:     ocamlbuild
   CompiledObject: best
   MainIs:         test_owl_parallel.ml
-  BuildDepends:   actor, owl, owl_neural
+  BuildDepends:   actor, owl
 
 # Executable test_wordcount
 #   Path:           test
