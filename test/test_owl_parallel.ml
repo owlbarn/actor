@@ -110,7 +110,7 @@ let test_neural_parallel () =
     ~batch:(Batch.Mini 100) ~learning_rate:(Learning_Rate.Adagrad 0.002) 0.05 in
   *)
   let chkpt state =
-    if Checkpoint.(state.current_batch mod 20 = 0) then (
+    if Checkpoint.(state.current_batch mod 1 = 0) then (
       Checkpoint.(state.stop <- true);
       (* Log.info "sync model with server" *)
     )
