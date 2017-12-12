@@ -81,12 +81,12 @@ Executable test_owl_parallel
   MainIs:         test_owl_parallel.ml
   BuildDepends:   actor, owl
 
-# Executable test_wordcount
-#   Path:           test
-#   BuildTools:     ocamlbuild
-#   CompiledObject: best
-#   MainIs:         test_wordcount.ml
-#   BuildDepends:   actor
+Executable test_wordcount
+  Path:           test
+  BuildTools:     ocamlbuild
+  CompiledObject: best
+  MainIs:         test_wordcount.ml
+  BuildDepends:   actor
 
 # Executable test_context
 #   Path:           test
@@ -95,12 +95,12 @@ Executable test_owl_parallel
 #   MainIs:         test_context.ml
 #   BuildDepends:   actor
 
-# Executable test_kmeans
-#   Path:           test
-#   BuildTools:     ocamlbuild
-#   CompiledObject: best
-#   MainIs:         test_kmeans.ml
-#   BuildDepends:   actor
+Executable test_kmeans
+  Path:           test
+  BuildTools:     ocamlbuild
+  CompiledObject: best
+  MainIs:         test_kmeans.ml
+  BuildDepends:   actor
 
 # Executable test_parameter
 #   Path:           test
