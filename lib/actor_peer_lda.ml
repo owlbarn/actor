@@ -111,7 +111,7 @@ let pull _context updates =
   let tk_updates = List.filter (fun (w,_,_) -> w = -1) updates in
   if List.length tk_updates > 0 then (
     let t_k', _ = P2P.get (-1) in
-    Actor_logger.error "%s ==> %i %f" !_context.myself_addr (List.length tk_updates) (MD.sum t_k');
+    Actor_logger.error "%s ==> %i %f" !_context.myself_addr (List.length tk_updates) (MD.sum' t_k');
     List.iter (fun (_,a,t) ->
       Array.iter (fun (k,c) -> MD.(set t_k' 0 k (get t_k' 0 k +. c))) a
     ) tk_updates;
@@ -147,7 +147,7 @@ let push _context params =
   show_stats ();
   (* a workaround for t__k at the moment *)
   let t_k' = P2P.get (-1) |> fst in
-  t__k := MD.clone t_k';
+  t__k := MD.copy t_k';
   (* if there are words to be merged into global model, rebuild local one *)
   let shall_rebuild = ref false in
   Array.iter (fun b -> if b = false then shall_rebuild := true) !b__m;

@@ -122,7 +122,7 @@ let test_neural_parallel () =
   in
   let url = Actor_config.manager_addr in
   let jid = Sys.argv.(1) in
-  M2.train_cnn ~params nn x y jid url
+  M2.train ~params nn x y jid url
 
 
 module M1 = Owl_parallel.Make_Distributed (Owl.Dense.Ndarray.D) (Actor_mapre)
@@ -149,7 +149,7 @@ let test_owl_distributed () =
   Actor_logger.info "start retrieving big x";
   let x = M1.to_ndarray x in
   Actor_logger.info "finsh retrieving big x";
-  Actor_logger.info "sum x = %g" (Owl.Arr.sum x)
+  Actor_logger.info "sum x = %g" (Owl.Arr.sum' x)
 
 
 let _ = test_neural_parallel ()
