@@ -1,6 +1,6 @@
 (** [ Test Parallel Module in Owl ] *)
 
-module Ctx = Actor_mapre
+module Ctx = Actor.Mapre
 
 let test_naive () =
   Ctx.init Sys.argv.(1) "tcp://localhost:5555";
@@ -84,7 +84,7 @@ let test_param () =
 *)
 
 (* test parameter server engine *)
-module M2 = Owl_neural_parallel.Make (Owl.Neural.S.Graph) (Actor_param)
+module M2 = Owl_neural_parallel.Make (Owl.Neural.S.Graph) (Actor.Param)
 let test_neural_parallel () =
   let open Owl.Neural.S in
   let open Graph in
@@ -125,7 +125,7 @@ let test_neural_parallel () =
   M2.train ~params nn x y jid url
 
 
-module M1 = Owl_parallel.Make_Distributed (Owl.Dense.Ndarray.D) (Actor_mapre)
+module M1 = Owl_parallel.Make_Distributed (Owl.Dense.Ndarray.D) (Actor.Mapre)
 let test_owl_distributed () =
   Ctx.init Sys.argv.(1) "tcp://localhost:5555";
   (* some tests ... *)
