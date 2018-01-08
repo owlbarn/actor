@@ -112,7 +112,7 @@ let pull _context updates =
   if List.length tk_updates > 0 then (
     let t_k', _ = P2P.get (-1) in
     Actor_logger.error "%s ==> %i %f" !_context.myself_addr (List.length tk_updates) (MD.sum' t_k');
-    List.iter (fun (_,a,t) ->
+    List.iter (fun (_,a,_t) ->
       Array.iter (fun (k,c) -> MD.(set t_k' 0 k (get t_k' 0 k +. c))) a
     ) tk_updates;
     P2P.set (-1) t_k'
@@ -154,7 +154,7 @@ let push _context params =
   if !shall_rebuild then rebuild_local_model ();
   (* update local model and set bitmap of words *)
   let h = Array.make !n_v false in
-  List.iteri (fun i (w,a) ->
+  List.iteri (fun _i (w,a) ->
     if !b__m.(w) = true then (
       Array.iter (fun (k,c) -> MD.set !t_wk w k c) a
     )

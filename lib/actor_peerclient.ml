@@ -22,7 +22,7 @@ let _get k =
   let s = [|k; !_context.master_addr|] in
   Actor_utils.send !_context.master_sock P2P_Get s;
   let _, m = Actor_utils.recv !_context.myself_sock in
-  let k, v, t = Marshal.from_string m.par.(0) 0 in
+  let _k, v, t = Marshal.from_string m.par.(0) 0 in
   v, t
 
 let _set k v =
@@ -66,7 +66,7 @@ let service_loop () =
     ZMQ.Socket.close !_context.myself_sock;
     Pervasives.exit 0 )
 
-let init m context =
+let init _m context =
   _context := context;
   (* re-initialise since it is a new process *)
   !_context.ztx <- ZMQ.Context.create ();

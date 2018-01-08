@@ -8,13 +8,13 @@ let recv s =
 
 let send ?(bar=0) v t s =
   try ZMQ.Socket.send ~block:false v (to_msg bar t s)
-  with exn -> let hwm = ZMQ.Socket.get_send_high_water_mark v in
+  with _exn -> let hwm = ZMQ.Socket.get_send_high_water_mark v in
   Actor_logger.error "fail to send bar:%i hwm:%i" bar hwm
 
 let rec _bind_available_addr addr sock ztx =
   addr := "tcp://127.0.0.1:" ^ (string_of_int (Random.int 10000 + 50000));
   try ZMQ.Socket.bind sock !addr
-  with exn -> _bind_available_addr addr sock ztx
+  with _exn -> _bind_available_addr addr sock ztx
 
 let bind_available_addr ztx =
   let router : [`Router] ZMQ.Socket.t = ZMQ.Socket.create ztx ZMQ.Socket.router in
@@ -40,9 +40,9 @@ let group_by_key x = (* FIXME: stack overflow if there too many values for a key
 
 let flatten_kvg x =
   try List.map (fun (k,l) -> List.map (fun v -> (k,v)) l) x |> List.flatten
-  with exn -> print_endline "Error: flatten_kvg"; []
+  with _exn -> print_endline "Error: flatten_kvg"; []
 
-let choose_load x n i = List.filter (fun (k,l) -> (Hashtbl.hash k mod n) = i) x
+let choose_load x n i = List.filter (fun (k,_l) -> (Hashtbl.hash k mod n) = i) x
 
 (* generate a log file name from address *)
 let addr_to_log x =

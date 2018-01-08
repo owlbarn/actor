@@ -1,4 +1,4 @@
-(** [ Distributed Stochastic Gradient Decendent ] *)
+(** [ Distributed Stochastic Gradient Descendent ] *)
 
 open Owl
 open Actor_types

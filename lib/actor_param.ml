@@ -61,7 +61,7 @@ let set k v =
   | true  -> Actor_paramclient.(_set k v !_context.step)
   | false -> Actor_paramserver.(_set k v !_context.step)
 
-let keys () = Hashtbl.fold (fun k v l -> l @ [ Obj.obj k ]) Actor_paramserver._param []
+let keys () = Hashtbl.fold (fun k _v l -> l @ [ Obj.obj k ]) Actor_paramserver._param []
 
 let worker_num () =
   match Actor_paramserver.(!_context.job_id) = "" with
