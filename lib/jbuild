@@ -15,7 +15,8 @@
     ; turn off some warnings as 4.06.0 is pernickety and errors out
     :standard -w "-50" -safe-string)
   )
-  (wrapped true)
+
+  (wrapped false)
 
   (libraries (
     dolog

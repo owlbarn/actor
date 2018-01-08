@@ -21,3 +21,4 @@ setup.log
 
 # jbuilder generated files
 .merlin
+*.install

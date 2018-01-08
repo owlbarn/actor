@@ -1,0 +1,9 @@
+(jbuild_version 1)
+
+(executables
+ ((public_names (test_wordcount test_kmeans test_owl_parallel))
+  (names        (test_wordcount test_kmeans test_owl_parallel))
+  (libraries (
+    actor
+    owl
+))))
