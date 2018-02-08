@@ -128,7 +128,7 @@ let service_loop () =
       let path = Str.(split (regexp "://")) m.par.(0) in
       let b = match (List.nth path 0) with
       | "unix"  -> Actor_storage.unix_load (List.nth path 1)
-      | _ -> Actor_logger.info "%s" ("Error: unknown system!"); "" in
+      | _ -> Actor_logger.info "%s" ("Error: unknown system!"); Bytes.empty in
       Actor_memory.add m.par.(1) [ b ];
       Actor_utils.send ~bar !_context.master_sock OK [||]
       )

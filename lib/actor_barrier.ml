@@ -16,7 +16,7 @@ let mapre_bsp bar _context =
     let i, m = Actor_utils.recv !_context.myself_sock in
     if bar = m.bar && not (Hashtbl.mem h i) then Hashtbl.add h i m;
   done;
-  Hashtbl.fold (fun k v l -> v :: l) h []
+  Hashtbl.fold (fun _k v l -> v :: l) h []
 
 (* Mapre barrier: Delay bounded parallel *)
 let mapre_dbp bar _context =
@@ -33,8 +33,8 @@ let mapre_dbp bar _context =
     if bar = m.bar && not (Hashtbl.mem h i) then Hashtbl.add h i m;
     if budget < (Unix.gettimeofday () -. t0) then failwith "timeout"
   done
-  with exn -> Actor_logger.info "%s" "timeout +++");
-  Hashtbl.fold (fun k v l -> v :: l) h []
+  with _exn -> Actor_logger.info "%s" "timeout +++");
+  Hashtbl.fold (fun _k v l -> v :: l) h []
 
 (* Param barrier: Bulk synchronous parallel *)
 let param_bsp _context =

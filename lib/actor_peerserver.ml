@@ -43,7 +43,7 @@ module Route = struct
   let furthest x =
     let d = ref min_int in
     let n = ref "" in
-    List.iteri (fun i y ->
+    List.iteri (fun _i y ->
       let d' = distance (hash y) x in
       if d' > !d then ( d := d'; n := y )
     ) (StrMap.keys !_context.workers @ [!_context.myself_addr]);
@@ -55,7 +55,7 @@ module Route = struct
     in
     let d = ref min_int in
     let n = ref "" in
-    List.iteri (fun i y ->
+    List.iteri (fun _i y ->
       let d' = distance (hash y) x in
       if d' > !d then ( d := d'; n := y )
     ) addrs;
@@ -64,7 +64,7 @@ module Route = struct
   let nearest x =
     let d = ref max_int in
     let n = ref "" in
-    List.iteri (fun i y ->
+    List.iteri (fun _i y ->
       let d' = distance (hash y) x in
       if d' < !d then ( d := d'; n := y )
     ) (StrMap.keys !_context.workers @ [!_context.myself_addr]);
@@ -76,7 +76,7 @@ module Route = struct
     in
     let d = ref max_int in
     let n = ref "" in
-    List.iteri (fun i y ->
+    List.iteri (fun _i y ->
       let d' = distance (hash y) x in
       if d' < !d then ( d := d'; n := y )
     ) addrs;
@@ -129,13 +129,13 @@ let _allocate_params x y =
 
 let _shall_deliver_pull () =
   let ready = ref true in
-  Hashtbl.iter (fun k v ->
+  Hashtbl.iter (fun _k v ->
     match v with Some _ -> () | None -> ready := false
   ) _plbuf;
   if !ready = true then (
     let s = Hashtbl.fold (fun _ v l ->
       match v with
-      | Some v -> let k,v,t = Obj.obj v in l @ [(k,v)]
+      | Some v -> let k,v,_t = Obj.obj v in l @ [(k,v)]
       | None -> l
     ) _plbuf []
     in

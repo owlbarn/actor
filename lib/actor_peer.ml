@@ -20,7 +20,7 @@ let start jid url =
     | OK -> (
       match Unix.fork () with
       | 0 -> Actor_peerclient.init m _context
-      | p -> Actor_peerserver.init m _context
+      | _p -> Actor_peerserver.init m _context
       )
     | _ -> Actor_logger.info "%s" "unknown command"
   in
@@ -57,4 +57,4 @@ let set k v =
   | true  -> Actor_peerserver.(_set k v !_context.step)
   | false -> Actor_peerclient.(_set k v)
 
-let swarm_size = None
+let _swarm_size = None

@@ -44,7 +44,7 @@ let _set k v t =
   | false -> Hashtbl.add _param k' (v',t)
 
 let _broadcast_all t s =
-  StrMap.iter (fun k v -> Actor_utils.send ~bar:!_context.step v t s) !_context.workers;
+  StrMap.iter (fun _k v -> Actor_utils.send ~bar:!_context.step v t s) !_context.workers;
   !_context.step
 
 let terminate () =
@@ -116,14 +116,14 @@ let init m context =
   |> List.iter ZMQ.Socket.close;
   (* wait until all the allocated actors register *)
   while (StrMap.cardinal !_context.workers) < (List.length addrs) do
-    let i, m = Actor_utils.recv !_context.myself_sock in
+    let _i, m = Actor_utils.recv !_context.myself_sock in
     let s = ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer in
     ZMQ.Socket.set_send_high_water_mark s Actor_config.high_warter_mark;
     ZMQ.Socket.connect s m.par.(0);
     !_context.workers <- (StrMap.add m.par.(0) s !_context.workers);
   done;
   (* initialise the step <--> work tables *)
-  StrMap.iter (fun k v ->
+  StrMap.iter (fun k _v ->
     Hashtbl.add !_context.worker_busy k 0;
     Hashtbl.add !_context.worker_step k 0;
     Hashtbl.add !_context.step_worker 0 k;

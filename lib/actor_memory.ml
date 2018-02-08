@@ -2,8 +2,6 @@
   is a distributed file system for actors
 *)
 
-open Actor_types
-
 let _data : (string, Obj.t) Hashtbl. t = Hashtbl.create 10_000_000
 
 let rand_id () = string_of_int (Random.int 536_870_912)

@@ -6,7 +6,7 @@ open Actor_types
 let _context = ref (Actor_utils.empty_param_context ())
 
 (* default push function *)
-let _default_push = fun worker_id vars -> []
+let _default_push = fun _worker_id _vars -> []
 let _push = ref (Marshal.to_string _default_push [ Marshal.Closures ])
 
 let _get k =
@@ -31,7 +31,7 @@ let service_loop () =
   let push : 'a -> ('b * 'c) list -> ('b * 'c) list = Marshal.from_string !_push 0 in
   (* loop to process messages *)
   try while true do
-    let i, m = Actor_utils.recv !_context.myself_sock in
+    let _i, m = Actor_utils.recv !_context.myself_sock in
     let t = m.bar in
     match m.typ with
     | PS_Schedule -> (

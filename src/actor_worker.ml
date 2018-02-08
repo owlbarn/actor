@@ -23,9 +23,9 @@ let start_app app arg =
   Actor_logger.info "%s" ("starting job " ^ app);
   match Unix.fork () with
   | 0 -> if Unix.fork () = 0 then Unix.execv app arg else exit 0
-  | p -> ignore(Unix.wait ())
+  | _p -> ignore(Unix.wait ())
 
-let deploy_app x = Actor_logger.error "%s" "error, cannot find app!"
+let deploy_app _x = Actor_logger.error "%s" "error, cannot find app!"
 
 let run id u_addr m_addr =
   (* set up connection to manager *)
@@ -52,7 +52,7 @@ let run id u_addr m_addr =
     with
       | Unix.Unix_error (_,_,_) -> heartbeat req id u_addr m_addr
       | ZMQ.ZMQ_exception (_,s) -> Actor_logger.error "%s" s
-      | exn -> Actor_logger.error "unknown error"
+      | _exn -> Actor_logger.error "unknown error"
   done;
   ZMQ.Socket.close rep;
   ZMQ.Socket.close req;

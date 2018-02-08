@@ -1,7 +1,7 @@
 (** [ Naive K-means implementation ]
 *)
 
-module Ctx = Actor_mapre
+module Ctx = Actor.Mapre
 
 let print_points = List.iter (fun x -> Printf.printf "(%.2f,%.2f)\n" (fst x) (snd x))
 let distance x y = (((fst x) -. (fst y)) ** 2.) +. (((snd x) -. (snd y)) ** 2.)
@@ -15,7 +15,7 @@ let format_filter_data fname = fname
 
 let kmeans x =
   let centers = ref [(1.,1.); (2.,2.); (3.,3.); (4.,4.)] in
-  for i = 0 to 50 do
+  for _i = 0 to 50 do
     let bc = Ctx.broadcast !centers in
     let y = Ctx.map (fun x ->
       let k = ref (-1, max_float) in
@@ -26,7 +26,7 @@ let kmeans x =
     let y = Ctx.reduce_by_key (fun x y -> (add_2pts (fst x) (fst y), (snd x)+.(snd y)) ) y in
     centers := Ctx.collect y
       |> List.flatten
-      |> List.map (fun (k,v) -> let p, c = v in ((fst p)/.c,(snd p)/.c) )
+      |> List.map (fun (_k,v) -> let p, c = v in ((fst p)/.c,(snd p)/.c) )
   done;
   !centers
 

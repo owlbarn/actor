@@ -9,7 +9,7 @@ let barrier bar = Actor_barrier.mapre_bsp bar _context
 
 let _broadcast_all t s =
   let bar = Random.int 536870912 in
-  StrMap.iter (fun k v -> Actor_utils.send ~bar v t s) !_context.workers;
+  StrMap.iter (fun _k v -> Actor_utils.send ~bar v t s) !_context.workers;
   bar
 
 let run_job_eager () =
@@ -50,7 +50,7 @@ let fold f a x =
   let bar = _broadcast_all Fold [|g; x|] in
   barrier bar
   |> List.map (fun m -> Marshal.from_string m.par.(0) 0)
-  |> List.filter (function Some x -> true | None -> false)
+  |> List.filter (function Some _x -> true | None -> false)
   |> List.map (function Some x -> x | None -> failwith "")
   |> List.fold_left f a
 
@@ -61,7 +61,7 @@ let reduce f x =
   let bar = _broadcast_all Reduce [|g; x|] in
   let y = barrier bar
   |> List.map (fun m -> Marshal.from_string m.par.(0) 0)
-  |> List.filter (function Some x -> true | None -> false)
+  |> List.filter (function Some _x -> true | None -> false)
   |> List.map (function Some x -> x | None -> failwith "") in
   match y with
   | hd :: tl -> Some (List.fold_left f hd tl)
@@ -179,7 +179,7 @@ let init m context =
   ) addrs |> List.iter ZMQ.Socket.close;
   (* wait until all the allocated actors register *)
   while (StrMap.cardinal !_context.workers) < (List.length addrs) do
-    let i, m = Actor_utils.recv !_context.myself_sock in
+    let _i, m = Actor_utils.recv !_context.myself_sock in
     let s = ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer in
     ZMQ.Socket.connect s m.par.(0);
     !_context.workers <- (StrMap.add m.par.(0) s !_context.workers);

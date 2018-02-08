@@ -1,19 +1,28 @@
+.PHONY: all
 all:
-	ocaml setup.ml -build
-oasis:
-	oasis setup
-	ocaml setup.ml -configure
-install:
-	ocaml setup.ml -uninstall
-	ocaml setup.ml -install
-uninstall:
-	ocamlfind remove actor
+	jbuilder build --dev
+
+.PHONY: clean
 clean:
-	rm -rf _build
-	rm -rf *.byte *.native
-	rm -rf log/*
+	jbuilder clean
+
+.PHONY: test
+test:
+	jbuilder runtest -j1 --no-buffer
+
+.PHONY: install
+install:
+	jbuilder install
+
+.PHONY: uninstall
+uninstall:
+	jbuilder uninstall
+
+.PHONY: doc
+doc:
+	jbuilder build @doc
+
+.PHONY: cleanall
 cleanall:
-	rm -rf _build setup.* myocamlbuild.ml _tags
-	rm -rf *.byte *.native
-	rm -rf lib/META lib/*.mldylib lib/*.mllib
-	rm -rf log/*
+	jbuilder uninstall && jbuilder clean
+	$(RM) -r $(find . -name .merlin)
