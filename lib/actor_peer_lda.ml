@@ -55,7 +55,7 @@ let init k v d =
   (* randomise the topic assignment for each token *)
   t__z := Array.mapi (fun i s ->
     Array.init (Array.length s) (fun j ->
-      let k' = Stats.Rnd.uniform_int ~a:0 ~b:(k - 1) () in
+      let k' = Stats.uniform_int_rvs ~a:0 ~b:(k - 1) in
       include_token s.(j) i k';
       k'
     )
@@ -91,7 +91,7 @@ let sampling d h =
         MD.set p 0 j !x
       done;
       (* draw a sample *)
-      let u = Stats.Rnd.uniform () *. !x in
+      let u = Stats.uniform_rvs ~a:0. ~b:1. *. !x in
       let k = ref 0 in
       while (MD.get p 0 !k) < u do k := !k + 1; done;
       include_token w d !k;
@@ -135,7 +135,7 @@ let pull _context updates =
   Hashtbl.iter (fun w (r,t) ->
     let a = Array.make (MD.nnz r) (0,0.) in
     let j = ref 0 in
-    MD.iteri (fun _ k c ->
+    MD.iteri (fun k c ->
       if c <> 0. then (a.(!j) <- (k,c); j := !j + 1)
     ) r;
     wk_updates' := !wk_updates' @ [(w,a,t)]
@@ -180,14 +180,14 @@ let push _context params =
       if c' <> c then a' := Array.append !a' [|(k,c'-.c)|]
     ) a;
     let r = MD.row !t_wk w in
-    MD.iteri (fun _ k c' ->
+    MD.iteri (fun k c' ->
       if h.(k) = false && c' <> 0. then a' := Array.append !a' [|(k,c')|]
     ) r;
     updates := !updates @ [(w,!a')]
   ) params;
   (* calculate t__k updates *)
   let a = ref [||] in
-  MD.iteri (fun _ k c ->
+  MD.iteri (fun k c ->
     if c <> 0. then a := Array.append !a [|(k,c)|]
   ) MD.(!t__k - t_k');
   updates := !updates @ [(-1,!a)];
