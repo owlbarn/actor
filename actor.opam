@@ -22,7 +22,6 @@ depexts: [
 depends: [
   "jbuilder" {build}
   "ocamlgraph"
-  "dolog"
   "owl"
   "zmq"
 ]

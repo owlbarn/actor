@@ -19,7 +19,6 @@
   (wrapped false)
 
   (libraries (
-    dolog
     zmq
     ocamlgraph
     owl
