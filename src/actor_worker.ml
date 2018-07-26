@@ -1,6 +1,9 @@
-(** [ Actor ]
-  connect to Manager, represent a working node/actor.
-*)
+(*
+ * Actor - Parallel & Distributed Engine of Owl System
+ * Copyright (c) 2016-2018 Liang Wang <liang.wang@cl.cam.ac.uk>
+ *)
+
+(* Actor: connect to Manager, represent a working node/actor. *)
 
 open Actor_types
 

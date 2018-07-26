@@ -1,4 +1,9 @@
-(** [ Data Parallel ] Map-Reduce server module *)
+(*
+ * Actor - Parallel & Distributed Engine of Owl System
+ * Copyright (c) 2016-2018 Liang Wang <liang.wang@cl.cam.ac.uk>
+ *)
+
+(* Data Parallel: Map-Reduce server module *)
 
 open Actor_types
 

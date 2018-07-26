@@ -1,4 +1,9 @@
-(** [ Peer LDA ] Latent Dirichlet Allocation *)
+(*
+ * Actor - Parallel & Distributed Engine of Owl System
+ * Copyright (c) 2016-2018 Liang Wang <liang.wang@cl.cam.ac.uk>
+ *)
+
+(* Peer LDA: Latent Dirichlet Allocation *)
 
 open Owl
 open Actor_types

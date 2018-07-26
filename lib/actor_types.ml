@@ -1,6 +1,11 @@
-(** [ Types ]
-  includes the types shared by different modules.
-*)
+(*
+ * Actor - Parallel & Distributed Engine of Owl System
+ * Copyright (c) 2016-2018 Liang Wang <liang.wang@cl.cam.ac.uk>
+ *)
+
+
+(* Types: includes the types shared by different modules. *)
+
 
 module StrMap = struct
   include Map.Make (String)

@@ -1,4 +1,7 @@
-(** [ Logger module ]  *)
+(*
+ * Actor - Parallel & Distributed Engine of Owl System
+ * Copyright (c) 2016-2018 Liang Wang <liang.wang@cl.cam.ac.uk>
+ *)
 
 include Owl_log
 

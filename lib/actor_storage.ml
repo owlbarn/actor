@@ -1,6 +1,10 @@
-(** [ Storage module ]
-  provide a basic persistent storage service
-*)
+(*
+ * Actor - Parallel & Distributed Engine of Owl System
+ * Copyright (c) 2016-2018 Liang Wang <liang.wang@cl.cam.ac.uk>
+ *)
+
+(* Storage module: provide a basic persistent storage service *)
+
 
 (* the following functions are for native Unix storage *)
 

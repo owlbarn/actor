@@ -1,4 +1,9 @@
-(** [ Peer-to-Peer Parallel ] Client module *)
+(*
+ * Actor - Parallel & Distributed Engine of Owl System
+ * Copyright (c) 2016-2018 Liang Wang <liang.wang@cl.cam.ac.uk>
+ *)
+
+(* Peer-to-Peer Parallel: Client module *)
 
 open Actor_types
 

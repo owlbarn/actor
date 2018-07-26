@@ -1,4 +1,9 @@
-(** [ Config ] contains the static configurations of the framework. *)
+(*
+ * Actor - Parallel & Distributed Engine of Owl System
+ * Copyright (c) 2016-2018 Liang Wang <liang.wang@cl.cam.ac.uk>
+ *)
+
+(* Config: contains the static configurations of the framework. *)
 
 (** Manager's address, all workders connect to this address *)
 let manager_addr = "tcp://127.0.0.1:5555"

@@ -1,4 +1,11 @@
-(** [ Distributed Stochastic Gradient Decendent ]
+(*
+ * Actor - Parallel & Distributed Engine of Owl System
+ * Copyright (c) 2016-2018 Liang Wang <liang.wang@cl.cam.ac.uk>
+ *)
+
+(*
+  Distributed Stochastic Gradient Decendent
+
   Each row in the data matrix is a data point;
   each column in the model matrix is a classifier.
  *)

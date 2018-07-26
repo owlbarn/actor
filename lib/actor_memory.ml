@@ -1,6 +1,10 @@
-(** [ Dfs ]
-  is a distributed file system for actors
-*)
+(*
+ * Actor - Parallel & Distributed Engine of Owl System
+ * Copyright (c) 2016-2018 Liang Wang <liang.wang@cl.cam.ac.uk>
+ *)
+
+
+(* Dfs is a distributed file system for actors *)
 
 let _data : (string, Obj.t) Hashtbl. t = Hashtbl.create 10_000_000
 
