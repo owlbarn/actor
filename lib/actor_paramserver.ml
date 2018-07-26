@@ -73,7 +73,7 @@ let terminate () =
 
 
 let service_loop () =
-  Actor_logger.debug "parameter server @ %s" !_context.myself_addr;
+  Owl_log.debug "parameter server @ %s" !_context.myself_addr;
   (* unmarshal the schedule and pull functions *)
   let schedule : ('a, 'b, 'c) ps_schedule_typ = Marshal.from_string !_schedule 0 in
   let pull : ('a, 'b, 'c) ps_pull_typ = Marshal.from_string !_pull 0 in
@@ -93,33 +93,33 @@ let service_loop () =
       Actor_utils.send ~bar:t w PS_Schedule [|s|]
     ) tasks;
     if List.length tasks > 0 then
-      Actor_logger.debug "schedule t:%i -> %i workers" !_context.step (List.length tasks);
+      Owl_log.debug "schedule t:%i -> %i workers" !_context.step (List.length tasks);
     (** wait for another message arrival *)
     let i, m = Actor_utils.recv !_context.myself_sock in
     let t = m.bar in
     match m.typ with
     | PS_Get -> (
-      Actor_logger.debug "%s: ps_get" !_context.myself_addr;
+      Owl_log.debug "%s: ps_get" !_context.myself_addr;
       let k = Marshal.from_string m.par.(0) 0 in
       let v, t' = _get k in
       let s = to_msg t' OK [| Marshal.to_string v [] |] in
       ZMQ.Socket.send_all ~block:false !_context.myself_sock [i;s]
       )
     | PS_Set -> (
-      Actor_logger.debug "%s: ps_set" !_context.myself_addr;
+      Owl_log.debug "%s: ps_set" !_context.myself_addr;
       let k = Marshal.from_string m.par.(0) 0 in
       let v = Marshal.from_string m.par.(1) 0 in
       _set k v t
       )
     | PS_Push -> (
-      Actor_logger.debug "%s: ps_push" !_context.myself_addr;
+      Owl_log.debug "%s: ps_push" !_context.myself_addr;
       let updates = Marshal.from_string m.par.(0) 0 |> pull in
       List.iter (fun (k,v) -> _set k v t) updates;
       update_steps t i
       )
-    | _ -> ( Actor_logger.debug "unknown mssage to PS" )
+    | _ -> ( Owl_log.debug "unknown mssage to PS" )
   done with Failure e -> (
-    Actor_logger.warn "%s" e;
+    Owl_log.warn "%s" e;
     terminate ();
     ZMQ.Socket.close !_context.myself_sock )
 

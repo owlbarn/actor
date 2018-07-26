@@ -19,9 +19,14 @@ let dfs_path = "storage.data"
 
 
 (** Log configs: path, level, color, etc. *)
-let level = Actor_logger.DEBUG
+let update_config level logdir fname =
+  Owl_log.set_level level;
+  match fname with
+  | "" -> (Owl_log.set_color true;  Owl_log.set_output stderr)
+  | _  -> (Owl_log.set_color false; open_out (logdir^fname) |> Owl_log.set_output)
+
 let logdir = "log/"
-let _ =  Actor_logger.update_config level logdir ""
+let _ =  update_config Owl_log.DEBUG logdir ""
 
 
 (** Max queue length of ZMQ send and receive *)

@@ -13,22 +13,22 @@ let myid = "worker_" ^ (string_of_int (Random.int 9000 + 1000))
 let _ztx = ZMQ.Context.create ()
 
 let register req id u_addr m_addr =
-  Actor_logger.info "%s" ("register -> " ^ m_addr);
+  Owl_log.info "%s" ("register -> " ^ m_addr);
   Actor_utils.send req User_Reg [|id; u_addr|];
   ignore (ZMQ.Socket.recv req)
 
 let heartbeat req id u_addr m_addr =
-  Actor_logger.info "%s" ("heartbeat -> " ^ m_addr);
+  Owl_log.info "%s" ("heartbeat -> " ^ m_addr);
   Actor_utils.send req Heartbeat [|id; u_addr|];
   ignore (ZMQ.Socket.recv req)
 
 let start_app app arg =
-  Actor_logger.info "%s" ("starting job " ^ app);
+  Owl_log.info "%s" ("starting job " ^ app);
   match Unix.fork () with
   | 0 -> if Unix.fork () = 0 then Unix.execv app arg else exit 0
   | _p -> ignore(Unix.wait ())
 
-let deploy_app _x = Actor_logger.error "cannot find %s" _x
+let deploy_app _x = Owl_log.error "cannot find %s" _x
 
 let run id u_addr m_addr =
   (* set up connection to manager *)
@@ -45,7 +45,7 @@ let run id u_addr m_addr =
       | Job_Create -> (
         let app = m.par.(1) in
         let arg = Marshal.from_string m.par.(2) 0 in
-        Actor_logger.info "%s" (app ^ " <- " ^ m.par.(0));
+        Owl_log.info "%s" (app ^ " <- " ^ m.par.(0));
         ZMQ.Socket.send rep (Marshal.to_string OK []);
         match Sys.file_exists app with
         | true -> start_app app arg
@@ -54,8 +54,8 @@ let run id u_addr m_addr =
       | _ -> ()
     with
       | Unix.Unix_error (_,_,_) -> heartbeat req id u_addr m_addr
-      | ZMQ.ZMQ_exception (_,s) -> Actor_logger.error "%s" s
-      | _exn -> Actor_logger.error "unknown error"
+      | ZMQ.ZMQ_exception (_,s) -> Owl_log.error "%s" s
+      | _exn -> Owl_log.error "unknown error"
   done;
   ZMQ.Socket.close rep;
   ZMQ.Socket.close req;

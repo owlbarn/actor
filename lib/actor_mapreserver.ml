@@ -40,7 +40,7 @@ let run_job_lazy x =
 
 
 let collect x =
-  Actor_logger.info "%s" ("collect " ^ x ^ "\n");
+  Owl_log.info "%s" ("collect " ^ x ^ "\n");
   run_job_lazy x;
   let bar = _broadcast_all Collect [|x|] in
   barrier bar
@@ -48,7 +48,7 @@ let collect x =
 
 
 let count x =
-  Actor_logger.info "%s" ("count " ^ x ^ "\n");
+  Owl_log.info "%s" ("count " ^ x ^ "\n");
   run_job_lazy x;
   let bar = _broadcast_all Count [|x|] in
   barrier bar
@@ -57,7 +57,7 @@ let count x =
 
 
 let fold f a x =
-  Actor_logger.info "%s" ("fold " ^ x ^ "\n");
+  Owl_log.info "%s" ("fold " ^ x ^ "\n");
   run_job_lazy x;
   let g = Marshal.to_string f [ Marshal.Closures ] in
   let bar = _broadcast_all Fold [|g; x|] in
@@ -69,7 +69,7 @@ let fold f a x =
 
 
 let reduce f x =
-  Actor_logger.info "%s" ("reduce " ^ x ^ "\n");
+  Owl_log.info "%s" ("reduce " ^ x ^ "\n");
   run_job_lazy x;
   let g = Marshal.to_string f [ Marshal.Closures ] in
   let bar = _broadcast_all Reduce [|g; x|] in
@@ -83,13 +83,13 @@ let reduce f x =
 
 
 let terminate () =
-  Actor_logger.info "%s" ("terminate #" ^ !_context.job_id ^ "\n");
+  Owl_log.info "%s" ("terminate #" ^ !_context.job_id ^ "\n");
   let bar = _broadcast_all Terminate [||] in
   let _ = barrier bar in ()
 
 
 let broadcast x =
-  Actor_logger.info "%s" ("broadcast -> " ^ string_of_int (StrMap.cardinal !_context.workers) ^ " workers\n");
+  Owl_log.info "%s" ("broadcast -> " ^ string_of_int (StrMap.cardinal !_context.workers) ^ " workers\n");
   let y = Actor_memory.rand_id () in
   let bar = _broadcast_all Broadcast [|Marshal.to_string x []; y|] in
   let _ = barrier bar in y
@@ -100,28 +100,28 @@ let get_value x = Actor_memory.find x
 
 let map f x =
   let y = Actor_memory.rand_id () in
-  Actor_logger.info "%s" ("map " ^ x ^ " -> " ^ y ^ "\n");
+  Owl_log.info "%s" ("map " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
   Actor_dag.add_edge (to_msg 0 MapTask [|g; x; y|]) x y Red; y
 
 
 let map_partition f x =
   let y = Actor_memory.rand_id () in
-  Actor_logger.info "%s" ("map_partition " ^ x ^ " -> " ^ y ^ "\n");
+  Owl_log.info "%s" ("map_partition " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
   Actor_dag.add_edge (to_msg 0 MapPartTask [|g; x; y|]) x y Red; y
 
 
 let filter f x =
   let y = Actor_memory.rand_id () in
-  Actor_logger.info "%s" ("filter " ^ x ^ " -> " ^ y ^ "\n");
+  Owl_log.info "%s" ("filter " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
   Actor_dag.add_edge (to_msg 0 FilterTask [|g; x; y|]) x y Red; y
 
 
 let flatten x =
   let y = Actor_memory.rand_id () in
-  Actor_logger.info "%s" ("flatten " ^ x ^ " -> " ^ y ^ "\n");
+  Owl_log.info "%s" ("flatten " ^ x ^ " -> " ^ y ^ "\n");
   Actor_dag.add_edge (to_msg 0 FlattenTask [|x; y|]) x y Red; y
 
 
@@ -130,14 +130,14 @@ let flatmap f x = flatten (map f x)
 
 let union x y =
   let z = Actor_memory.rand_id () in
-  Actor_logger.info "%s" ("union " ^ x ^ " & " ^ y ^ " -> " ^ z ^ "\n");
+  Owl_log.info "%s" ("union " ^ x ^ " & " ^ y ^ " -> " ^ z ^ "\n");
   Actor_dag.add_edge (to_msg 0 UnionTask [|x; y; z|]) x z Red;
   Actor_dag.add_edge (to_msg 0 UnionTask [|x; y; z|]) y z Red; z
 
 
 let shuffle x =
   let y = Actor_memory.rand_id () in
-  Actor_logger.info "%s" ("shuffle " ^ x ^ " -> " ^ y ^ "\n");
+  Owl_log.info "%s" ("shuffle " ^ x ^ " -> " ^ y ^ "\n");
   let z = Marshal.to_string (StrMap.keys !_context.workers) [] in
   let b = Marshal.to_string (Random.int 536870912) [] in
   Actor_dag.add_edge (to_msg 0 ShuffleTask [|x; y; z; b|]) x y Blue; y
@@ -147,7 +147,7 @@ let reduce_by_key f x =
   (* TODO: without local combiner ... keep or not? *)
   let x = shuffle x in
   let y = Actor_memory.rand_id () in
-  Actor_logger.info "%s" ("reduce_by_key " ^ x ^ " -> " ^ y ^ "\n");
+  Owl_log.info "%s" ("reduce_by_key " ^ x ^ " -> " ^ y ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
   Actor_dag.add_edge (to_msg 0 ReduceByKeyTask [|g; x; y|]) x y Red; y
 
@@ -159,20 +159,20 @@ let ___reduce_by_key f x =
   Actor_dag.add_edge (to_msg 0 ReduceByKeyTask [|g; x; y|]) x y Red;
   let x = shuffle y in
   let y = Actor_memory.rand_id () in
-  Actor_logger.info "%s" ("reduce_by_key " ^ x ^ " -> " ^ y ^ "\n");
+  Owl_log.info "%s" ("reduce_by_key " ^ x ^ " -> " ^ y ^ "\n");
   Actor_dag.add_edge (to_msg 0 ReduceByKeyTask [|g; x; y|]) x y Red; y
 
 
 let join x y =
   let z = Actor_memory.rand_id () in
-  Actor_logger.info "%s" ("join " ^ x ^ " & " ^ y ^ " -> " ^ z ^ "\n");
+  Owl_log.info "%s" ("join " ^ x ^ " & " ^ y ^ " -> " ^ z ^ "\n");
   let x, y = shuffle x, shuffle y in
   Actor_dag.add_edge (to_msg 0 JoinTask [|x; y; z|]) x z Red;
   Actor_dag.add_edge (to_msg 0 JoinTask [|x; y; z|]) y z Red; z
 
 
 let apply f i o =
-  Actor_logger.info "%s" ("apply f ... " ^ "\n");
+  Owl_log.info "%s" ("apply f ... " ^ "\n");
   let g = Marshal.to_string f [ Marshal.Closures ] in
   let o = List.map (fun _ -> Actor_memory.rand_id ()) o in
   let x = Marshal.to_string i [ ] in
@@ -183,14 +183,14 @@ let apply f i o =
 
 
 let load x =
-  Actor_logger.info "%s" ("load " ^ x ^ "\n");
+  Owl_log.info "%s" ("load " ^ x ^ "\n");
   let y = Actor_memory.rand_id () in
   let bar = _broadcast_all Load [|x; y|] in
   let _ = barrier bar in y
 
 
 let save x y =
-  Actor_logger.info "%s" ("save " ^ x ^ "\n");
+  Owl_log.info "%s" ("save " ^ x ^ "\n");
   let bar = _broadcast_all Save [|x; y|] in
   barrier bar
   |> List.map (fun m -> Marshal.from_string m.par.(0) 0)

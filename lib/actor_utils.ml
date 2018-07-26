@@ -16,7 +16,7 @@ let recv s =
 let send ?(bar=0) v t s =
   try ZMQ.Socket.send ~block:false v (to_msg bar t s)
   with _exn -> let hwm = ZMQ.Socket.get_send_high_water_mark v in
-  Actor_logger.error "fail to send bar:%i hwm:%i" bar hwm
+  Owl_log.error "fail to send bar:%i hwm:%i" bar hwm
 
 
 let rec _bind_available_addr addr sock ztx =

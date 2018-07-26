@@ -38,7 +38,7 @@ let update_param x t =
 
 
 let service_loop () =
-  Actor_logger.debug "parameter worker @ %s" !_context.myself_addr;
+  Owl_log.debug "parameter worker @ %s" !_context.myself_addr;
   (* unmarshal the push function *)
   let push : 'a -> ('b * 'c) list -> ('b * 'c) list = Marshal.from_string !_push 0 in
   (* loop to process messages *)
@@ -47,21 +47,21 @@ let service_loop () =
     let t = m.bar in
     match m.typ with
     | PS_Schedule -> (
-      Actor_logger.debug "%s: ps_schedule" !_context.myself_addr;
+      Owl_log.debug "%s: ps_schedule" !_context.myself_addr;
       !_context.step <- (if t > !_context.step then t else !_context.step);
       let vars = Marshal.from_string m.par.(0) 0 in
       let updates = push !_context.myself_addr vars in
       update_param updates t
       )
     | Terminate -> (
-      Actor_logger.debug "%s: terminate"!_context.myself_addr;
+      Owl_log.debug "%s: terminate"!_context.myself_addr;
       Actor_utils.send ~bar:t !_context.master_sock OK [||];
       Unix.sleep 1; (* FIXME: sleep ... *)
       failwith ("#" ^ !_context.job_id ^ " terminated")
       )
-    | _ -> ( Actor_logger.debug "unknown mssage to PS" )
+    | _ -> ( Owl_log.debug "unknown mssage to PS" )
   done with Failure e -> (
-    Actor_logger.warn "%s" e;
+    Owl_log.warn "%s" e;
     ZMQ.Socket.close !_context.myself_sock;
     Pervasives.exit 0 )
 

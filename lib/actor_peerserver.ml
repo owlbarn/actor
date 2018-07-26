@@ -202,11 +202,11 @@ let _notify_peers_step () =
 
 let _process_timeout () =
   _notify_peers_step ();
-  Actor_logger.debug "%s: timeout" !_context.myself_addr
+  Owl_log.debug "%s: timeout" !_context.myself_addr
 
 
 let service_loop () =
-  Actor_logger.debug "%s: p2p server" !_context.myself_addr;
+  Owl_log.debug "%s: p2p server" !_context.myself_addr;
   let barrier : p2p_barrier_typ = Marshal.from_string !_barrier 0 in
   let pull : ('a, 'b) p2p_pull_typ = Marshal.from_string !_pull 0 in
   (* loop to process messages *)
@@ -216,18 +216,18 @@ let service_loop () =
     try let i, m = Actor_utils.recv !_context.myself_sock in (
     match m.typ with
     | P2P_Connect -> (
-      Actor_logger.debug "%s: p2p_connect %s" !_context.myself_addr m.par.(0);
+      Owl_log.debug "%s: p2p_connect %s" !_context.myself_addr m.par.(0);
       let addr = m.par.(0) in
       !_context.master_addr <- addr;
       !_context.master_sock <- Route.connect addr
       )
     | P2P_Ping -> (
-      Actor_logger.debug "%s: p2p_ping %s" !_context.myself_addr m.par.(0);
+      Owl_log.debug "%s: p2p_ping %s" !_context.myself_addr m.par.(0);
       let addr = m.par.(0) in
       if Route.exists addr = false then Route.(connect addr |> add addr)
       )
     | P2P_Join -> (
-      Actor_logger.debug "%s: p2p_join %s" !_context.myself_addr m.par.(0);
+      Owl_log.debug "%s: p2p_join %s" !_context.myself_addr m.par.(0);
       let src = m.par.(0) in
       let dst = Marshal.from_string m.par.(1) 0 in
       let next = Route.nearest_exclude dst [src] in
@@ -244,7 +244,7 @@ let service_loop () =
             Route.forward next P2P_Ping [|src|];
           let h = _allocate_params !_context.myself_addr src in
           let s = Marshal.to_string h [] in
-          Actor_logger.debug "params: %s ===> %s size:%i" !_context.myself_addr src (String.length s);
+          Owl_log.debug "params: %s ===> %s size:%i" !_context.myself_addr src (String.length s);
           Route.forward src P2P_Copy [|s|]
         )
       );
@@ -252,7 +252,7 @@ let service_loop () =
         Route.forward next P2P_Join m.par;
       )
     | P2P_Copy -> (
-      Actor_logger.debug "%s: p2p_copy" !_context.myself_addr;
+      Owl_log.debug "%s: p2p_copy" !_context.myself_addr;
       let h = Marshal.from_string m.par.(0) 0 in
       List.iter (fun (k,v) ->
         match Hashtbl.mem _param k with
@@ -261,7 +261,7 @@ let service_loop () =
       ) h
       )
     | P2P_Get -> (
-      Actor_logger.debug "%s: p2p_get" !_context.myself_addr;
+      Owl_log.debug "%s: p2p_get" !_context.myself_addr;
       let k = Marshal.from_string m.par.(0) 0 in
       let next = Route.(hash k |> nearest) in
       match next = !_context.myself_addr with
@@ -274,7 +274,7 @@ let service_loop () =
       | false -> Route.forward next P2P_Get_Q m.par
       )
     | P2P_Get_Q -> (
-      Actor_logger.debug "%s: p2p_get_q" !_context.myself_addr;
+      Owl_log.debug "%s: p2p_get_q" !_context.myself_addr;
       let k = Marshal.from_string m.par.(0) 0 in
       let next = Route.(hash k |> nearest) in
       match next = !_context.myself_addr with
@@ -288,7 +288,7 @@ let service_loop () =
       | false -> Route.forward next P2P_Get_Q m.par
       )
     | P2P_Get_R -> (
-      Actor_logger.debug "%s: p2p_get_r" !_context.myself_addr;
+      Owl_log.debug "%s: p2p_get_r" !_context.myself_addr;
       let addr = m.par.(1) in
       let next = Route.(hash addr |> nearest) in
       match next = !_context.myself_addr with
@@ -296,7 +296,7 @@ let service_loop () =
       | false -> Route.forward next P2P_Get_R m.par
       )
     | P2P_Set -> (
-      Actor_logger.debug "%s: p2p_get" !_context.myself_addr;
+      Owl_log.debug "%s: p2p_get" !_context.myself_addr;
       let k, v, t = Marshal.from_string m.par.(0) 0 in
       (* check whether this is from the local client *)
       let t = if t < 0 then (
@@ -310,7 +310,7 @@ let service_loop () =
       | false -> Route.forward next P2P_Set m.par
       )
     | P2P_Push -> (
-      Actor_logger.debug "%s: p2p_push" !_context.myself_addr;
+      Owl_log.debug "%s: p2p_push" !_context.myself_addr;
       Marshal.from_string m.par.(0) 0
       |> List.iter (fun (k,v) ->
         let next = Route.(hash k |> nearest) in
@@ -323,7 +323,7 @@ let service_loop () =
       )
       )
     | P2P_Pull -> (
-      Actor_logger.debug "%s: p2p_pull" !_context.myself_addr;
+      Owl_log.debug "%s: p2p_pull" !_context.myself_addr;
       Marshal.from_string m.par.(0) 0
       |> List.iter (fun k ->
         let next = Route.(hash k |> nearest) in
@@ -342,7 +342,7 @@ let service_loop () =
       _shall_deliver_pull ()
       )
     | P2P_Pull_Q -> (
-      Actor_logger.debug "%s: p2p_pull_q %s" !_context.myself_addr m.par.(1);
+      Owl_log.debug "%s: p2p_pull_q %s" !_context.myself_addr m.par.(1);
       let k = Marshal.from_string m.par.(0) 0 in
       let next = Route.(hash k |> nearest) in
       match next = !_context.myself_addr with
@@ -356,7 +356,7 @@ let service_loop () =
       | false -> Route.forward next P2P_Pull_Q m.par
       )
     | P2P_Pull_R -> (
-      Actor_logger.debug "%s: p2p_pull_r %s" !_context.myself_addr m.par.(1);
+      Owl_log.debug "%s: p2p_pull_r %s" !_context.myself_addr m.par.(1);
       let addr = m.par.(1) in
       let next = Route.(hash addr |> nearest) in
       match next = !_context.myself_addr with
@@ -368,12 +368,12 @@ let service_loop () =
       | false -> Route.forward next P2P_Pull_R m.par
       )
     | P2P_Bar -> (
-      Actor_logger.debug "%s: p2p_bar" !_context.myself_addr;
+      Owl_log.debug "%s: p2p_bar" !_context.myself_addr;
       !_context.block <- true;
       !_context.step <- !_context.step + 1;
       _notify_peers_step ();
       )
-    | _ -> ( Actor_logger.error "unknown mssage type" ) );
+    | _ -> ( Owl_log.error "unknown mssage type" ) );
     (* second, update the piggybacked step  *)
     if i <> !_context.master_addr then _update_step_buf i m.bar;
     (* third, check the barrier control *)
@@ -381,7 +381,7 @@ let service_loop () =
     (* fourth, in case the process hangs *)
     with Unix.Unix_error (_,_,_) -> _process_timeout ()
   done with Failure e -> (
-    Actor_logger.warn "%s" e;
+    Owl_log.warn "%s" e;
     ZMQ.Socket.close !_context.myself_sock )
 
 

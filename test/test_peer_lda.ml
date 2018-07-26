@@ -13,6 +13,6 @@ let d = Owl_nlp_utils.tokenise_all v x
 let t = 100
 
 let _ =
-  Actor_logger.info "#doc:%i #top:%i #voc:%i" (Array.length d) t (Hashtbl.length v);
+  Owl_log.info "#doc:%i #top:%i #voc:%i" (Array.length d) t (Hashtbl.length v);
   Actor_peer_lda.init t v d;
   Actor_peer_lda.start Sys.argv.(1)

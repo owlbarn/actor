@@ -40,7 +40,7 @@ let calculate_gradient b x y m g l =
   let yt = MX.rows y i in
   let yt' = MX.(xt *@ m) in
   let d = g xt yt yt' in
-  Actor_logger.debug "loss = %.10f" (l yt yt' |> MX.sum);
+  Owl_log.debug "loss = %.10f" (l yt yt' |> MX.sum);
   d
 
 
@@ -89,5 +89,5 @@ let start jid =
   (* FIXME: need to fix this hack *)
   MX.iteri_cols (fun k v -> Actor_paramserver._set k v 0) !_model;
   (* start running the ps *)
-  Actor_logger.info "PS: sdg algorithm starts running ...";
+  Owl_log.info "PS: sdg algorithm starts running ...";
   PS.start jid Actor_config.manager_addr

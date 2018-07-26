@@ -68,7 +68,7 @@ let _barrier () =
 
 
 let service_loop () =
-  Actor_logger.debug "p2p_client @ %s" !_context.master_addr;
+  Owl_log.debug "p2p_client @ %s" !_context.master_addr;
   (* unmarshal the schedule and push function *)
   let schedule : 'a p2p_schedule_typ = Marshal.from_string !_schedule 0 in
   let push : ('a, 'b) p2p_push_typ = Marshal.from_string !_push 0 in
@@ -81,7 +81,7 @@ let service_loop () =
     |> _push_model
     |> _barrier
   done with Failure e -> (
-    Actor_logger.warn "%s" e;
+    Owl_log.warn "%s" e;
     ZMQ.Socket.close !_context.myself_sock;
     Pervasives.exit 0 )
 

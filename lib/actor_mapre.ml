@@ -25,7 +25,7 @@ let init jid url =
   let _ = match m.typ with
     | Job_Master -> Actor_mapreserver.init m _context
     | Job_Worker -> Actor_mapreclient.init m _context
-    | _ -> Actor_logger.info "%s" "unknown command"
+    | _ -> Owl_log.info "%s" "unknown command"
   in
   ZMQ.Socket.close req
 

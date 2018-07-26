@@ -76,7 +76,7 @@ let init k v d =
 
 
 let rebuild_local_model () =
-  Actor_logger.warn "rebuild local model start";
+  Owl_log.warn "rebuild local model start";
   t_wk := MD.zeros !n_v !n_k;
   Array.iteri (fun i d ->
     Array.iteri (fun j k ->
@@ -84,11 +84,11 @@ let rebuild_local_model () =
       MD.(set !t_wk w k (get !t_wk w k +. 1.));
     ) d
   ) !t__z;
-  Actor_logger.warn "rebuild local model finished"
+  Owl_log.warn "rebuild local model finished"
 
 
 let show_stats () =
-  Actor_logger.info "t_wk = %.4f, t_dk = %.4f" (MD.density !t_wk) (MD.density !t_dk)
+  Owl_log.info "t_wk = %.4f, t_dk = %.4f" (MD.density !t_wk) (MD.density !t_dk)
 
 
 let sampling d h =
@@ -114,19 +114,19 @@ let sampling d h =
 
 
 let schedule _context =
-  Actor_logger.info "schedule @ %s, step:%i" !_context.master_addr !_context.step;
+  Owl_log.info "schedule @ %s, step:%i" !_context.master_addr !_context.step;
   let d = Array.init !n_v (fun i -> i) in
   Stats.choose d (!n_v / 10) |> Array.to_list
 
 
 let pull _context updates =
   let num_updates = List.fold_right (fun (_,a,_) x -> Array.length a + x) updates 0 in
-  Actor_logger.info "pull @ %s, updates:%i" !_context.myself_addr num_updates;
+  Owl_log.info "pull @ %s, updates:%i" !_context.myself_addr num_updates;
   (* update t__k *)
   let tk_updates = List.filter (fun (w,_,_) -> w = -1) updates in
   if List.length tk_updates > 0 then (
     let t_k', _ = P2P.get (-1) in
-    Actor_logger.error "%s ==> %i %f" !_context.myself_addr (List.length tk_updates) (MD.sum' t_k');
+    Owl_log.error "%s ==> %i %f" !_context.myself_addr (List.length tk_updates) (MD.sum' t_k');
     List.iter (fun (_,a,_t) ->
       Array.iter (fun (k,c) -> MD.(set t_k' 0 k (get t_k' 0 k +. c))) a
     ) tk_updates;
@@ -159,7 +159,7 @@ let pull _context updates =
 
 
 let push _context params =
-  Actor_logger.info "push @ %s" !_context.master_addr;
+  Owl_log.info "push @ %s" !_context.master_addr;
   show_stats ();
   (* a workaround for t__k at the moment *)
   let t_k' = P2P.get (-1) |> fst in
@@ -224,5 +224,5 @@ let start jid =
   P2P.register_pull pull;
   P2P.register_stop stop;
   (* start running the ps *)
-  Actor_logger.info "P2P: lda algorithm starts running ...";
+  Owl_log.info "P2P: lda algorithm starts running ...";
   P2P.start jid Actor_config.manager_addr

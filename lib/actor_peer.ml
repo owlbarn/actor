@@ -28,7 +28,7 @@ let start jid url =
       | 0 -> Actor_peerclient.init m _context
       | _p -> Actor_peerserver.init m _context
       )
-    | _ -> Actor_logger.info "%s" "unknown command"
+    | _ -> Owl_log.info "%s" "unknown command"
   in
   ZMQ.Socket.close req
 

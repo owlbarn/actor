@@ -38,7 +38,7 @@ let mapre_dbp bar _context =
     if bar = m.bar && not (Hashtbl.mem h i) then Hashtbl.add h i m;
     if budget < (Unix.gettimeofday () -. t0) then failwith "timeout"
   done
-  with _exn -> Actor_logger.info "%s" "timeout +++");
+  with _exn -> Owl_log.info "%s" "timeout +++");
   Hashtbl.fold (fun _k v l -> v :: l) h []
 
 

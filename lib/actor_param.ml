@@ -40,7 +40,7 @@ let start ?barrier jid url =
   let _ = match m.typ with
     | Job_Master -> Actor_paramserver.init m _context
     | Job_Worker -> Actor_paramclient.init m _context
-    | _ -> Actor_logger.info "%s" "unknown command";
+    | _ -> Owl_log.info "%s" "unknown command";
   in
   ZMQ.Socket.close req
 

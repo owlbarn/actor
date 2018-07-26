@@ -37,7 +37,7 @@ let calculate_gradient b x y m g l =
   let yt = MX.rows y i in
   let yt' = MX.(xt *@ m) in
   let d = g xt yt yt' in
-  Actor_logger.info "loss = %.10f" (l yt yt' |> MX.sum);
+  Owl_log.info "loss = %.10f" (l yt yt' |> MX.sum);
   d
 
 
@@ -88,5 +88,5 @@ let start jid =
   P2P.register_pull pull;
   P2P.register_stop stop;
   (* start running the ps *)
-  Actor_logger.info "P2P: sdg algorithm starts running ...";
+  Owl_log.info "P2P: sdg algorithm starts running ...";
   P2P.start jid Actor_config.manager_addr

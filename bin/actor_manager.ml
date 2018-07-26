@@ -31,7 +31,7 @@ let process r m =
   | User_Reg -> (
     let uid, addr = m.par.(0), m.par.(1) in
     if Workers.mem uid = false then
-      Actor_logger.info "%s" (uid ^ " @ " ^ addr);
+      Owl_log.info "%s" (uid ^ " @ " ^ addr);
       Workers.add uid addr;
       Actor_utils.send r OK [||];
     )
@@ -47,13 +47,13 @@ let process r m =
       Actor_utils.send r Job_Worker [|master|]
     )
   | Heartbeat -> (
-    Actor_logger.info "%s" ("heartbeat @ " ^ m.par.(0));
+    Owl_log.info "%s" ("heartbeat @ " ^ m.par.(0));
     Workers.add m.par.(0) m.par.(1);
     Actor_utils.send r OK [||];
     )
   | P2P_Reg -> (
     let addr, jid = m.par.(0), m.par.(1) in
-    Actor_logger.info "p2p @ %s job:%s" addr jid;
+    Owl_log.info "p2p @ %s job:%s" addr jid;
     if Actor_service.mem jid = false then Actor_service.add jid "";
     let peers = Actor_service.choose_workers jid 10 in
     let peers = Marshal.to_string peers [] in
@@ -61,7 +61,7 @@ let process r m =
     Actor_utils.send r OK [|peers|];
     )
   | _ -> (
-    Actor_logger.error "unknown message type"
+    Owl_log.error "unknown message type"
     )
 
 let run _id addr =

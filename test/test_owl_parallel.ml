@@ -19,7 +19,7 @@ let retrieve_model () =
   try PS.get "model"
   (* model does not exist, init *)
   with Not_found -> (
-    Actor_logger.warn "model does not exists, init now ...";
+    Owl_log.warn "model does not exists, init now ...";
     let nn =
       input [|28;28;1|]
       |> conv2d [|5;5;1;32|] [|1;1|] ~act_typ:Activation.Relu
@@ -47,7 +47,7 @@ let push id vars =
   let updates = List.map (fun (k, model) ->
     (*
     let sleep_t = Owl.Stats.Rnd.uniform_int ~a:1 ~b:10 () in
-    Actor_logger.info "working %is" sleep_t;
+    Owl_log.info "working %is" sleep_t;
     Owl_neural.Feedforward.print model; flush_all ();
     Unix.sleep sleep_t;
     *)
@@ -80,7 +80,7 @@ let test_param () =
   PS.register_barrier Actor_barrier.param_asp;
 
   PS.start Sys.argv.(1) Actor_config.manager_addr;
-  Actor_logger.info "do some work at master node"
+  Owl_log.info "do some work at master node"
 *)
 
 (* test parameter server engine *)
@@ -138,18 +138,18 @@ let test_owl_distributed () =
   Owl.Dense.Ndarray.D.print (M1.to_ndarray y); flush_all ();
 
   let a = M1.get y [|1;2;2|] in
-  Actor_logger.info "get ===> %g" a;
+  Owl_log.info "get ===> %g" a;
 
   let x = M1.ones [|200;300;400|] in
   let x = M1.map (fun a -> a +. 1.) x in
   let a = M1.fold (+.) x 0. in
   let b = M1.sum x in
-  Actor_logger.info "fold vs. sum ===> %g, %g" a b;
+  Owl_log.info "fold vs. sum ===> %g, %g" a b;
 
-  Actor_logger.info "start retrieving big x";
+  Owl_log.info "start retrieving big x";
   let x = M1.to_ndarray x in
-  Actor_logger.info "finsh retrieving big x";
-  Actor_logger.info "sum x = %g" (Owl.Arr.sum' x)
+  Owl_log.info "finsh retrieving big x";
+  Owl_log.info "sum x = %g" (Owl.Arr.sum' x)
 
 
 let _ = test_neural_parallel ()
