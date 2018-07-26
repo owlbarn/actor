@@ -8,9 +8,11 @@
 open Owl
 open Actor_types
 
+
 module MS = Sparse.Dok_matrix
 module MD = Mat
 module P2P = Actor_peer
+
 
 (* local model hyper-parameters *)
 let alpha = ref 0.
@@ -30,15 +32,18 @@ let data = ref [| [||] |]
 let vocb : (string, int) Hashtbl.t ref = ref (Hashtbl.create 1)
 let b__m = ref [||]   (* track if local model has been merged *)
 
+
 let include_token w d k =
   MD.(set !t__k 0 k (get !t__k 0 k +. 1.));
   MD.(set !t_wk w k (get !t_wk w k +. 1.));
   MD.(set !t_dk d k (get !t_dk d k +. 1.))
 
+
 let exclude_token w d k =
   MD.(set !t__k 0 k (get !t__k 0 k -. 1.));
   MD.(set !t_wk w k (get !t_wk w k -. 1.));
   MD.(set !t_dk d k (get !t_dk d k -. 1.))
+
 
 let init k v d =
   Log.info "init the model";
@@ -69,6 +74,7 @@ let init k v d =
   for w = 0 to !n_v - 1 do P2P.set w [||] done;
   P2P.set (-1) !t__k
 
+
 let rebuild_local_model () =
   Actor_logger.warn "rebuild local model start";
   t_wk := MD.zeros !n_v !n_k;
@@ -80,8 +86,10 @@ let rebuild_local_model () =
   ) !t__z;
   Actor_logger.warn "rebuild local model finished"
 
+
 let show_stats () =
   Actor_logger.info "t_wk = %.4f, t_dk = %.4f" (MD.density !t_wk) (MD.density !t_dk)
+
 
 let sampling d h =
   let p = MD.zeros 1 !n_k in
@@ -104,10 +112,12 @@ let sampling d h =
     )
   ) !data.(d)
 
+
 let schedule _context =
   Actor_logger.info "schedule @ %s, step:%i" !_context.master_addr !_context.step;
   let d = Array.init !n_v (fun i -> i) in
   Stats.choose d (!n_v / 10) |> Array.to_list
+
 
 let pull _context updates =
   let num_updates = List.fold_right (fun (_,a,_) x -> Array.length a + x) updates 0 in
@@ -146,6 +156,7 @@ let pull _context updates =
     wk_updates' := !wk_updates' @ [(w,a,t)]
   ) h;
   !wk_updates'
+
 
 let push _context params =
   Actor_logger.info "push @ %s" !_context.master_addr;
@@ -198,9 +209,12 @@ let push _context params =
   updates := !updates @ [(-1,!a)];
   !updates
 
+
 let barrier _context = Actor_barrier.p2p_bsp _context
 
+
 let stop _context = !_context.step > 5_00
+
 
 let start jid =
   (* register schedule, push, pull functions *)

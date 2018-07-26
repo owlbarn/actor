@@ -7,8 +7,11 @@
 
 open Actor_types
 
+
 type param_context = Actor_types.param_context
+
 type barrier = ASP | BSP | SSP | PSP
+
 
 let start ?barrier jid url =
   (* reset the barrier control if specifed *)
@@ -41,32 +44,41 @@ let start ?barrier jid url =
   in
   ZMQ.Socket.close req
 
+
 let register_barrier (f : ps_barrier_typ) =
   Actor_paramserver._barrier := Marshal.to_string f [ Marshal.Closures ]
+
 
 let register_schedule (f : ('a, 'b, 'c) ps_schedule_typ) =
   Actor_paramserver._schedule := Marshal.to_string f [ Marshal.Closures ]
 
+
 let register_pull (f : ('a, 'b, 'c) ps_pull_typ) =
   Actor_paramserver._pull := Marshal.to_string f [ Marshal.Closures ]
+
 
 let register_push (f : ('a, 'b, 'c) ps_push_typ) =
   Actor_paramclient._push := Marshal.to_string f [ Marshal.Closures ]
 
+
 let register_stop (f : ps_stop_typ) =
   Actor_paramserver._stop := Marshal.to_string f [ Marshal.Closures ]
+
 
 let get k =
   match Actor_paramserver.(!_context.job_id) = "" with
   | true  -> Actor_paramclient._get k
   | false -> Actor_paramserver._get k
 
+
 let set k v =
   match Actor_paramserver.(!_context.job_id) = "" with
   | true  -> Actor_paramclient.(_set k v !_context.step)
   | false -> Actor_paramserver.(_set k v !_context.step)
 
+
 let keys () = Hashtbl.fold (fun k _v l -> l @ [ Obj.obj k ]) Actor_paramserver._param []
+
 
 let worker_num () =
   match Actor_paramserver.(!_context.job_id) = "" with

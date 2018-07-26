@@ -7,25 +7,36 @@
 
 open Actor_types
 
+
 (* the global context: master, worker, etc. *)
 let _context = ref (Actor_utils.empty_param_context ())
+
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
+
 
 (* default schedule function *)
 let _default_schedule = fun _ -> [ ] (** TODO: fix scheduler ... *)
+
 let _schedule = ref (Marshal.to_string _default_schedule [ Marshal.Closures ])
+
 
 (* default pull function *)
 let _default_pull = fun updates -> updates
+
 let _pull = ref (Marshal.to_string _default_pull [ Marshal.Closures ])
+
 
 (* default stopping function *)
 let _default_stop = fun _ -> false
+
 let _stop = ref (Marshal.to_string _default_stop [ Marshal.Closures ])
+
 
 (* default barrier function *)
 let _default_barrier = Actor_barrier.param_bsp
+
 let _barrier = ref (Marshal.to_string _default_barrier [ Marshal.Closures ])
+
 
 let update_steps t w =
   let t' = Hashtbl.find !_context.worker_step w in
@@ -36,10 +47,12 @@ let update_steps t w =
     Hashtbl.add !_context.step_worker t w )
   | false -> ()
 
+
 let _get k =
   let k' = Obj.repr k in
   let v, t = Hashtbl.find _param k' in
   Obj.obj v, t
+
 
 let _set k v t =
   let k' = Obj.repr k in
@@ -48,13 +61,16 @@ let _set k v t =
   | true  -> Hashtbl.replace _param k' (v',t)
   | false -> Hashtbl.add _param k' (v',t)
 
+
 let _broadcast_all t s =
   StrMap.iter (fun _k v -> Actor_utils.send ~bar:!_context.step v t s) !_context.workers;
   !_context.step
 
+
 let terminate () =
   let _ = _broadcast_all Terminate [||] in
   Unix.sleep 1 (** FIXME: change to BSP *)
+
 
 let service_loop () =
   Actor_logger.debug "parameter server @ %s" !_context.myself_addr;
@@ -106,6 +122,7 @@ let service_loop () =
     Actor_logger.warn "%s" e;
     terminate ();
     ZMQ.Socket.close !_context.myself_sock )
+
 
 let init m context =
   _context := context;

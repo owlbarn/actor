@@ -3,10 +3,11 @@
  * Copyright (c) 2016-2018 Liang Wang <liang.wang@cl.cam.ac.uk>
  *)
 
-
 open Actor_types
 
+
 type vlabel = { c : color; f : string }
+
 
 module Digraph = struct
   module V' = struct
@@ -23,19 +24,25 @@ module Digraph = struct
   include Graph.Imperative.Digraph.ConcreteLabeled (V') (E')
 end
 
+
 module TopoOrd = Graph.Topological.Make_stable (Digraph)
+
 
 let _graph = ref (Digraph.create ())
 
+
 let _vlabel = Hashtbl.create 1048576
 
+
 let get_vlabel_f x = (Hashtbl.find _vlabel x).f
+
 
 let add_edge f u v c =
   if (Hashtbl.mem _vlabel u) = false then
     Hashtbl.add _vlabel u { c = Green; f = "" };
   Hashtbl.add _vlabel v { c = c; f = f };
   Digraph.add_edge !_graph u v
+
 
 let stages_eager () =
   let r, s = ref [], ref [] in
@@ -47,6 +54,7 @@ let stages_eager () =
   ) !_graph in
   if List.length !s = 0 then !r else !r @ [!s]
 
+
 let rec _stages_lazy v =
   let l = ref [v] in
   List.iter (fun u ->
@@ -54,6 +62,7 @@ let rec _stages_lazy v =
     | Blue | Red -> l := (_stages_lazy u) @ !l
     | Green -> ()
   ) (Digraph.pred !_graph v); !l
+
 
 let stages_lazy v =
   let r, s = ref [], ref [] in
@@ -65,11 +74,13 @@ let stages_lazy v =
   ) (_stages_lazy v) in
   if List.length !s = 0 then !r else !r @ [!s]
 
+
 let mark_stage_done s =
   List.iter (fun k ->
     let v = Hashtbl.find _vlabel k in
     Hashtbl.add _vlabel k { c = Green; f = v.f }
   ) s
+
 
 (* FIXME: the following functions are for debugging *)
 
@@ -80,6 +91,7 @@ let print_vertex v =
   | Green -> Printf.printf "(%s, Green); " v
   | Blue  -> Printf.printf "(%s, Blue); " v
 
+
 let print_stages x =
   print_endline "";
   List.iter (fun l ->
@@ -89,7 +101,9 @@ let print_stages x =
     ) l; print_endline ""
   ) x
 
+
 let print_tasks () = TopoOrd.iter (fun v -> print_vertex v) !_graph
+
 
 let test () =
   add_edge "" "1" "2" Red;

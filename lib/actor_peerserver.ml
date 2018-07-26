@@ -7,20 +7,28 @@
 
 open Actor_types
 
+
 (* the global context: master, worker, etc. *)
 let _context = ref (Actor_utils.empty_peer_context ())
+
 let _param : (Obj.t, Obj.t * int) Hashtbl.t = Hashtbl.create 1_000_000
+
 
 (* buffer of the requests and replies of pulling model parameters *)
 let _plbuf : (Obj.t, Obj.t option) Hashtbl.t = Hashtbl.create 1_000
 
+
 (* default pull function *)
 let _default_pull _ updates = updates
+
 let _pull = ref (Marshal.to_string _default_pull [ Marshal.Closures ])
+
 
 (* default barrier function *)
 let _default_barrier = fun _ -> true
+
 let _barrier = ref (Marshal.to_string _default_barrier [ Marshal.Closures ])
+
 
 (* routing table module *)
 module Route = struct
@@ -28,15 +36,20 @@ module Route = struct
   (* FIXME: given ONLY 30-bit address space *)
   let _space = 2. ** 30. |> int_of_float
 
+
   let hash x = Hashtbl.hash x
 
+
   let distance x y = (x - y + _space) mod _space
+
 
   let add addr sock =
     if Hashtbl.mem !_context.spbuf addr = false then Hashtbl.add !_context.spbuf addr 0;
     !_context.workers <- (StrMap.add addr sock !_context.workers)
 
+
   let exists addr = StrMap.mem addr !_context.workers
+
 
   let connect addr =
     let sock = ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer in
@@ -44,6 +57,7 @@ module Route = struct
     ZMQ.Socket.set_identity sock !_context.myself_addr;
     ZMQ.Socket.connect sock addr;
     sock
+
 
   let furthest x =
     let d = ref min_int in
@@ -53,6 +67,7 @@ module Route = struct
       if d' > !d then ( d := d'; n := y )
     ) (StrMap.keys !_context.workers @ [!_context.myself_addr]);
     !n
+
 
   let furthest_exclude x l =
     let addrs = StrMap.keys !_context.workers @ [!_context.myself_addr]
@@ -66,6 +81,7 @@ module Route = struct
     ) addrs;
     !n
 
+
   let nearest x =
     let d = ref max_int in
     let n = ref "" in
@@ -74,6 +90,7 @@ module Route = struct
       if d' < !d then ( d := d'; n := y )
     ) (StrMap.keys !_context.workers @ [!_context.myself_addr]);
     !n
+
 
   let nearest_exclude x l =
     let addrs = StrMap.keys !_context.workers @ [!_context.myself_addr]
@@ -87,9 +104,11 @@ module Route = struct
     ) addrs;
     !n
 
+
   let forward nxt typ msg =
     let s = StrMap.find nxt !_context.workers in
     Actor_utils.send ~bar:!_context.step s typ msg
+
 
   let init_table addrs =
     (* contact initial random peers *)
@@ -109,12 +128,15 @@ module Route = struct
         forward n P2P_Join [|!_context.myself_addr; s|]
     ) in ()
 
+
 end
+
 
 let _get k =
   let k' = Obj.repr k in
   let v, t = Hashtbl.find _param k' in
   Obj.obj v, t
+
 
 let _set k v t =
   let k' = Obj.repr k in
@@ -122,6 +144,7 @@ let _set k v t =
   match Hashtbl.mem _param k' with
   | true  -> Hashtbl.replace _param k' (v',t)
   | false -> Hashtbl.add _param k' (v',t)
+
 
 let _allocate_params x y =
   let x = Route.hash x in
@@ -131,6 +154,7 @@ let _allocate_params x y =
     let h = Obj.obj k |> Route.hash in
     if (Route.distance y h) < (Route.distance x h) then l := !l @ [(k,v)]
   ) _param; !l
+
 
 let _shall_deliver_pull () =
   let ready = ref true in
@@ -149,6 +173,7 @@ let _shall_deliver_pull () =
     Hashtbl.reset _plbuf
   )
 
+
 let _barrier_control barrier pull =
   let updates = List.map Obj.obj !_context.mpbuf in
   if barrier _context = true then (
@@ -160,6 +185,7 @@ let _barrier_control barrier pull =
     )
   )
 
+
 let _update_step_buf addr step =
   if Hashtbl.mem !_context.spbuf addr = true then (
     let step = max step (Hashtbl.find !_context.spbuf addr) in
@@ -167,14 +193,17 @@ let _update_step_buf addr step =
   )
   else Hashtbl.add !_context.spbuf addr step
 
+
 let _notify_peers_step () =
   List.iter (fun k ->
     Route.forward k P2P_Ping [|!_context.myself_addr|]
   ) (StrMap.keys !_context.workers)
 
+
 let _process_timeout () =
   _notify_peers_step ();
   Actor_logger.debug "%s: timeout" !_context.myself_addr
+
 
 let service_loop () =
   Actor_logger.debug "%s: p2p server" !_context.myself_addr;
@@ -354,6 +383,7 @@ let service_loop () =
   done with Failure e -> (
     Actor_logger.warn "%s" e;
     ZMQ.Socket.close !_context.myself_sock )
+
 
 let init m context =
   _context := context;

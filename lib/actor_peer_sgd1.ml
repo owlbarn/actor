@@ -8,8 +8,10 @@
 open Owl
 open Actor_types
 
+
 module MX = Mat
 module P2P = Actor_peer
+
 
 (* variables used in distributed sgd *)
 let data_x = ref (MX.empty 0 0)
@@ -18,6 +20,7 @@ let _model = ref (MX.empty 0 0)
 let gradfn = ref Owl_optimise.square_grad
 let lossfn = ref Owl_optimise.square_loss
 let step_t = ref 0.001
+
 
 (* prepare data, model, gradient, loss *)
 let init x y m g l =
@@ -28,6 +31,7 @@ let init x y m g l =
   lossfn := l;
   MX.iteri_cols (fun i v -> P2P.set i v) !_model
 
+
 let calculate_gradient b x y m g l =
   let xt, i = MX.draw_rows x b in
   let yt = MX.rows y i in
@@ -36,12 +40,15 @@ let calculate_gradient b x y m g l =
   Actor_logger.info "loss = %.10f" (l yt yt' |> MX.sum);
   d
 
+
 let update_local_model = None
+
 
 let schedule _context =
   let n = MX.col_num !_model in
   let k = Stats.Rnd.uniform_int ~a:0 ~b:(n - 1) () in
   [ k ]
+
 
 let push _context params =
   List.map (fun (k,v) ->
@@ -51,7 +58,9 @@ let push _context params =
     (k, d)
   ) params
 
+
 let barrier _context = Actor_barrier.p2p_bsp _context
+
 
 let pull _context updates =
   let h = Hashtbl.create 32 in
@@ -67,7 +76,9 @@ let pull _context updates =
   ) updates;
   Hashtbl.fold (fun k (v,t) l -> l @ [(k,v,t)]) h []
 
+
 let stop _context = !_context.step > 10_000
+
 
 let start jid =
   (* register schedule, push, pull functions *)

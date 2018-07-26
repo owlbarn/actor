@@ -3,7 +3,6 @@
  * Copyright (c) 2016-2018 Liang Wang <liang.wang@cl.cam.ac.uk>
  *)
 
-
 (* Types: includes the types shared by different modules. *)
 
 
@@ -13,7 +12,9 @@ module StrMap = struct
   let values x = List.map snd (bindings x)
 end
 
+
 type color = Red | Green | Blue
+
 
 type message_type =
   (* General messge types *)
@@ -29,11 +30,13 @@ type message_type =
   | P2P_Get_Q | P2P_Get_R | P2P_Copy | P2P_Push | P2P_Pull | P2P_Pull_Q | P2P_Pull_R
   | P2P_Bar
 
+
 type message_rec = {
   mutable bar : int;
   mutable typ : message_type;
   mutable par : string array;
 }
+
 
 type mapre_context = {
   mutable ztx         : ZMQ.Context.t;                    (* zmq context for communication *)
@@ -46,6 +49,7 @@ type mapre_context = {
   mutable step        : int;                              (* local step for barrier control *)
   mutable msbuf       : (int, string * message_rec) Hashtbl.t;  (* buffer of un-ordered messages *)
 }
+
 
 type param_context = {
   mutable ztx         : ZMQ.Context.t;                    (* zmq context for communication *)
@@ -62,6 +66,7 @@ type param_context = {
   mutable step_worker : (int, string) Hashtbl.t;          (* lookup table of workers at a specific step *)
 }
 
+
 type peer_context = {
   mutable ztx         : ZMQ.Context.t;                    (* zmq context for communication *)
   mutable job_id      : string;                           (* job id or swarm id, depends on paradigm *)
@@ -76,22 +81,26 @@ type peer_context = {
   mutable spbuf       : (string, int) Hashtbl.t;          (* buffer of the step of connected peers, piggybacked in m.bar *)
 }
 
+
 type actor_rec = {
   id        : string;
   addr      : string;
   last_seen : float;
 }
 
+
 type data_rec = {
   id    : string;
   owner : string;
 }
+
 
 type service_rec = {
   id             : string;
   master         : string;
   mutable worker : string array;
 }
+
 
 (** types of user-defined functions in model parallel module *)
 
@@ -105,6 +114,7 @@ type ps_barrier_typ = param_context ref -> int * (string list)
 
 type ps_stop_typ = param_context ref -> bool
 
+
 (** types of user-defined functions in p2p parallel module *)
 
 type 'a p2p_schedule_typ = peer_context ref -> 'a list
@@ -117,14 +127,17 @@ type p2p_barrier_typ = peer_context ref -> bool
 
 type p2p_stop_typ = peer_context ref -> bool
 
+
 (** two functions to translate between message rec and string *)
 
 let to_msg b t p =
   let m = { bar = b; typ = t; par = p } in
   Marshal.to_string m [ ]
 
+
 let of_msg s =
   let m : message_rec = Marshal.from_string s 0 in m;;
+
 
 (* initialise some states *)
 

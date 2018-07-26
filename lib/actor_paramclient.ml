@@ -7,12 +7,16 @@
 
 open Actor_types
 
+
 (* the global context: master, worker, etc. *)
 let _context = ref (Actor_utils.empty_param_context ())
 
+
 (* default push function *)
 let _default_push = fun _worker_id _vars -> []
+
 let _push = ref (Marshal.to_string _default_push [ Marshal.Closures ])
+
 
 let _get k =
   let k' = Marshal.to_string k [] in
@@ -20,15 +24,18 @@ let _get k =
   let m = of_msg (ZMQ.Socket.recv ~block:true !_context.master_sock) in
   Marshal.from_string m.par.(0) 0, m.bar
 
+
 let _set k v t =
   let k' = Marshal.to_string k [] in
   let v' = Marshal.to_string v [] in
   Actor_utils.send ~bar:t !_context.master_sock PS_Set [|k'; v'|]
 
+
 let update_param x t =
   (* update multiple kvs, more efficient than set *)
   let x' = Marshal.to_string x [] in
   Actor_utils.send ~bar:t !_context.master_sock PS_Push [|x'|]
+
 
 let service_loop () =
   Actor_logger.debug "parameter worker @ %s" !_context.myself_addr;
@@ -57,6 +64,7 @@ let service_loop () =
     Actor_logger.warn "%s" e;
     ZMQ.Socket.close !_context.myself_sock;
     Pervasives.exit 0 )
+
 
 let init m context =
   _context := context;

@@ -7,10 +7,13 @@
 
 open Actor_types
 
+
 (* the global context: master, worker, etc. *)
 let _context = ref (Actor_utils.empty_mapre_context ())
 
+
 let barrier bar = Actor_barrier.mapre_bsp bar _context
+
 
 let shuffle bar x z =
   List.mapi (fun i k ->
@@ -25,6 +28,7 @@ let shuffle bar x z =
       s ) in
     Actor_utils.send ~bar s OK [|Marshal.to_string v []|]
   ) z
+
 
 let process_pipeline s =
   Array.iter (fun s ->
@@ -80,6 +84,7 @@ let process_pipeline s =
       )
     | _ -> Actor_logger.info "%s" "unknown task types"
   ) s
+
 
 let service_loop () =
   Actor_logger.debug "mapre worker @ %s" !_context.myself_addr;
@@ -153,6 +158,7 @@ let service_loop () =
     Actor_logger.warn "%s" e;
     ZMQ.Socket.(close !_context.master_sock; close !_context.myself_sock);
     Pervasives.exit 0 )
+
 
 let init m context =
   _context := context;

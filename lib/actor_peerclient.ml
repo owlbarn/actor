@@ -7,20 +7,28 @@
 
 open Actor_types
 
+
 (* the global context: master, worker, etc. *)
 let _context = ref (Actor_utils.empty_peer_context ())
 
+
 (* default schedule function *)
 let _default_schedule = fun _ -> [ ]
+
 let _schedule = ref (Marshal.to_string _default_schedule [ Marshal.Closures ])
+
 
 (* default push function *)
 let _default_push = fun _ _ -> []
+
 let _push = ref (Marshal.to_string _default_push [ Marshal.Closures ])
+
 
 (* default stopping function *)
 let _default_stop = fun _ -> false
+
 let _stop = ref (Marshal.to_string _default_stop [ Marshal.Closures ])
+
 
 let _get k =
   let k = Marshal.to_string k [] in
@@ -30,16 +38,20 @@ let _get k =
   let _k, v, t = Marshal.from_string m.par.(0) 0 in
   v, t
 
+
 let _set k v =
   let s = Marshal.to_string (k, v, -1) [] in
   Actor_utils.send !_context.master_sock P2P_Set [|s|]
+
 
 let _push_model params =
   let s = Marshal.to_string params [] in
   Actor_utils.send !_context.master_sock P2P_Push [|s|]
 
+
 let _pull_model params =
   List.map (fun k -> let v, _ = _get k in (k,v)) params
+
 
 let _pull_model_batch params =
   let s = Marshal.to_string params [] in
@@ -48,10 +60,12 @@ let _pull_model_batch params =
   let kvs = Marshal.from_string m.par.(0) 0 in
   kvs
 
+
 let _barrier () =
   Actor_utils.send !_context.master_sock P2P_Bar [||];
   let _, m = Actor_utils.recv !_context.myself_sock in
   !_context.step <- m.bar
+
 
 let service_loop () =
   Actor_logger.debug "p2p_client @ %s" !_context.master_addr;
@@ -70,6 +84,7 @@ let service_loop () =
     Actor_logger.warn "%s" e;
     ZMQ.Socket.close !_context.myself_sock;
     Pervasives.exit 0 )
+
 
 let init _m context =
   _context := context;

@@ -16,6 +16,7 @@ open Actor_types
 module MX = Mat
 module PS = Actor_param
 
+
 (* variables used in distributed sgd *)
 let data_x = ref (MX.empty 0 0)
 let data_y = ref (MX.empty 0 0)
@@ -23,6 +24,7 @@ let _model = ref (MX.empty 0 0)
 let gradfn = ref Owl_optimise.square_grad
 let lossfn = ref Owl_optimise.square_loss
 let step_t = ref 0.001
+
 
 (* prepare data, model, gradient, loss *)
 let init x y m g l =
@@ -32,6 +34,7 @@ let init x y m g l =
   gradfn := g;
   lossfn := l
 
+
 let calculate_gradient b x y m g l =
   let xt, i = MX.draw_rows x b in
   let yt = MX.rows y i in
@@ -39,6 +42,7 @@ let calculate_gradient b x y m g l =
   let d = g xt yt yt' in
   Actor_logger.debug "loss = %.10f" (l yt yt' |> MX.sum);
   d
+
 
 let schedule workers =
   let _, n = MX.shape !_model in
@@ -48,6 +52,7 @@ let schedule workers =
     let v, _ = PS.get k in
     (x, [(k,v)])
   ) workers
+
 
 let push id vars =
   (* update local model, need to improve for sparsity *)
@@ -62,6 +67,7 @@ let push id vars =
     (k, MX.col d k)
   ) vars
 
+
 let pull vars =
   List.map (fun (k,d) ->
     let v0, _ = PS.get k in
@@ -69,7 +75,9 @@ let pull vars =
     (k,v1)
   ) vars
 
+
 let stop (_context : param_context ref) = !_context.step > 10_000
+
 
 let start jid =
   (* register schedule, push, pull functions *)

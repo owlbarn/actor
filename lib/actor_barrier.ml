@@ -7,6 +7,7 @@
 
 open Actor_types
 
+
 (* Mapre barrier: Bulk synchronous parallel *)
 let mapre_bsp bar _context =
   let h = Hashtbl.create 1024 in
@@ -20,6 +21,7 @@ let mapre_bsp bar _context =
     if bar = m.bar && not (Hashtbl.mem h i) then Hashtbl.add h i m;
   done;
   Hashtbl.fold (fun _k v l -> v :: l) h []
+
 
 (* Mapre barrier: Delay bounded parallel *)
 let mapre_dbp bar _context =
@@ -39,6 +41,7 @@ let mapre_dbp bar _context =
   with _exn -> Actor_logger.info "%s" "timeout +++");
   Hashtbl.fold (fun _k v l -> v :: l) h []
 
+
 (* Param barrier: Bulk synchronous parallel *)
 let param_bsp _context =
   let num_finish = List.length (Hashtbl.find_all !_context.step_worker !_context.step) in
@@ -46,6 +49,7 @@ let param_bsp _context =
   match num_finish = num_worker with
   | true  -> !_context.step + 1, (StrMap.keys !_context.workers)
   | false -> !_context.step, []
+
 
 (* Param barrier: Stale synchronous parallel *)
 let param_ssp _context =
@@ -63,8 +67,10 @@ let param_ssp _context =
   ) !_context.worker_step []
   in (t, l)
 
+
 (* Param barrier: Asynchronous parallel *)
 let param_asp _context = !_context.stale <- max_int; param_ssp _context
+
 
 (* P2P barrier : Bulk synchronous parallel
    this one waits for the slowest one to catch up. *)
@@ -78,8 +84,10 @@ let p2p_bsp _context =
     )
   | false -> false
 
+
 (* P2P barrier: Asynchronous parallel *)
 let p2p_asp _context = true
+
 
 (* P2P barrier: Asynchronous parallel but aligned with local client *)
 let p2p_asp_local _context = !_context.block

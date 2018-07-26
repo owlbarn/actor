@@ -7,6 +7,7 @@
 
 open Actor_types
 
+
 let start jid url =
   let _ztx = ZMQ.Context.create () in
   let _addr, _router = Actor_utils.bind_available_addr _ztx in
@@ -31,35 +32,44 @@ let start jid url =
   in
   ZMQ.Socket.close req
 
+
 (* basic architectural functions for p2p parallel *)
 
 let register_barrier (f : p2p_barrier_typ) =
   Actor_peerserver._barrier := Marshal.to_string f [ Marshal.Closures ]
 
+
 let register_pull (f : ('a, 'b) p2p_pull_typ) =
   Actor_peerserver._pull := Marshal.to_string f [ Marshal.Closures ]
+
 
 let register_schedule (f : 'a p2p_schedule_typ) =
   Actor_peerclient._schedule := Marshal.to_string f [ Marshal.Closures ]
 
+
 let register_push (f : ('a, 'b) p2p_push_typ) =
   Actor_peerclient._push := Marshal.to_string f [ Marshal.Closures ]
+
 
 let register_stop (f : p2p_stop_typ) =
   Actor_peerclient._stop := Marshal.to_string f [ Marshal.Closures ]
 
+
 (* some helper functions for various strategies *)
 
 let is_server () = Actor_peerclient.(!_context.job_id) = ""
+
 
 let get k =
   match is_server () with
   | true  -> Actor_peerserver._get k
   | false -> Actor_peerclient._get k
 
+
 let set k v =
   match is_server () with
   | true  -> Actor_peerserver.(_set k v !_context.step)
   | false -> Actor_peerclient.(_set k v)
+
 
 let _swarm_size = None
