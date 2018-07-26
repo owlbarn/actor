@@ -214,166 +214,167 @@ let service_loop () =
   try while true do
     (* first, wait and process arriving message *)
     try let i, m = Actor_utils.recv !_context.myself_sock in (
-    match m.typ with
-    | P2P_Connect -> (
-      Owl_log.debug "%s: p2p_connect %s" !_context.myself_addr m.par.(0);
-      let addr = m.par.(0) in
-      !_context.master_addr <- addr;
-      !_context.master_sock <- Route.connect addr
-      )
-    | P2P_Ping -> (
-      Owl_log.debug "%s: p2p_ping %s" !_context.myself_addr m.par.(0);
-      let addr = m.par.(0) in
-      if Route.exists addr = false then Route.(connect addr |> add addr)
-      )
-    | P2P_Join -> (
-      Owl_log.debug "%s: p2p_join %s" !_context.myself_addr m.par.(0);
-      let src = m.par.(0) in
-      let dst = Marshal.from_string m.par.(1) 0 in
-      let next = Route.nearest_exclude dst [src] in
-      if next = !_context.myself_addr then (
-        if Route.exists src = false then (
-          let s = Route.connect src in
-          let _ = Route.add src s in
-          Actor_utils.send s P2P_Ping [|!_context.myself_addr|]
-        );
-        (* oh, hello neighbour, maybe take my model *)
-        if Route.hash src = dst - 1 then (
-          let next = Route.furthest_exclude dst [src; !_context.myself_addr] in
-          if String.length next <> 0 then
-            Route.forward next P2P_Ping [|src|];
-          let h = _allocate_params !_context.myself_addr src in
-          let s = Marshal.to_string h [] in
-          Owl_log.debug "params: %s ===> %s size:%i" !_context.myself_addr src (String.length s);
-          Route.forward src P2P_Copy [|s|]
+      match m.typ with
+      | P2P_Connect -> (
+          Owl_log.debug "%s: p2p_connect %s" !_context.myself_addr m.par.(0);
+          let addr = m.par.(0) in
+          !_context.master_addr <- addr;
+          !_context.master_sock <- Route.connect addr
         )
-      );
-      if next <> !_context.myself_addr && String.length next <> 0 then
-        Route.forward next P2P_Join m.par;
-      )
-    | P2P_Copy -> (
-      Owl_log.debug "%s: p2p_copy" !_context.myself_addr;
-      let h = Marshal.from_string m.par.(0) 0 in
-      List.iter (fun (k,v) ->
-        match Hashtbl.mem _param k with
-        | true  -> Hashtbl.replace _param k v
-        | false -> Hashtbl.add _param k v
-      ) h
-      )
-    | P2P_Get -> (
-      Owl_log.debug "%s: p2p_get" !_context.myself_addr;
-      let k = Marshal.from_string m.par.(0) 0 in
-      let next = Route.(hash k |> nearest) in
-      match next = !_context.myself_addr with
-      | true  -> (
-          (* FIXME: what if i cannot find the k *)
-          let v, t = _get k in
-          let s = Marshal.to_string (k, v, t) [] in
-          Actor_utils.send !_context.master_sock OK [|s; next|]
+      | P2P_Ping -> (
+          Owl_log.debug "%s: p2p_ping %s" !_context.myself_addr m.par.(0);
+          let addr = m.par.(0) in
+          if Route.exists addr = false then Route.(connect addr |> add addr)
         )
-      | false -> Route.forward next P2P_Get_Q m.par
-      )
-    | P2P_Get_Q -> (
-      Owl_log.debug "%s: p2p_get_q" !_context.myself_addr;
-      let k = Marshal.from_string m.par.(0) 0 in
-      let next = Route.(hash k |> nearest) in
-      match next = !_context.myself_addr with
-      | true  -> (
-          let v, t = _get k in
-          let s = Marshal.to_string (k, v, t) [] in
-          let addr = m.par.(1) in
-          let next = Route.(hash addr |> nearest) in
-          Route.forward next P2P_Get_R [|s; addr|]
+      | P2P_Join -> (
+          Owl_log.debug "%s: p2p_join %s" !_context.myself_addr m.par.(0);
+          let src = m.par.(0) in
+          let dst = Marshal.from_string m.par.(1) 0 in
+          let next = Route.nearest_exclude dst [src] in
+          if next = !_context.myself_addr then (
+            if Route.exists src = false then (
+              let s = Route.connect src in
+              let _ = Route.add src s in
+              Actor_utils.send s P2P_Ping [|!_context.myself_addr|]
+            );
+            (* oh, hello neighbour, maybe take my model *)
+            if Route.hash src = dst - 1 then (
+              let next = Route.furthest_exclude dst [src; !_context.myself_addr] in
+              if String.length next <> 0 then
+                Route.forward next P2P_Ping [|src|];
+              let h = _allocate_params !_context.myself_addr src in
+              let s = Marshal.to_string h [] in
+              Owl_log.debug "params: %s ===> %s size:%i" !_context.myself_addr src (String.length s);
+              Route.forward src P2P_Copy [|s|]
+            )
+          );
+          if next <> !_context.myself_addr && String.length next <> 0 then
+            Route.forward next P2P_Join m.par;
         )
-      | false -> Route.forward next P2P_Get_Q m.par
-      )
-    | P2P_Get_R -> (
-      Owl_log.debug "%s: p2p_get_r" !_context.myself_addr;
-      let addr = m.par.(1) in
-      let next = Route.(hash addr |> nearest) in
-      match next = !_context.myself_addr with
-      | true  -> Actor_utils.send !_context.master_sock OK m.par
-      | false -> Route.forward next P2P_Get_R m.par
-      )
-    | P2P_Set -> (
-      Owl_log.debug "%s: p2p_get" !_context.myself_addr;
-      let k, v, t = Marshal.from_string m.par.(0) 0 in
-      (* check whether this is from the local client *)
-      let t = if t < 0 then (
-        let s = Marshal.to_string (k, v, !_context.step) [] in
-        m.par <- [|s|]; !_context.step
-      ) else t
-      in
-      let next = Route.(hash k |> nearest) in
-      match next = !_context.myself_addr with
-      | true  -> !_context.mpbuf <- !_context.mpbuf @ [Obj.repr (k, v, t)]
-      | false -> Route.forward next P2P_Set m.par
-      )
-    | P2P_Push -> (
-      Owl_log.debug "%s: p2p_push" !_context.myself_addr;
-      Marshal.from_string m.par.(0) 0
-      |> List.iter (fun (k,v) ->
-        let next = Route.(hash k |> nearest) in
-        match next = !_context.myself_addr with
-        | true  -> !_context.mpbuf <- !_context.mpbuf @ [Obj.repr (k, v, !_context.step)]
-        | false -> (
-            let s = Marshal.to_string (k, v, !_context.step) [] in
-            Route.forward next P2P_Set [|s|]
-          )
-      )
-      )
-    | P2P_Pull -> (
-      Owl_log.debug "%s: p2p_pull" !_context.myself_addr;
-      Marshal.from_string m.par.(0) 0
-      |> List.iter (fun k ->
+      | P2P_Copy -> (
+          Owl_log.debug "%s: p2p_copy" !_context.myself_addr;
+          let h = Marshal.from_string m.par.(0) 0 in
+          List.iter (fun (k,v) ->
+            match Hashtbl.mem _param k with
+            | true  -> Hashtbl.replace _param k v
+            | false -> Hashtbl.add _param k v
+          ) h
+        )
+      | P2P_Get -> (
+        Owl_log.debug "%s: p2p_get" !_context.myself_addr;
+        let k = Marshal.from_string m.par.(0) 0 in
         let next = Route.(hash k |> nearest) in
         match next = !_context.myself_addr with
         | true  -> (
-            let v, t = _get k in
-            Hashtbl.add _plbuf (Obj.repr k) (Some (Obj.repr (k,v,t)))
+              (* FIXME: what if i cannot find the k *)
+              let v, t = _get k in
+              let s = Marshal.to_string (k, v, t) [] in
+              Actor_utils.send !_context.master_sock OK [|s; next|]
           )
-        | false -> (
-            let y = Marshal.to_string k [] in
-            let s = [|y; !_context.myself_addr|] in
-            Route.forward next P2P_Pull_Q s;
-            Hashtbl.add _plbuf (Obj.repr k) None
-          )
-      );
-      _shall_deliver_pull ()
-      )
-    | P2P_Pull_Q -> (
-      Owl_log.debug "%s: p2p_pull_q %s" !_context.myself_addr m.par.(1);
-      let k = Marshal.from_string m.par.(0) 0 in
-      let next = Route.(hash k |> nearest) in
-      match next = !_context.myself_addr with
-      | true  -> (
-          let v, t = _get k in
-          let s = Marshal.to_string (k, v, t) [] in
+        | false -> Route.forward next P2P_Get_Q m.par
+        )
+      | P2P_Get_Q -> (
+          Owl_log.debug "%s: p2p_get_q" !_context.myself_addr;
+          let k = Marshal.from_string m.par.(0) 0 in
+          let next = Route.(hash k |> nearest) in
+          match next = !_context.myself_addr with
+          | true  -> (
+              let v, t = _get k in
+              let s = Marshal.to_string (k, v, t) [] in
+              let addr = m.par.(1) in
+              let next = Route.(hash addr |> nearest) in
+              Route.forward next P2P_Get_R [|s; addr|]
+            )
+          | false -> Route.forward next P2P_Get_Q m.par
+        )
+      | P2P_Get_R -> (
+          Owl_log.debug "%s: p2p_get_r" !_context.myself_addr;
           let addr = m.par.(1) in
           let next = Route.(hash addr |> nearest) in
-          Route.forward next P2P_Pull_R [|s; addr|]
+          match next = !_context.myself_addr with
+          | true  -> Actor_utils.send !_context.master_sock OK m.par
+          | false -> Route.forward next P2P_Get_R m.par
         )
-      | false -> Route.forward next P2P_Pull_Q m.par
-      )
-    | P2P_Pull_R -> (
-      Owl_log.debug "%s: p2p_pull_r %s" !_context.myself_addr m.par.(1);
-      let addr = m.par.(1) in
-      let next = Route.(hash addr |> nearest) in
-      match next = !_context.myself_addr with
-      | true  -> (
+      | P2P_Set -> (
+          Owl_log.debug "%s: p2p_get" !_context.myself_addr;
           let k, v, t = Marshal.from_string m.par.(0) 0 in
-          Hashtbl.replace _plbuf (Obj.repr k) (Some (Obj.repr (k,v,t)));
+          (* check whether this is from the local client *)
+          let t = if t < 0 then (
+            let s = Marshal.to_string (k, v, !_context.step) [] in
+            m.par <- [|s|]; !_context.step
+          ) else t
+          in
+          let next = Route.(hash k |> nearest) in
+          match next = !_context.myself_addr with
+          | true  -> !_context.mpbuf <- !_context.mpbuf @ [Obj.repr (k, v, t)]
+          | false -> Route.forward next P2P_Set m.par
+        )
+      | P2P_Push -> (
+          Owl_log.debug "%s: p2p_push" !_context.myself_addr;
+          Marshal.from_string m.par.(0) 0
+          |> List.iter (fun (k,v) ->
+            let next = Route.(hash k |> nearest) in
+            match next = !_context.myself_addr with
+            | true  -> !_context.mpbuf <- !_context.mpbuf @ [Obj.repr (k, v, !_context.step)]
+            | false -> (
+                let s = Marshal.to_string (k, v, !_context.step) [] in
+                Route.forward next P2P_Set [|s|]
+              )
+          )
+        )
+      | P2P_Pull -> (
+          Owl_log.debug "%s: p2p_pull" !_context.myself_addr;
+          Marshal.from_string m.par.(0) 0
+          |> List.iter (fun k ->
+            let next = Route.(hash k |> nearest) in
+            match next = !_context.myself_addr with
+            | true  -> (
+                let v, t = _get k in
+                Hashtbl.add _plbuf (Obj.repr k) (Some (Obj.repr (k,v,t)))
+              )
+            | false -> (
+                let y = Marshal.to_string k [] in
+                let s = [|y; !_context.myself_addr|] in
+                Route.forward next P2P_Pull_Q s;
+                Hashtbl.add _plbuf (Obj.repr k) None
+              )
+          );
           _shall_deliver_pull ()
-      )
-      | false -> Route.forward next P2P_Pull_R m.par
-      )
-    | P2P_Bar -> (
-      Owl_log.debug "%s: p2p_bar" !_context.myself_addr;
-      !_context.block <- true;
-      !_context.step <- !_context.step + 1;
-      _notify_peers_step ();
-      )
-    | _ -> ( Owl_log.error "unknown mssage type" ) );
+        )
+      | P2P_Pull_Q -> (
+          Owl_log.debug "%s: p2p_pull_q %s" !_context.myself_addr m.par.(1);
+          let k = Marshal.from_string m.par.(0) 0 in
+          let next = Route.(hash k |> nearest) in
+          match next = !_context.myself_addr with
+          | true  -> (
+              let v, t = _get k in
+              let s = Marshal.to_string (k, v, t) [] in
+              let addr = m.par.(1) in
+              let next = Route.(hash addr |> nearest) in
+              Route.forward next P2P_Pull_R [|s; addr|]
+            )
+          | false -> Route.forward next P2P_Pull_Q m.par
+        )
+      | P2P_Pull_R -> (
+          Owl_log.debug "%s: p2p_pull_r %s" !_context.myself_addr m.par.(1);
+          let addr = m.par.(1) in
+          let next = Route.(hash addr |> nearest) in
+          match next = !_context.myself_addr with
+          | true  -> (
+              let k, v, t = Marshal.from_string m.par.(0) 0 in
+              Hashtbl.replace _plbuf (Obj.repr k) (Some (Obj.repr (k,v,t)));
+              _shall_deliver_pull ()
+          )
+          | false -> Route.forward next P2P_Pull_R m.par
+        )
+      | P2P_Bar -> (
+          Owl_log.debug "%s: p2p_bar" !_context.myself_addr;
+          !_context.block <- true;
+          !_context.step <- !_context.step + 1;
+          _notify_peers_step ();
+        )
+      | _ -> Owl_log.error "unknown mssage type"
+    );
     (* second, update the piggybacked step  *)
     if i <> !_context.master_addr then _update_step_buf i m.bar;
     (* third, check the barrier control *)

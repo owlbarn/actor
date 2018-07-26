@@ -99,25 +99,25 @@ let service_loop () =
     let t = m.bar in
     match m.typ with
     | PS_Get -> (
-      Owl_log.debug "%s: ps_get" !_context.myself_addr;
-      let k = Marshal.from_string m.par.(0) 0 in
-      let v, t' = _get k in
-      let s = to_msg t' OK [| Marshal.to_string v [] |] in
-      ZMQ.Socket.send_all ~block:false !_context.myself_sock [i;s]
+        Owl_log.debug "%s: ps_get" !_context.myself_addr;
+        let k = Marshal.from_string m.par.(0) 0 in
+        let v, t' = _get k in
+        let s = to_msg t' OK [| Marshal.to_string v [] |] in
+        ZMQ.Socket.send_all ~block:false !_context.myself_sock [i;s]
       )
     | PS_Set -> (
-      Owl_log.debug "%s: ps_set" !_context.myself_addr;
-      let k = Marshal.from_string m.par.(0) 0 in
-      let v = Marshal.from_string m.par.(1) 0 in
-      _set k v t
+        Owl_log.debug "%s: ps_set" !_context.myself_addr;
+        let k = Marshal.from_string m.par.(0) 0 in
+        let v = Marshal.from_string m.par.(1) 0 in
+        _set k v t
       )
     | PS_Push -> (
-      Owl_log.debug "%s: ps_push" !_context.myself_addr;
-      let updates = Marshal.from_string m.par.(0) 0 |> pull in
-      List.iter (fun (k,v) -> _set k v t) updates;
-      update_steps t i
+        Owl_log.debug "%s: ps_push" !_context.myself_addr;
+        let updates = Marshal.from_string m.par.(0) 0 |> pull in
+        List.iter (fun (k,v) -> _set k v t) updates;
+        update_steps t i
       )
-    | _ -> ( Owl_log.debug "unknown mssage to PS" )
+    | _ -> Owl_log.debug "unknown mssage to PS"
   done with Failure e -> (
     Owl_log.warn "%s" e;
     terminate ();

@@ -47,17 +47,17 @@ let service_loop () =
     let t = m.bar in
     match m.typ with
     | PS_Schedule -> (
-      Owl_log.debug "%s: ps_schedule" !_context.myself_addr;
-      !_context.step <- (if t > !_context.step then t else !_context.step);
-      let vars = Marshal.from_string m.par.(0) 0 in
-      let updates = push !_context.myself_addr vars in
-      update_param updates t
+        Owl_log.debug "%s: ps_schedule" !_context.myself_addr;
+        !_context.step <- (if t > !_context.step then t else !_context.step);
+        let vars = Marshal.from_string m.par.(0) 0 in
+        let updates = push !_context.myself_addr vars in
+        update_param updates t
       )
     | Terminate -> (
-      Owl_log.debug "%s: terminate"!_context.myself_addr;
-      Actor_utils.send ~bar:t !_context.master_sock OK [||];
-      Unix.sleep 1; (* FIXME: sleep ... *)
-      failwith ("#" ^ !_context.job_id ^ " terminated")
+        Owl_log.debug "%s: terminate"!_context.myself_addr;
+        Actor_utils.send ~bar:t !_context.master_sock OK [||];
+        Unix.sleep 1; (* FIXME: sleep ... *)
+        failwith ("#" ^ !_context.job_id ^ " terminated")
       )
     | _ -> ( Owl_log.debug "unknown mssage to PS" )
   done with Failure e -> (

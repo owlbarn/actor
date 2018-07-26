@@ -24,11 +24,11 @@ let start jid url =
   let m = of_msg (ZMQ.Socket.recv req) in
   let _ = match m.typ with
     | OK -> (
-      match Unix.fork () with
-      | 0 -> Actor_peerclient.init m _context
-      | _p -> Actor_peerserver.init m _context
+        match Unix.fork () with
+        | 0  -> Actor_peerclient.init m _context
+        | _p -> Actor_peerserver.init m _context
       )
-    | _ -> Owl_log.info "%s" "unknown command"
+    | _ -> Owl_log.info "start: unknown command"
   in
   ZMQ.Socket.close req
 
