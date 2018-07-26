@@ -25,7 +25,7 @@ let start_app app arg =
   | 0 -> if Unix.fork () = 0 then Unix.execv app arg else exit 0
   | _p -> ignore(Unix.wait ())
 
-let deploy_app _x = Actor_logger.error "%s" "error, cannot find app!"
+let deploy_app _x = Actor_logger.error "cannot find %s" _x
 
 let run id u_addr m_addr =
   (* set up connection to manager *)
@@ -45,7 +45,7 @@ let run id u_addr m_addr =
         Actor_logger.info "%s" (app ^ " <- " ^ m.par.(0));
         ZMQ.Socket.send rep (Marshal.to_string OK []);
         match Sys.file_exists app with
-        | true ->  start_app app arg
+        | true -> start_app app arg
         | false -> deploy_app app
         )
       | _ -> ()
