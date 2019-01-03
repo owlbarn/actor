@@ -3,19 +3,19 @@ all: build
 
 .PHONY: depend depends
 depend depends:
-	jbuilder external-lib-deps --missing @install @runtest
+	dune external-lib-deps --missing @install @runtest
 
 .PHONY: build
 build: depends
-	jbuilder build @install
+	dune build @install
 
 .PHONY: test
 test: depends
-	jbuilder runtest -j 1 --no-buffer -p owl
+	dune runtest -j 1 --no-buffer -p owl
 
 .PHONY: clean
 clean:
-	jbuilder clean
+	dune clean
 
 .PHONY: install
 install: build

@@ -1,0 +1,11 @@
+(executables
+  (public_names
+    actor_manager
+    actor_worker
+  )
+  (names
+    actor_manager
+    actor_worker
+  )
+  (libraries actor)
+)
