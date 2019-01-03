@@ -5,33 +5,33 @@
 let test () = print_endline "I am a test fun."
 
 let server () =
-  let context = ZMQ.Context.create () in
-  let responder = ZMQ.Socket.create context ZMQ.Socket.rep in
-  ZMQ.Socket.bind responder "tcp://*:5555";
+  let context = Zmq.Context.create () in
+  let responder = Zmq.Socket.create context Zmq.Socket.rep in
+  Zmq.Socket.bind responder "tcp://*:5555";
   while true do
-    let request = ZMQ.Socket.recv responder in
+    let request = Zmq.Socket.recv responder in
     Printf.printf "Received request: [%s]\n%!" request;
     let s = Marshal.to_string test [ Marshal.Closures ] in
-    ZMQ.Socket.send responder s;
+    Zmq.Socket.send responder s;
   done;
-  ZMQ.Socket.close responder;
-  ZMQ.Context.terminate context
+  Zmq.Socket.close responder;
+  Zmq.Context.terminate context
 
 let client () =
-  let context = ZMQ.Context.create () in
+  let context = Zmq.Context.create () in
   print_endline "Connecting to hello world server...";
-  let requester = ZMQ.Socket.create context ZMQ.Socket.req in
-  ZMQ.Socket.connect requester "tcp://localhost:5555";
+  let requester = Zmq.Socket.create context Zmq.Socket.req in
+  Zmq.Socket.connect requester "tcp://localhost:5555";
   for i = 1 to 5 do
     Printf.printf "Sending request %d...\n" i;
-    ZMQ.Socket.send requester "Hello";
-    let s = ZMQ.Socket.recv requester in
+    Zmq.Socket.send requester "Hello";
+    let s = Zmq.Socket.recv requester in
     Printf.printf "call the serialized function %i ... \n" i;
     let f : unit -> unit = Marshal.from_string s 0 in
     f ()
   done;
-  ZMQ.Socket.close requester;
-  ZMQ.Context.terminate context
+  Zmq.Socket.close requester;
+  Zmq.Context.terminate context
 
 let _ =
   match Sys.argv.(1) with

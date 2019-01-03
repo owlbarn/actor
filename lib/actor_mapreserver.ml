@@ -202,17 +202,17 @@ let init m context =
   (* contact allocated actors to assign jobs *)
   let addrs = Marshal.from_string m.par.(0) 0 in
   List.map (fun x ->
-    let req = ZMQ.Socket.create !_context.ztx ZMQ.Socket.req in
-    ZMQ.Socket.connect req x;
+    let req = Zmq.Socket.create !_context.ztx Zmq.Socket.req in
+    Zmq.Socket.connect req x;
     let app = Filename.basename Sys.argv.(0) in
     let arg = Marshal.to_string Sys.argv [] in
     Actor_utils.send req Job_Create [|!_context.myself_addr; app; arg|]; req
-  ) addrs |> List.iter ZMQ.Socket.close;
+  ) addrs |> List.iter Zmq.Socket.close;
   (* wait until all the allocated actors register *)
   while (StrMap.cardinal !_context.workers) < (List.length addrs) do
     let _i, m = Actor_utils.recv !_context.myself_sock in
-    let s = ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer in
-    ZMQ.Socket.connect s m.par.(0);
+    let s = Zmq.Socket.create !_context.ztx Zmq.Socket.dealer in
+    Zmq.Socket.connect s m.par.(0);
     !_context.workers <- (StrMap.add m.par.(0) s !_context.workers);
   done
 

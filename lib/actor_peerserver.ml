@@ -52,10 +52,10 @@ module Route = struct
 
 
   let connect addr =
-    let sock = ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer in
-    ZMQ.Socket.set_send_high_water_mark sock Actor_config.high_warter_mark;
-    ZMQ.Socket.set_identity sock !_context.myself_addr;
-    ZMQ.Socket.connect sock addr;
+    let sock = Zmq.Socket.create !_context.ztx Zmq.Socket.dealer in
+    Zmq.Socket.set_send_high_water_mark sock Actor_config.high_warter_mark;
+    Zmq.Socket.set_identity sock !_context.myself_addr;
+    Zmq.Socket.connect sock addr;
     sock
 
 
@@ -210,7 +210,7 @@ let service_loop () =
   let barrier : p2p_barrier_typ = Marshal.from_string !_barrier 0 in
   let pull : ('a, 'b) p2p_pull_typ = Marshal.from_string !_pull 0 in
   (* loop to process messages *)
-  ZMQ.Socket.set_receive_timeout !_context.myself_sock (1 * 1000);
+  Zmq.Socket.set_receive_timeout !_context.myself_sock (1 * 1000);
   try while true do
     (* first, wait and process arriving message *)
     try let i, m = Actor_utils.recv !_context.myself_sock in (
@@ -383,7 +383,7 @@ let service_loop () =
     with Unix.Unix_error (_,_,_) -> _process_timeout ()
   done with Failure e -> (
     Owl_log.warn "%s" e;
-    ZMQ.Socket.close !_context.myself_sock )
+    Zmq.Socket.close !_context.myself_sock )
 
 
 let init m context =

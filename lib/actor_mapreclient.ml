@@ -21,10 +21,10 @@ let shuffle bar x z =
     let s = if StrMap.mem k !_context.workers then
       StrMap.find k !_context.workers
     else (
-      let s = ZMQ.Socket.(create !_context.ztx dealer) in
-      let _ = ZMQ.Socket.(set_identity s !_context.myself_addr; connect s k) in
+      let s = Zmq.Socket.(create !_context.ztx dealer) in
+      let _ = Zmq.Socket.(set_identity s !_context.myself_addr; connect s k) in
       let _ = !_context.workers <- StrMap.add k s !_context.workers in
-      let _ = ZMQ.Socket.set_send_high_water_mark s Actor_config.high_warter_mark in
+      let _ = Zmq.Socket.set_send_high_water_mark s Actor_config.high_warter_mark in
       s ) in
     Actor_utils.send ~bar s OK [|Marshal.to_string v []|]
   ) z
@@ -167,7 +167,7 @@ let service_loop () =
       )
   done with Failure e -> (
     Owl_log.warn "%s" e;
-    ZMQ.Socket.(close !_context.master_sock; close !_context.myself_sock);
+    Zmq.Socket.(close !_context.master_sock; close !_context.myself_sock);
     Pervasives.exit 0 )
 
 
@@ -175,10 +175,10 @@ let init m context =
   _context := context;
   !_context.master_addr <- m.par.(0);
   (* connect to job master *)
-  let master = ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer in
-  ZMQ.Socket.set_send_high_water_mark master Actor_config.high_warter_mark;
-  ZMQ.Socket.set_identity master !_context.myself_addr;
-  ZMQ.Socket.connect master !_context.master_addr;
+  let master = Zmq.Socket.create !_context.ztx Zmq.Socket.dealer in
+  Zmq.Socket.set_send_high_water_mark master Actor_config.high_warter_mark;
+  Zmq.Socket.set_identity master !_context.myself_addr;
+  Zmq.Socket.connect master !_context.master_addr;
   Actor_utils.send master OK [|!_context.myself_addr|];
   !_context.master_sock <- master;
   (* enter into worker service loop *)

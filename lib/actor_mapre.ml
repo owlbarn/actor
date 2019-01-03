@@ -9,10 +9,10 @@ open Actor_types
 
 
 let init jid url =
-  let _ztx = ZMQ.Context.create () in
+  let _ztx = Zmq.Context.create () in
   let _addr, _router = Actor_utils.bind_available_addr _ztx in
-  let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
-  ZMQ.Socket.connect req url;
+  let req = Zmq.Socket.create _ztx Zmq.Socket.req in
+  Zmq.Socket.connect req url;
   Actor_utils.send req Job_Reg [|_addr; jid|];
   (* create and initialise part of the context *)
   let _context = Actor_utils.empty_mapre_context () in
@@ -21,13 +21,13 @@ let init jid url =
   _context.myself_sock <- _router;
   _context.ztx <- _ztx;
   (* depends on the role, start server or client *)
-  let m = of_msg (ZMQ.Socket.recv req) in
+  let m = of_msg (Zmq.Socket.recv req) in
   let _ = match m.typ with
     | Job_Master -> Actor_mapreserver.init m _context
     | Job_Worker -> Actor_mapreclient.init m _context
     | _          -> Owl_log.info "%s" "unknown command"
   in
-  ZMQ.Socket.close req
+  Zmq.Socket.close req
 
 
 (* interface to mapreserver functions *)

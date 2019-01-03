@@ -21,7 +21,7 @@ let _push = ref (Marshal.to_string _default_push [ Marshal.Closures ])
 let _get k =
   let k' = Marshal.to_string k [] in
   Actor_utils.send ~bar:!_context.step !_context.master_sock PS_Get [|k'|];
-  let m = of_msg (ZMQ.Socket.recv ~block:true !_context.master_sock) in
+  let m = of_msg (Zmq.Socket.recv ~block:true !_context.master_sock) in
   Marshal.from_string m.par.(0) 0, m.bar
 
 
@@ -62,7 +62,7 @@ let service_loop () =
     | _ -> ( Owl_log.debug "unknown mssage to PS" )
   done with Failure e -> (
     Owl_log.warn "%s" e;
-    ZMQ.Socket.close !_context.myself_sock;
+    Zmq.Socket.close !_context.myself_sock;
     Pervasives.exit 0 )
 
 
@@ -70,10 +70,10 @@ let init m context =
   _context := context;
   !_context.master_addr <- m.par.(0);
   (* connect to job master *)
-  let master = ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer in
-  ZMQ.Socket.set_send_high_water_mark master Actor_config.high_warter_mark;
-  ZMQ.Socket.set_identity master !_context.myself_addr;
-  ZMQ.Socket.connect master !_context.master_addr;
+  let master = Zmq.Socket.create !_context.ztx Zmq.Socket.dealer in
+  Zmq.Socket.set_send_high_water_mark master Actor_config.high_warter_mark;
+  Zmq.Socket.set_identity master !_context.myself_addr;
+  Zmq.Socket.connect master !_context.master_addr;
   Actor_utils.send master OK [|!_context.myself_addr|];
   !_context.master_sock <- master;
   (* enter into worker service loop *)

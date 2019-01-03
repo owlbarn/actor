@@ -9,10 +9,10 @@ open Actor_types
 
 
 let start jid url =
-  let _ztx = ZMQ.Context.create () in
+  let _ztx = Zmq.Context.create () in
   let _addr, _router = Actor_utils.bind_available_addr _ztx in
-  let req = ZMQ.Socket.create _ztx ZMQ.Socket.req in
-  ZMQ.Socket.connect req url;
+  let req = Zmq.Socket.create _ztx Zmq.Socket.req in
+  Zmq.Socket.connect req url;
   Actor_utils.send req P2P_Reg [|_addr; jid|];
   (* create and initialise part of the context *)
   let _context = Actor_utils.empty_peer_context () in
@@ -21,7 +21,7 @@ let start jid url =
   _context.myself_sock <- _router;
   _context.ztx <- _ztx;
   (* equivalent role, client is a new process *)
-  let m = of_msg (ZMQ.Socket.recv req) in
+  let m = of_msg (Zmq.Socket.recv req) in
   let _ = match m.typ with
     | OK -> (
         match Unix.fork () with
@@ -30,7 +30,7 @@ let start jid url =
       )
     | _ -> Owl_log.info "start: unknown command"
   in
-  ZMQ.Socket.close req
+  Zmq.Socket.close req
 
 
 (* basic architectural functions for p2p parallel *)

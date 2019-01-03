@@ -103,7 +103,7 @@ let service_loop () =
         let k = Marshal.from_string m.par.(0) 0 in
         let v, t' = _get k in
         let s = to_msg t' OK [| Marshal.to_string v [] |] in
-        ZMQ.Socket.send_all ~block:false !_context.myself_sock [i;s]
+        Zmq.Socket.send_all ~block:false !_context.myself_sock [i;s]
       )
     | PS_Set -> (
         Owl_log.debug "%s: ps_set" !_context.myself_addr;
@@ -121,7 +121,7 @@ let service_loop () =
   done with Failure e -> (
     Owl_log.warn "%s" e;
     terminate ();
-    ZMQ.Socket.close !_context.myself_sock )
+    Zmq.Socket.close !_context.myself_sock )
 
 
 let init m context =
@@ -129,19 +129,19 @@ let init m context =
   (* contact allocated actors to assign jobs *)
   let addrs = Marshal.from_string m.par.(0) 0 in
   List.map (fun x ->
-    let req = ZMQ.Socket.create !_context.ztx ZMQ.Socket.req in
-    ZMQ.Socket.connect req x;
+    let req = Zmq.Socket.create !_context.ztx Zmq.Socket.req in
+    Zmq.Socket.connect req x;
     let app = Filename.basename Sys.argv.(0) in
     let arg = Marshal.to_string Sys.argv [] in
     Actor_utils.send req Job_Create [|!_context.myself_addr; app; arg|]; req
   ) addrs
-  |> List.iter ZMQ.Socket.close;
+  |> List.iter Zmq.Socket.close;
   (* wait until all the allocated actors register *)
   while (StrMap.cardinal !_context.workers) < (List.length addrs) do
     let _i, m = Actor_utils.recv !_context.myself_sock in
-    let s = ZMQ.Socket.create !_context.ztx ZMQ.Socket.dealer in
-    ZMQ.Socket.set_send_high_water_mark s Actor_config.high_warter_mark;
-    ZMQ.Socket.connect s m.par.(0);
+    let s = Zmq.Socket.create !_context.ztx Zmq.Socket.dealer in
+    Zmq.Socket.set_send_high_water_mark s Actor_config.high_warter_mark;
+    Zmq.Socket.connect s m.par.(0);
     !_context.workers <- (StrMap.add m.par.(0) s !_context.workers);
   done;
   (* initialise the step <--> work tables *)
