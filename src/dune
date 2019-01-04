@@ -1,13 +1,6 @@
 (library
   (name actor)
   (public_name actor)
-  (modules
-    (:standard \
-      actor_peer_sgd0
-      actor_peer_sgd1
-      actor_param_sgd
-    )
-  )
   (flags (
     ; turn off some warnings as 4.06.0 is pernickety and errors out
     :standard -w "-50" -safe-string)

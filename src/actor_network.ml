@@ -3,10 +3,14 @@
  * Copyright (c) 2016-2018 Liang Wang <liang.wang@cl.cam.ac.uk>
  *)
 
-(* module aliases *)
+module type Sig = sig
 
-module Mapre = Actor_mapre
+  module Context : sig
+    type t
+  end
 
-module Param = Actor_param
+  module Socket : sig
+    type t
+  end
 
-module Peer = Actor_peer
+end
