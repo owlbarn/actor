@@ -3,7 +3,7 @@
  * Copyright (c) 2016-2018 Liang Wang <liang.wang@cl.cam.ac.uk>
  *)
 
-type socket = [`Dealer] Zmq.Socket.t
+type socket = [`Dealer] Zmq_lwt.Socket.t
 
 
 let context =
@@ -11,37 +11,38 @@ let context =
 
 
 let init () =
-  context := Zmq.Context.create ()
+  context := Zmq.Context.create ();
+  Lwt.return ()
 
 
 let exit () =
-  Zmq.Context.terminate !context
+  Zmq.Context.terminate !context;
+  Lwt.return ()
 
 
 let socket () =
-  Zmq.Socket.create !context Zmq.Socket.dealer
+  let sock = Zmq.Socket.create !context Zmq.Socket.dealer in
+  Zmq_lwt.Socket.of_socket sock
 
 
 let listen addr =
   let sock = Zmq.Socket.create !context Zmq.Socket.dealer in
   Zmq.Socket.bind sock addr;
-  sock
+  Zmq_lwt.Socket.of_socket sock
 
 
 let connect sock addr =
-  Zmq.Socket.connect sock addr
+  let sock = Zmq_lwt.Socket.to_socket sock in
+  Zmq.Socket.connect sock addr;
+  Lwt.return ()
 
 
 let send sock msg =
-  Zmq.Socket.send sock msg
+  Zmq_lwt.Socket.send sock msg
 
 
 let recv sock =
-  Zmq.Socket.recv sock
+  Zmq_lwt.Socket.recv sock
 
 
-let close sock = Zmq.Socket.close sock
-
-
-let timeout sock threshold =
-  Zmq.Socket.set_receive_timeout sock threshold
+let close sock = Zmq_lwt.Socket.close sock

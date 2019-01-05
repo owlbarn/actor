@@ -7,6 +7,7 @@
 
 module Make
   (Net : Actor_net.Sig)
+  (Sys : Actor_sys.Sig)
   = struct
 
   module Types = Actor_types.Make(Net)
@@ -30,40 +31,63 @@ let heartbeat req id u_addr m_addr =
 
 let start_app app arg =
   Owl_log.info "%s" ("starting job " ^ app);
-  match Unix.fork () with
-  | 0 -> if Unix.fork () = 0 then Unix.execv app arg else exit 0
-  | _p -> ignore(Unix.wait ())
+  let _ =
+    match Unix.fork () with
+    | 0 -> if Unix.fork () = 0 then Unix.execv app arg else exit 0
+    | _p -> ignore(Unix.wait ())
+  in
+  Lwt.return ()
 
-let deploy_app _x = Owl_log.error "cannot find %s" _x
+let deploy_app _x =
+  Owl_log.error "cannot find %s" _x;
+  Lwt.return ()
 
 let run id u_addr m_addr =
   (* set up connection to manager *)
   let req = Net.socket () in
-  Net.connect req m_addr;
-  register req myid u_addr m_addr;
+  let%lwt () = Net.connect req m_addr in
+  let%lwt () = register req myid u_addr m_addr in
   (* set up local service *)
   let rep = Net.listen u_addr in
-  while true do
-    Net.timeout rep (3 * 1000);
-    try
-      let msg = of_msg (Net.recv rep) in
-      match msg with
-      | Job_Create (uid, app, arg) -> (
-        Owl_log.info "%s" (app ^ " <- " ^ uid);
-        Net.send rep (Marshal.to_string OK []);
-        match Sys.file_exists app with
-        | true -> start_app app arg
-        | false -> deploy_app app
-        )
-      | _ -> ()
-    with
-      | Unix.Unix_error (_,_,_) -> heartbeat req id u_addr m_addr
-      | Zmq.ZMQ_exception (_,s) -> Owl_log.error "%s" s
-      | _exn -> Owl_log.error "unknown error"
-  done;
-  Net.close rep;
-  Net.close req;
-  Net.exit ()
+
+  let rec loop continue =
+    if continue then (
+      let%lwt pkt = Net.recv rep in
+      let msg = of_msg pkt in
+      let%lwt () =
+        match msg with
+        | Job_Create (uid, app, arg) -> (
+          Owl_log.info "%s" (app ^ " <- " ^ uid);
+          let%lwt () = Net.send rep (Marshal.to_string OK []) in
+          let%lwt () =
+            match%lwt Sys.file_exists app with
+            | true  -> start_app app arg
+            | false -> deploy_app app
+          in
+          Lwt.return ()
+          )
+        | _ -> Lwt.return ()
+      in
+      loop true
+    )
+    else (
+      let%lwt () = Net.close rep in
+      let%lwt () = Net.close req in
+      Net.exit ()
+    )
+
+  in
+
+  let rec timer () =
+    let%lwt () = Lwt_unix.sleep 10. in
+    let%lwt () = heartbeat req id u_addr m_addr in
+    timer ()
+  in
+
+  let%lwt () = timer () in
+  let%lwt () = loop true in
+  Lwt.return ()
+
 
 
 end

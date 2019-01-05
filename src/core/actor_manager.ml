@@ -8,6 +8,7 @@
 
 module Make
   (Net : Actor_net.Sig)
+  (Sys : Actor_sys.Sig)
   = struct
 
   module Types = Actor_types.Make(Net)
@@ -41,7 +42,7 @@ module Make
       if Workers.mem uid = false then
         Owl_log.info "%s" (uid ^ " @ " ^ addr);
         Workers.add uid addr;
-        (* Actor_utils.send r OK [||]; *)
+        Net.send r "OK [||]"
       )
     | Job_Reg (master, jid) -> (
       if Service.mem jid = false then (
@@ -68,18 +69,29 @@ module Make
       Net.send r "OK [|peers|]";
       )
     | _ -> (
-      Owl_log.error "unknown message type"
+      Owl_log.error "unknown message type";
+      Lwt.return ()
       )
 
   let run addr =
-    Net.init ();
-    let rep = Net.listen addr in
-    while true do
-      let m = of_msg (Net.recv rep) in
-      process rep m;
-    done;
-    Net.close rep;
-    Net.exit ()
+    let%lwt () = Net.init () in
+    let sock = Net.listen addr in
+
+    let rec loop continue =
+      if continue then (
+        let%lwt pkt = Net.recv sock in
+        let msg = of_msg pkt in
+        let%lwt () = process sock msg in
+        loop true
+      )
+      else (
+        let%lwt () = Net.close sock in
+        let%lwt () = Net.exit () in
+        Lwt.return ()
+      )
+    in
+
+    loop true
 
 
 end

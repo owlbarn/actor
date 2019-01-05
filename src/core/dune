@@ -6,9 +6,11 @@
     :standard -w "-50" -safe-string)
   )
   (wrapped false)
+  (preprocess (pps lwt.ppx))
   (libraries
-    zmq
+    lwt
     ocamlgraph
     owl-base
+    zmq-lwt
   )
 )

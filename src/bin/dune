@@ -7,5 +7,5 @@
     actor_bin_manager
     actor_bin_worker
   )
-  (libraries actor)
+  (libraries actor lwt lwt.unix)
 )
