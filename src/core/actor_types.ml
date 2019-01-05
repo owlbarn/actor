@@ -22,11 +22,11 @@ module Make
     (* General messge types *)
     | OK
     | Fail
-    | Heartbeat of string * string
-    | User_Reg  of string * string
-    | Job_Reg   of string * string
-    | Job_Master
-    | Job_Worker
+    | Heartbeat  of string * string
+    | User_Reg   of string * string
+    | Job_Reg    of string * string
+    | Job_Master of string array
+    | Job_Worker of string
     | Job_Create of string * string * (string array)
     (* Data parallel: Mapre *)
     | MapTask | MapPartTask | FilterTask | ReduceByKeyTask | ShuffleTask | UnionTask

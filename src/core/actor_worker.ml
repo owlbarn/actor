@@ -26,13 +26,9 @@ module Make
     Net.send sock s
 
 
-  let start_app app arg =
+  let start_app app args =
     Owl_log.info "%s" ("starting job " ^ app);
-    let _ =
-      match Unix.fork () with
-      | 0 -> if Unix.fork () = 0 then Unix.execv app arg else exit 0
-      | _p -> ignore(Unix.wait ())
-    in
+    Sys.exec app args;
     Lwt.return ()
 
 
@@ -59,7 +55,8 @@ module Make
           match msg with
           | Job_Create (uid, app, arg) -> (
               Owl_log.info "%s" (app ^ " <- " ^ uid);
-              let%lwt () = Net.send w_sock (Marshal.to_string OK []) in
+              let s = Marshal.to_string OK [] in
+              let%lwt () = Net.send w_sock s in
               match%lwt Sys.file_exists app with
               | true  -> start_app app arg
               | false -> deploy_app app

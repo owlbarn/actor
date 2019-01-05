@@ -18,6 +18,7 @@ module Make
 
 
   module Workers = struct
+
     let _workers = ref StrMap.empty
 
     let create id addr = {
@@ -27,48 +28,61 @@ module Make
     }
 
     let add id addr = _workers := StrMap.add id (create id addr) !_workers
+
     let remove id = _workers := StrMap.remove id !_workers
+
     let mem id = StrMap.mem id !_workers
-    let to_list () = StrMap.fold (fun _k v l -> l @ [v]) !_workers []
-    let addrs () = StrMap.fold (fun _k v l -> l @ [v.addr]) !_workers []
+
+    let to_array () =
+      StrMap.fold (fun _k v l -> l @ [v]) !_workers []
+      |> Array.of_list
+
+    let addrs () =
+      StrMap.fold (fun _k v l -> l @ [v.addr]) !_workers []
+      |> Array.of_list
+
   end
 
 
-  let process r msg =
+  let process sock msg =
     match msg with
     | User_Reg (uid, addr) -> (
-      if Workers.mem uid = false then
-        Owl_log.info "%s" (uid ^ " @ " ^ addr);
-        Workers.add uid addr;
-        Net.send r "OK [||]"
+        if Workers.mem uid = false then
+          Owl_log.info "%s" (uid ^ " @ " ^ addr);
+          Workers.add uid addr;
+          Net.send sock "OK [||]"
       )
     | Job_Reg (master, jid) -> (
-      if Service.mem jid = false then (
-        Service.add jid master;
-        (* FIXME: currently send back all nodes as workers *)
-        let ____addrs = Marshal.to_string (Workers.addrs ()) [] in
-        Net.send r "Job_Master [|addrs|]"
-      )
-      else
-        let ____master = (Service.find jid).master in
-        Net.send r "Job_Worker [|master|]"
+        if Service.mem jid = false then (
+          Service.add jid master;
+          (* FIXME: currently send back all nodes as workers *)
+          let m = Job_Master (Workers.addrs ()) in
+          let s = Marshal.to_string m [] in
+          Net.send sock s
+        )
+        else (
+          let m = Job_Worker (Service.find jid).master in
+          let s = Marshal.to_string m [] in
+          Net.send sock s
+        )
       )
     | Heartbeat (uid, addr) -> (
-      Owl_log.info "%s" ("heartbeat @ " ^ uid);
-      Workers.add uid addr;
-      Net.send r "OK [||]";
+        Owl_log.info "%s" ("heartbeat @ " ^ uid);
+        Workers.add uid addr;
+        let s = Marshal.to_string OK [] in
+        Net.send sock s
       )
     | P2P_Reg (addr, jid) -> (
-      Owl_log.info "p2p @ %s job:%s" addr jid;
-      if Service.mem jid = false then Service.add jid "";
-      let peers = Service.choose_workers jid 10 in
-      let ____peers = Marshal.to_string peers [] in
-      Service.add_worker jid addr;
-      Net.send r "OK [|peers|]";
+        Owl_log.info "p2p @ %s job:%s" addr jid;
+        if Service.mem jid = false then Service.add jid "";
+        let peers = Service.choose_workers jid 10 in
+        let ____peers = Marshal.to_string peers [] in
+        Service.add_worker jid addr;
+        Net.send sock "OK [|peers|]";
       )
     | _ -> (
-      Owl_log.error "unknown message type";
-      Lwt.return ()
+        Owl_log.error "unknown message type";
+        Lwt.return ()
       )
 
 
