@@ -1,6 +1,6 @@
 (*
  * Actor - Parallel & Distributed Engine of Owl System
- * Copyright (c) 2016-2018 Liang Wang <liang.wang@cl.cam.ac.uk>
+ * Copyright (c) 2016-2019 Liang Wang <liang.wang@cl.cam.ac.uk>
  *)
 
 type socket = [`Dealer] Zmq_lwt.Socket.t
@@ -11,6 +11,7 @@ let context =
 
 
 let init () =
+  Random.self_init ();
   context := Zmq.Context.create ();
   Lwt.return ()
 

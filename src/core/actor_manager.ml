@@ -1,6 +1,6 @@
 (*
  * Actor - Parallel & Distributed Engine of Owl System
- * Copyright (c) 2016-2018 Liang Wang <liang.wang@cl.cam.ac.uk>
+ * Copyright (c) 2016-2019 Liang Wang <liang.wang@cl.cam.ac.uk>
  *)
 
 (* Manager: keeps running to manage a group of actors *)
@@ -33,8 +33,6 @@ module Make
     let addrs () = StrMap.fold (fun _k v l -> l @ [v.addr]) !_workers []
   end
 
-  let addr = Actor_config.manager_addr
-  let myid = Actor_config.manager_id
 
   let process r msg =
     match msg with
@@ -72,6 +70,7 @@ module Make
       Owl_log.error "unknown message type";
       Lwt.return ()
       )
+
 
   let run addr =
     let%lwt () = Net.init () in

@@ -1,6 +1,6 @@
 (*
  * Actor - Parallel & Distributed Engine of Owl System
- * Copyright (c) 2016-2018 Liang Wang <liang.wang@cl.cam.ac.uk>
+ * Copyright (c) 2016-2019 Liang Wang <liang.wang@cl.cam.ac.uk>
  *)
 
 module Worker = Actor_worker.Make (Actor_net_zmq) (Actor_sys_unix)

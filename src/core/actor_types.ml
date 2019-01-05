@@ -1,6 +1,6 @@
 (*
  * Actor - Parallel & Distributed Engine of Owl System
- * Copyright (c) 2016-2018 Liang Wang <liang.wang@cl.cam.ac.uk>
+ * Copyright (c) 2016-2019 Liang Wang <liang.wang@cl.cam.ac.uk>
  *)
 
 
@@ -138,20 +138,13 @@ module Make
   (** two functions to translate between message rec and string *)
 
   let to_msg b t p =
-    print_endline "here +++";
     let m = { bar = b; typ = t; par = p } in
     Marshal.to_string m [ ]
 
 
   let of_msg s =
-    print_endline "here ===";
     let m : message_type = Marshal.from_string s 0 in
     m
-
-
-  (* initialise some states *)
-
-  let _ = Random.self_init ();;
 
 
 end
