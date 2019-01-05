@@ -9,6 +9,6 @@
   (libraries
     zmq
     ocamlgraph
-    owl
+    owl-base
   )
 )
