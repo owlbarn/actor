@@ -20,26 +20,18 @@ module Make
 
   type message_type =
     (* General messge types *)
-    | OK
-    | Fail
+    | Reg_Req of string * string
+    | Reg_Rep of string
     | Heartbeat  of string * string
-    | User_Reg   of string * string
-    | Job_Reg    of string * string
-    | Job_Master of string array
-    | Job_Worker of string
-    | Job_Create of string * string * (string array)
-    (* Data parallel: Mapre *)
-    | MapTask | MapPartTask | FilterTask | ReduceByKeyTask | ShuffleTask | UnionTask
-    | JoinTask | FlattenTask | ApplyTask | NopTask
-    | Pipeline | Collect | Count | Broadcast | Fold | Reduce | Terminate | Load | Save
-    (* Model Parallel: Param *)
-    | PS_Get | PS_Set | PS_Schedule | PS_Push
-    (* P2P Parallel: Peer *)
-    | P2P_Reg of string * string
-    | P2P_Connect | P2P_Ping | P2P_Join | P2P_Forward | P2P_Set | P2P_Get
-    | P2P_Get_Q | P2P_Get_R | P2P_Copy | P2P_Push | P2P_Pull | P2P_Pull_Q | P2P_Pull_R
-    | P2P_Bar
 
+
+  type mapre_config = {
+    mutable myself  : string;
+    mutable server  : string;
+    mutable client  : string array;
+    mutable uri     : string StrMap.t;
+    mutable waiting : (string, string) Hashtbl.t
+  }
 
   type message_rec = {
     mutable bar : int;
@@ -101,12 +93,6 @@ module Make
     owner : string;
   }
 
-
-  type service_rec = {
-    id             : string;
-    master         : string;
-    mutable worker : string array;
-  }
 
 
   (** types of user-defined functions in model parallel module *)
