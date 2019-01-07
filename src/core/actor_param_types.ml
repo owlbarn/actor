@@ -23,7 +23,6 @@ type param_context = {
   mutable server  : string;
   mutable client  : string array;
   mutable book    : (string, string) Hashtbl.t;
-  mutable waiting : (string, string) Hashtbl.t;
 }
 
 

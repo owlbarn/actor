@@ -6,7 +6,6 @@
 type t = {
   promise  : unit Lwt.t;
   resolver : unit Lwt.u;
-  check    : unit -> bool;
   callback : unit -> unit Lwt.t;
   data     : (string, string) Hashtbl.t;
 }
@@ -15,10 +14,10 @@ type t = {
 let bars : (int, t) Hashtbl.t = Hashtbl.create 128
 
 
-let make bar_id check callback data =
+let make bar_id callback data =
   let promise, resolver = Lwt.wait () in
-  let bar_rec = { promise; resolver; check; callback; data } in
-  Hashtbl.add bars bar_id bar_rec
+  let bar = { promise; resolver; callback; data } in
+  Hashtbl.add bars bar_id bar
 
 
 let remove bar_id = Hashtbl.remove bars bar_id
@@ -29,11 +28,6 @@ let wait bar_id =
   let%lwt () = bar.promise in
   let%lwt () = bar.callback () in
   Lwt.return ()
-
-
-let check bar_id =
-  let bar = Hashtbl.find bars bar_id in
-  bar.check ()
 
 
 let wakeup bar_id =
