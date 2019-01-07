@@ -1,11 +1,13 @@
 
-open Actor_mapre_types
+open Actor_param_types
 
-module M = Actor_mapre.Make (Actor_net_zmq) (Actor_sys_unix)
+module M = Actor_param.Make (Actor_net_zmq) (Actor_sys_unix)
 
 
 let main args =
   Owl_log.(set_level DEBUG);
+  Random.self_init ();
+
   let myself = args.(1) in
   let server = args.(2) in
   let client = Array.sub args 3 (Array.length args - 3) in
@@ -15,7 +17,8 @@ let main args =
   Hashtbl.add book server "tcp://127.0.0.1:5555";
 
   if myself <> server then (
-    let addr = "tcp://127.0.0.1:5556" in
+    let port = string_of_int (6000 + Random.int 1000) in
+    let addr = "tcp://127.0.0.1:" ^ port in
     Hashtbl.add book myself addr
   )
   else (
@@ -24,7 +27,7 @@ let main args =
     ) client
   );
 
-  let contex = {
+  let context = {
     myself;
     server;
     client;
@@ -33,7 +36,7 @@ let main args =
   }
   in
 
-  Lwt_main.run (M.init contex)
+  Lwt_main.run (M.init context)
 
 
 let _ =

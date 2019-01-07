@@ -18,7 +18,7 @@ type message = {
 }
 
 
-type mapre_contex = {
+type param_context = {
   mutable myself  : string;
   mutable server  : string;
   mutable client  : string array;

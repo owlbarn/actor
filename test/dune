@@ -1,9 +1,9 @@
 (executables
   (public_names
-    actor_mapre_test_0
+    actor_param_test_0
   )
   (names
-    actor_mapre_test_0
+    actor_param_test_0
   )
   (libraries actor)
 )

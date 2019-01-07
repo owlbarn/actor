@@ -8,18 +8,19 @@ module Make
   (Sys : Actor_sys.Sig)
   = struct
 
-  open Actor_mapre_types
+  open Actor_param_types
 
 
-  let process contex data =
+  let process context data =
     let m = decode_message data in
     match m.operation with
     | Reg_Req -> (
         Owl_log.debug "<<< %s Reg_Req" m.uuid;
-        Hashtbl.replace contex.book m.uuid m.addr;
-        let uuid = contex.myself in
-        let addr = Hashtbl.find contex.book uuid in
+        Hashtbl.replace context.book m.uuid m.addr;
+        let uuid = context.myself in
+        let addr = Hashtbl.find context.book uuid in
         let s = encode_message uuid addr Reg_Rep in
+        Actor_param_utils.is_ready context;
         Net.send m.addr s
       )
     | Heartbeat -> (
@@ -32,13 +33,13 @@ module Make
       )
 
 
-  let init contex =
+  let init context =
     let%lwt () = Net.init () in
 
     (* start server service *)
-    let uuid = contex.myself in
-    let addr = Hashtbl.find contex.book uuid in
-    let%lwt () = Net.listen addr (process contex) in
+    let uuid = context.myself in
+    let addr = Hashtbl.find context.book uuid in
+    let%lwt () = Net.listen addr (process context) in
 
     (* clean up when server exits *)
     let%lwt () = Net.exit () in

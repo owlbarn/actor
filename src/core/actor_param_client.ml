@@ -8,7 +8,7 @@ module Make
   (Sys : Actor_sys.Sig)
   = struct
 
-  open Actor_mapre_types
+  open Actor_param_types
 
 
   let register s_addr c_uuid c_addr =
@@ -41,14 +41,14 @@ module Make
       )
 
 
-  let init contex =
+  let init context =
     let%lwt () = Net.init () in
 
     (* register client to server *)
-    let s_uuid = contex.myself in
-    let s_addr = Hashtbl.find contex.book s_uuid in
-    let m_uuid = contex.server in
-    let m_addr = Hashtbl.find contex.book m_uuid in
+    let s_uuid = context.myself in
+    let s_addr = Hashtbl.find context.book s_uuid in
+    let m_uuid = context.server in
+    let m_addr = Hashtbl.find context.book m_uuid in
     let%lwt () = register m_addr s_uuid s_addr in
 
     (* start client service *)
