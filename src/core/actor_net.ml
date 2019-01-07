@@ -12,13 +12,9 @@ module type Sig = sig
 
   val exit : unit -> unit Lwt.t
 
-  val socket : unit -> socket
+  val listen : string -> (string -> unit Lwt.t) -> unit Lwt.t
 
-  val listen : string -> socket
-
-  val connect : socket -> string -> unit Lwt.t
-
-  val send : socket -> string -> unit Lwt.t
+  val send : string -> string -> unit Lwt.t
 
   val recv : socket -> string Lwt.t
 

@@ -8,18 +8,16 @@ module Make
   (Sys : Actor_sys.Sig)
   = struct
 
-  module Types = Actor_types.Make (Net)
-
   module Server = Actor_mapreserver.Make (Net) (Sys)
 
   module Client = Actor_mapreclient.Make (Net) (Sys)
 
-  open Types
+  open Actor_types
 
 
   let init config =
     let uuid = config.myself in
-    let addr = StrMap.find uuid config.uri in
+    let addr = Hashtbl.find config.book uuid in
 
     if config.myself = config.server then (
       Owl_log.debug "mapre server %s @ %s" uuid addr;
