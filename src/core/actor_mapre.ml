@@ -8,24 +8,24 @@ module Make
   (Sys : Actor_sys.Sig)
   = struct
 
-  module Server = Actor_mapreserver.Make (Net) (Sys)
+  open Actor_mapre_types
 
-  module Client = Actor_mapreclient.Make (Net) (Sys)
+  module Server = Actor_mapre_server.Make (Net) (Sys)
 
-  open Actor_types
+  module Client = Actor_mapre_client.Make (Net) (Sys)
 
 
-  let init config =
-    let uuid = config.myself in
-    let addr = Hashtbl.find config.book uuid in
+  let init contex =
+    let uuid = contex.myself in
+    let addr = Hashtbl.find contex.book uuid in
 
-    if config.myself = config.server then (
+    if contex.myself = contex.server then (
       Owl_log.debug "mapre server %s @ %s" uuid addr;
-      Server.init config
+      Server.init contex
     )
     else (
       Owl_log.debug "mapre client %s @ %s" uuid addr;
-      Client.init config
+      Client.init contex
     )
 
 

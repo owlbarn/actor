@@ -1,5 +1,5 @@
 
-open Actor_types
+open Actor_mapre_types
 
 module M = Actor_mapre.Make (Actor_net_zmq) (Actor_sys_unix)
 
@@ -24,7 +24,7 @@ let main args =
     ) client
   );
 
-  let config = {
+  let contex = {
     myself;
     server;
     client;
@@ -33,7 +33,7 @@ let main args =
   }
   in
 
-  Lwt_main.run (M.init config)
+  Lwt_main.run (M.init contex)
 
 
 let _ =

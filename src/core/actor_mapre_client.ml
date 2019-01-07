@@ -8,31 +8,31 @@ module Make
   (Sys : Actor_sys.Sig)
   = struct
 
-  open Actor_types
+  open Actor_mapre_types
 
 
-  let register m_addr s_uuid s_addr =
-    Owl_log.debug "Reg_Req (%s, %s)" s_uuid s_addr;
-    let s = Marshal.to_string (Reg_Req (s_uuid, s_addr)) [] in
-    Net.send m_addr s
+  let register s_addr c_uuid c_addr =
+    Owl_log.debug ">>> %s Reg_Req" s_addr;
+    let s = encode_message c_uuid c_addr Reg_Req in
+    Net.send s_addr s
 
 
-  let heartbeat m_addr s_uuid s_addr =
+  let heartbeat s_addr c_uuid c_addr =
     let rec loop () =
       let%lwt () = Sys.sleep 10. in
-      Owl_log.debug "Heartbeat (%s, %s)" s_uuid s_addr;
-      let s = Marshal.to_string (Heartbeat (s_uuid, s_addr)) [] in
-      let%lwt () = Net.send m_addr s in
+      Owl_log.debug ">>> %s Heartbeat" s_addr;
+      let s = encode_message c_uuid c_addr Heartbeat in
+      let%lwt () = Net.send s_addr s in
       loop ()
     in
     loop ()
 
 
-  let process pkt =
-    let msg = of_msg pkt in
-    match msg with
-    | Reg_Rep result -> (
-        Owl_log.debug "Reg_Rep %s" result;
+  let process data =
+    let m = decode_message data in
+    match m.operation with
+    | Reg_Rep -> (
+        Owl_log.debug "<<< %s Reg_Rep" m.uuid;
         Lwt.return ()
       )
     | _ -> (
@@ -41,14 +41,14 @@ module Make
       )
 
 
-  let init config =
+  let init contex =
     let%lwt () = Net.init () in
 
     (* register client to server *)
-    let s_uuid = config.myself in
-    let s_addr = Hashtbl.find config.book s_uuid in
-    let m_uuid = config.server in
-    let m_addr = Hashtbl.find config.book m_uuid in
+    let s_uuid = contex.myself in
+    let s_addr = Hashtbl.find contex.book s_uuid in
+    let m_uuid = contex.server in
+    let m_addr = Hashtbl.find contex.book m_uuid in
     let%lwt () = register m_addr s_uuid s_addr in
 
     (* start client service *)
