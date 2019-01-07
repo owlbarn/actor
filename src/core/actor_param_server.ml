@@ -21,6 +21,7 @@ module Make
         let addr = Hashtbl.find context.book uuid in
         let s = encode_message uuid addr Reg_Rep in
         Actor_param_utils.is_ready context;
+        Actor_barrier_bsp.sync 0 m.uuid;
         Net.send m.addr s
       )
     | Heartbeat -> (
@@ -33,13 +34,27 @@ module Make
       )
 
 
+  let iterate context =
+    let rec loop i =
+      let%lwt () = Sys.sleep 10. in
+      Owl_log.debug "%s iter #%i" context.myself i;
+
+      let next () = loop (i + 1) in
+      Actor_barrier_bsp.wait i context.client next
+    in
+    loop 0
+
+
   let init context =
     let%lwt () = Net.init () in
 
     (* start server service *)
     let uuid = context.myself in
     let addr = Hashtbl.find context.book uuid in
-    let%lwt () = Net.listen addr (process context) in
+    let thread_0 = Net.listen addr (process context) in
+    let thread_1 = iterate context in
+    let%lwt () = thread_0 in
+    let%lwt () = thread_1 in
 
     (* clean up when server exits *)
     let%lwt () = Net.exit () in
