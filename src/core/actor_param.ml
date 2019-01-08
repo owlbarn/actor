@@ -16,18 +16,14 @@ module Make
 
 
   let init context =
-    let uuid = context.myself in
-    let addr = Hashtbl.find context.book uuid in
-
-    if context.myself = context.server then (
-      Owl_log.debug "param server %s @ %s" uuid addr;
+    if context.my_uuid = context.server_uuid then (
+      Owl_log.debug "param server %s @ %s" context.my_uuid context.my_addr;
       Server.init context
     )
     else (
-      Owl_log.debug "param client %s @ %s" uuid addr;
+      Owl_log.debug "param client %s @ %s" context.my_uuid context.my_addr;
       Client.init context
     )
-
 
 
   (* interface to paramserver functions *)

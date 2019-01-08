@@ -9,6 +9,12 @@ type operation =
   | Reg_Req
   | Reg_Rep
   | Heartbeat
+  | Exit
+  (* Model parallel types *)
+  | PS_Get
+  | PS_Set
+  | PS_Schedule
+  | PS_Push
 
 
 type message = {
@@ -19,10 +25,11 @@ type message = {
 
 
 type param_context = {
-  mutable myself  : string;
-  mutable server  : string;
-  mutable client  : string array;
-  mutable book    : (string, string) Hashtbl.t;
+  mutable my_uuid     : string;
+  mutable my_addr     : string;
+  mutable server_uuid : string;
+  mutable server_addr : string;
+  mutable book        : Actor_book.t;
 }
 
 

@@ -3,21 +3,29 @@
  * Copyright (c) 2016-2019 Liang Wang <liang.wang@cl.cam.ac.uk>
  *)
 
+module B =
+  Actor_barrier_generic.Make(struct
+    type param = (string, string) Hashtbl.t
+  end)
 
-let check bar =
-  Actor_barrier_generic.(Hashtbl.length bar.data = 0)
+
+let check bar = B.(Hashtbl.length bar.param = 0)
 
 
-let wait iter_idx client callback =
+let make iter_idx client callback =
   let bar_id = iter_idx in
   let htbl = Actor_param_utils.arr_to_htbl client in
-  Actor_barrier_generic.make bar_id callback htbl;
-  Actor_barrier_generic.wait bar_id
+  B.make bar_id callback htbl
+
+
+let wait iter_idx = B.wait iter_idx
 
 
 let sync bar_id node_id =
-  let bar = Actor_barrier_generic.get bar_id in
-  Hashtbl.remove bar.data node_id;
-  if check bar then (
-    Actor_barrier_generic.wakeup bar_id
+  if B.mem bar_id then (
+    let bar = B.get bar_id in
+    Hashtbl.remove bar.param node_id;
+
+    if check bar then
+      B.wakeup bar_id
   )

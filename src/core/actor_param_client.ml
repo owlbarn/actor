@@ -45,11 +45,10 @@ module Make
     let%lwt () = Net.init () in
 
     (* register client to server *)
-    let s_uuid = context.myself in
-    let s_addr = Hashtbl.find context.book s_uuid in
-    let m_uuid = context.server in
-    let m_addr = Hashtbl.find context.book m_uuid in
-    let%lwt () = register m_addr s_uuid s_addr in
+    let s_uuid = context.my_uuid in
+    let s_addr = context.my_addr in
+    let m_addr = context.server_addr in
+    let%lwt () = register context.server_addr s_uuid s_addr in
 
     (* start client service *)
     let thread_0 = heartbeat m_addr s_uuid s_addr in

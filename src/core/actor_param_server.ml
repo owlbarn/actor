@@ -11,21 +11,53 @@ module Make
   open Actor_param_types
 
 
+  let dummy_barrier context =
+    Actor_param_utils.htbl_to_arr context.book
+    |> Array.map (fun (_, v) -> Actor_book.(v.uuid))
+
+
+  let heartbeat context =
+    let rec loop () =
+      let%lwt () = Sys.sleep 10. in
+      Owl_log.debug "Heartbeat %s" context.my_uuid;
+      loop ()
+    in
+    loop ()
+
+
+  let schedule context =
+    Owl_log.debug "Schedule %s" context.my_uuid;
+    let passed = dummy_barrier context in
+    Array.iter (fun c ->
+      Owl_log.debug "%s passed ..." c;
+    ) passed
+
+
   let process context data =
     let m = decode_message data in
     match m.operation with
     | Reg_Req -> (
         Owl_log.debug "<<< %s Reg_Req" m.uuid;
-        Hashtbl.replace context.book m.uuid m.addr;
-        let uuid = context.myself in
-        let addr = Hashtbl.find context.book uuid in
+        Actor_book.set_addr context.book m.uuid m.addr;
+        let uuid = context.my_uuid in
+        let addr = context.my_addr in
         let s = encode_message uuid addr Reg_Rep in
-        Actor_param_utils.is_ready context;
-        Actor_barrier_bsp.sync 0 m.uuid;
-        Net.send m.addr s
+        let%lwt () = Net.send m.addr s in
+        if Actor_param_utils.is_ready context then
+          schedule context;
+        Lwt.return ()
       )
     | Heartbeat -> (
         Owl_log.debug "<<< %s Heartbeat" m.uuid;
+        Lwt.return ()
+      )
+    | Exit -> (
+        Owl_log.debug "<<< %s Exit" m.uuid;
+        Lwt.return ()
+      )
+    | PS_Push -> (
+        Owl_log.debug "<<< %s Push" m.uuid;
+        schedule context;
         Lwt.return ()
       )
     | _ -> (
@@ -37,10 +69,11 @@ module Make
   let iterate context =
     let rec loop i =
       let%lwt () = Sys.sleep 10. in
-      Owl_log.debug "%s iter #%i" context.myself i;
+      Owl_log.debug "%s iter #%i" context.my_uuid i;
 
-      let next () = loop (i + 1) in
-      Actor_barrier_bsp.wait i context.client next
+      (* let next () = loop (i + 1) in
+      Actor_barrier_bsp.wait i next *)
+      loop(i + 1)
     in
     loop 0
 
@@ -49,10 +82,8 @@ module Make
     let%lwt () = Net.init () in
 
     (* start server service *)
-    let uuid = context.myself in
-    let addr = Hashtbl.find context.book uuid in
-    let thread_0 = Net.listen addr (process context) in
-    let thread_1 = iterate context in
+    let thread_0 = Net.listen context.my_addr (process context) in
+    let thread_1 = heartbeat context in
     let%lwt () = thread_0 in
     let%lwt () = thread_1 in
 
