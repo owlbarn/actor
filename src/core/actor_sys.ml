@@ -5,10 +5,6 @@
 
 module type Sig = sig
 
-  val exec : string -> string array -> unit
-
-  val file_exists : string -> bool Lwt.t
-
   val sleep : float -> unit Lwt.t
 
 end

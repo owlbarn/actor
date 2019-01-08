@@ -4,15 +4,16 @@
  *)
 
 module Make
-  (Net : Actor_net.Sig)
-  (Sys : Actor_sys.Sig)
+  (Net  : Actor_net.Sig)
+  (Sys  : Actor_sys.Sig)
+  (Impl : Actor_param_impl.Sig)
   = struct
 
-  open Actor_param_types
+  include Actor_param_types.Make(Impl)
 
-  module Server = Actor_param_server.Make (Net) (Sys)
+  module Server = Actor_param_server.Make (Net) (Sys) (Impl)
 
-  module Client = Actor_param_client.Make (Net) (Sys)
+  module Client = Actor_param_client.Make (Net) (Sys) (Impl)
 
 
   let init context =
@@ -28,6 +29,6 @@ module Make
 
   (* interface to paramserver functions *)
 
-  
+
 
 end

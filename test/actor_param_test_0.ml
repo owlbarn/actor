@@ -1,7 +1,33 @@
 
-open Actor_param_types
+module Impl = struct
 
-module M = Actor_param.Make (Actor_net_zmq) (Actor_sys_unix)
+  type model = (int, string) Hashtbl.t
+
+  type key = int
+
+  type value = string
+
+  let get model key = Hashtbl.find model key
+
+  let set model key value = Hashtbl.replace model key value
+
+  let schedule nodes =
+    Array.map (fun node ->
+      let task = Random.int 1000 in
+      (node, task)
+    ) nodes
+
+  let push key =
+    Unix.sleep 1;
+    "Impl.push" ^ (string_of_int key)
+
+
+end
+
+
+include Actor_param_types.Make(Impl)
+
+module M = Actor_param.Make (Actor_net_zmq) (Actor_sys_unix) (Impl)
 
 
 let main args =
@@ -36,8 +62,6 @@ let main args =
     server_uuid;
     server_addr;
     book;
-    schedule = (fun _ -> [|("n01", "test task")|]);
-    push     = (fun x -> Unix.sleep 1; x);
   }
   in
 

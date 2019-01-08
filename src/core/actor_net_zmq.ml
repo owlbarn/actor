@@ -6,8 +6,7 @@
 type socket = [`Dealer] Zmq_lwt.Socket.t
 
 
-let context =
-  ref (Zmq.Context.create ())
+let context = ref (Zmq.Context.create ())
 
 
 let conn_pool : (string, socket) Hashtbl.t = Hashtbl.create 128
@@ -19,9 +18,8 @@ let init () =
 
 
 let exit () =
-  Hashtbl.iter (fun k v ->
-    print_endline ("shutdown " ^ k);
-    Lwt.async(fun () -> Zmq_lwt.Socket.close v)
+  Hashtbl.iter (fun _ v ->
+    Lwt.async (fun () -> Zmq_lwt.Socket.close v)
   ) conn_pool;
   Zmq.Context.terminate !context;
   Lwt.return ()
@@ -71,8 +69,7 @@ let send addr data =
   Zmq_lwt.Socket.send sock data
 
 
-let recv sock =
-  Zmq_lwt.Socket.recv sock
+let recv sock = Zmq_lwt.Socket.recv sock
 
 
 let close sock = Zmq_lwt.Socket.close sock

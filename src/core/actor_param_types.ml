@@ -4,40 +4,44 @@
  *)
 
 
-type operation =
-  (* General messge types *)
-  | Reg_Req
-  | Reg_Rep
-  | Heartbeat
-  | Exit
-  (* Model parallel types *)
-  | PS_Get
-  | PS_Set
-  | PS_Schd of string
-  | PS_Push of string
+module Make
+  (Impl : Actor_param_impl.Sig)
+  = struct
+
+  type operation =
+    (* General messge types *)
+    | Reg_Req
+    | Reg_Rep
+    | Heartbeat
+    | Exit
+    (* Model parallel types *)
+    | PS_Get
+    | PS_Set
+    | PS_Schd of Impl.key
+    | PS_Push of Impl.value
 
 
-type message = {
-  mutable uuid      : string;
-  mutable addr      : string;
-  mutable operation : operation;
-}
+  type message = {
+    mutable uuid      : string;
+    mutable addr      : string;
+    mutable operation : operation;
+  }
 
 
-type param_context = {
-  mutable my_uuid     : string;
-  mutable my_addr     : string;
-  mutable server_uuid : string;
-  mutable server_addr : string;
-  mutable book        : Actor_book.t;
-  mutable schedule    : string array -> (string * string) array;
-  mutable push        : string -> string;
-}
+  type param_context = {
+    mutable my_uuid     : string;
+    mutable my_addr     : string;
+    mutable server_uuid : string;
+    mutable server_addr : string;
+    mutable book        : Actor_book.t;
+  }
 
 
-let encode_message uuid addr operation =
-  let m = { uuid; addr; operation } in
-  Marshal.to_string m []
+  let encode_message uuid addr operation =
+    let m = { uuid; addr; operation } in
+    Marshal.to_string m []
 
 
-let decode_message data : message = Marshal.from_string data 0
+  let decode_message data : message = Marshal.from_string data 0
+
+end

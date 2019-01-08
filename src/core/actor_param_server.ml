@@ -4,11 +4,12 @@
  *)
 
 module Make
-  (Net : Actor_net.Sig)
-  (Sys : Actor_sys.Sig)
+  (Net  : Actor_net.Sig)
+  (Sys  : Actor_sys.Sig)
+  (Impl : Actor_param_impl.Sig)
   = struct
 
-  open Actor_param_types
+  include Actor_param_types.Make(Impl)
 
 
   let heartbeat context =
@@ -24,7 +25,7 @@ module Make
     Owl_log.debug "Schedule %s" context.my_uuid;
     Actor_barrier_bsp.sync context.book uuid;
     let passed = Actor_barrier_bsp.pass context.book in
-    let tasks = context.schedule passed in
+    let tasks = Impl.schedule passed in
     Array.iter (fun (uuid, task) ->
       Owl_log.debug ">>> %s Schedule ..." uuid;
       let addr = Actor_book.get_addr context.book uuid in
@@ -61,9 +62,8 @@ module Make
         Owl_log.debug "<<< %s PS_Set" m.uuid;
         Lwt.return ()
       )
-    | PS_Push update -> (
+    | PS_Push _update -> (
         Owl_log.debug "<<< %s Push" m.uuid;
-        Owl_log.warn "%s" update;
         schedule m.uuid context;
         Lwt.return ()
       )

@@ -18,7 +18,8 @@ let pass book =
   ) book;
 
   if !synced then
-    Actor_param_utils.htbl_to_arr book |> Array.map fst
+    Actor_param_utils.htbl_to_arr book
+    |> Array.map fst
   else
     [| |]
 

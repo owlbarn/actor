@@ -4,11 +4,12 @@
  *)
 
 module Make
-  (Net : Actor_net.Sig)
-  (Sys : Actor_sys.Sig)
+  (Net  : Actor_net.Sig)
+  (Sys  : Actor_sys.Sig)
+  (Impl : Actor_param_impl.Sig)
   = struct
 
-  open Actor_param_types
+  include Actor_param_types.Make(Impl)
 
 
   let register s_addr c_uuid c_addr =
@@ -44,8 +45,7 @@ module Make
       )
     | PS_Schd task -> (
         Owl_log.debug "<<< %s PS_Schd" m.uuid;
-        Owl_log.warn "%s" task;
-        let update = context.push task in
+        let update = Impl.push task in
         let s = encode_message my_uuid my_addr (PS_Push update) in
         Net.send context.server_addr s
       )
@@ -59,14 +59,13 @@ module Make
     let%lwt () = Net.init () in
 
     (* register client to server *)
-    let s_uuid = context.my_uuid in
-    let s_addr = context.my_addr in
-    let m_addr = context.server_addr in
-    let%lwt () = register context.server_addr s_uuid s_addr in
+    let uuid = context.my_uuid in
+    let addr = context.my_addr in
+    let%lwt () = register context.server_addr uuid addr in
 
     (* start client service *)
-    let thread_0 = heartbeat m_addr s_uuid s_addr in
-    let thread_1 = Net.listen s_addr (process context) in
+    let thread_0 = heartbeat context.server_addr uuid addr in
+    let thread_1 = Net.listen addr (process context) in
     let%lwt () = thread_0 in
     let%lwt () = thread_1 in
 
