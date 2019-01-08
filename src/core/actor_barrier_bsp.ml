@@ -3,29 +3,26 @@
  * Copyright (c) 2016-2019 Liang Wang <liang.wang@cl.cam.ac.uk>
  *)
 
-module B =
-  Actor_barrier_generic.Make(struct
-    type param = (string, string) Hashtbl.t
-  end)
+open Actor_book
 
 
-let check bar = B.(Hashtbl.length bar.param = 0)
+let pass book =
+  let fastest = ref min_int in
+  let synced = ref true in
+
+  Hashtbl.iter (fun _ node ->
+    if node.step > !fastest then
+      fastest := node.step;
+    if !fastest > min_int && !fastest != node.step then
+      synced := false
+  ) book;
+
+  if !synced then
+    Actor_param_utils.htbl_to_arr book |> Array.map fst
+  else
+    [| |]
 
 
-let make iter_idx client callback =
-  let bar_id = iter_idx in
-  let htbl = Actor_param_utils.arr_to_htbl client in
-  B.make bar_id callback htbl
-
-
-let wait iter_idx = B.wait iter_idx
-
-
-let sync bar_id node_id =
-  if B.mem bar_id then (
-    let bar = B.get bar_id in
-    Hashtbl.remove bar.param node_id;
-
-    if check bar then
-      B.wakeup bar_id
-  )
+let sync book uuid =
+  let step = Actor_book.get_step book uuid in
+  Actor_book.set_step book uuid (step + 1)

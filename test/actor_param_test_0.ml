@@ -20,7 +20,7 @@ let main args =
     else
       random_addr
   in
-  
+
   let book = Actor_book.make () in
   let clients = Array.sub args 3 (Array.length args - 3) in
   Array.iter (fun uuid ->
@@ -36,6 +36,8 @@ let main args =
     server_uuid;
     server_addr;
     book;
+    schedule = (fun _ -> [|("n01", "test task")|]);
+    push     = (fun x -> Unix.sleep 1; x);
   }
   in
 

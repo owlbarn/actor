@@ -11,11 +11,6 @@ module Make
   open Actor_param_types
 
 
-  let dummy_barrier context =
-    Actor_param_utils.htbl_to_arr context.book
-    |> Array.map (fun (_, v) -> Actor_book.(v.uuid))
-
-
   let heartbeat context =
     let rec loop () =
       let%lwt () = Sys.sleep 10. in
@@ -25,57 +20,57 @@ module Make
     loop ()
 
 
-  let schedule context =
+  let schedule uuid context =
     Owl_log.debug "Schedule %s" context.my_uuid;
-    let passed = dummy_barrier context in
-    Array.iter (fun c ->
-      Owl_log.debug "%s passed ..." c;
-    ) passed
+    Actor_barrier_bsp.sync context.book uuid;
+    let passed = Actor_barrier_bsp.pass context.book in
+    let tasks = context.schedule passed in
+    Array.iter (fun (uuid, task) ->
+      Owl_log.debug ">>> %s Schedule ..." uuid;
+      let addr = Actor_book.get_addr context.book uuid in
+      let s = encode_message uuid addr (PS_Schd task) in
+      Lwt.async (fun () -> Net.send addr s)
+    ) tasks
+
 
 
   let process context data =
     let m = decode_message data in
+    let my_uuid = context.my_uuid in
+    let my_addr = context.my_addr in
+
     match m.operation with
     | Reg_Req -> (
         Owl_log.debug "<<< %s Reg_Req" m.uuid;
         Actor_book.set_addr context.book m.uuid m.addr;
-        let uuid = context.my_uuid in
-        let addr = context.my_addr in
-        let s = encode_message uuid addr Reg_Rep in
+        let s = encode_message my_uuid my_addr Reg_Rep in
         let%lwt () = Net.send m.addr s in
         if Actor_param_utils.is_ready context then
-          schedule context;
+          schedule m.uuid context;
         Lwt.return ()
       )
     | Heartbeat -> (
         Owl_log.debug "<<< %s Heartbeat" m.uuid;
         Lwt.return ()
       )
-    | Exit -> (
-        Owl_log.debug "<<< %s Exit" m.uuid;
+    | PS_Get -> (
+        Owl_log.debug "<<< %s PS_Get" m.uuid;
         Lwt.return ()
       )
-    | PS_Push -> (
+    | PS_Set -> (
+        Owl_log.debug "<<< %s PS_Set" m.uuid;
+        Lwt.return ()
+      )
+    | PS_Push update -> (
         Owl_log.debug "<<< %s Push" m.uuid;
-        schedule context;
+        Owl_log.warn "%s" update;
+        schedule m.uuid context;
         Lwt.return ()
       )
     | _ -> (
         Owl_log.error "unknown message type";
         Lwt.return ()
       )
-
-
-  let iterate context =
-    let rec loop i =
-      let%lwt () = Sys.sleep 10. in
-      Owl_log.debug "%s iter #%i" context.my_uuid i;
-
-      (* let next () = loop (i + 1) in
-      Actor_barrier_bsp.wait i next *)
-      loop(i + 1)
-    in
-    loop 0
 
 
   let init context =

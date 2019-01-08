@@ -28,12 +28,26 @@ module Make
     loop ()
 
 
-  let process data =
+  let process context data =
     let m = decode_message data in
+    let my_uuid = context.my_uuid in
+    let my_addr = context.my_addr in
+
     match m.operation with
     | Reg_Rep -> (
         Owl_log.debug "<<< %s Reg_Rep" m.uuid;
         Lwt.return ()
+      )
+    | Exit -> (
+        Owl_log.debug "<<< %s Exit" m.uuid;
+        Lwt.return ()
+      )
+    | PS_Schd task -> (
+        Owl_log.debug "<<< %s PS_Schd" m.uuid;
+        Owl_log.warn "%s" task;
+        let update = context.push task in
+        let s = encode_message my_uuid my_addr (PS_Push update) in
+        Net.send context.server_addr s
       )
     | _ -> (
         Owl_log.error "unknown message type";
@@ -52,7 +66,7 @@ module Make
 
     (* start client service *)
     let thread_0 = heartbeat m_addr s_uuid s_addr in
-    let thread_1 = Net.listen s_addr process in
+    let thread_1 = Net.listen s_addr (process context) in
     let%lwt () = thread_0 in
     let%lwt () = thread_1 in
 

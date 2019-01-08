@@ -13,8 +13,8 @@ type operation =
   (* Model parallel types *)
   | PS_Get
   | PS_Set
-  | PS_Schedule
-  | PS_Push
+  | PS_Schd of string
+  | PS_Push of string
 
 
 type message = {
@@ -30,6 +30,8 @@ type param_context = {
   mutable server_uuid : string;
   mutable server_addr : string;
   mutable book        : Actor_book.t;
+  mutable schedule    : string array -> (string * string) array;
+  mutable push        : string -> string;
 }
 
 
