@@ -1,5 +1,5 @@
 (*
- * Actor - Parallel & Distributed Engine of Owl System
+ * Light Actor - Parallel & Distributed Engine of Owl System
  * Copyright (c) 2016-2019 Liang Wang <liang.wang@cl.cam.ac.uk>
  *)
 
@@ -41,7 +41,7 @@ let get_addr book uuid =
     let n = Hashtbl.find book uuid in
     n.addr
   else
-    failwith "Actor_book.get_addr"
+    failwith ("Actor_book.get_addr " ^ uuid)
 
 
 let set_addr book uuid addr =
@@ -49,7 +49,8 @@ let set_addr book uuid addr =
     let n = Hashtbl.find book uuid in
     n.addr <- addr
   else
-    failwith "Actor_book.set_addr"
+    failwith ("Actor_book.set_addr " ^ uuid)
+
 
 
 let get_busy book uuid =
@@ -57,7 +58,7 @@ let get_busy book uuid =
     let n = Hashtbl.find book uuid in
     n.busy
   else
-    failwith "Actor_book.get_busy"
+    failwith ("Actor_book.get_busy " ^ uuid)
 
 
 let set_busy book uuid busy =
@@ -65,7 +66,7 @@ let set_busy book uuid busy =
     let n = Hashtbl.find book uuid in
     n.busy <- busy
   else
-    failwith "Actor_book.set_busy"
+    failwith ("Actor_book.set_busy " ^ uuid)
 
 
 let get_step book uuid =
@@ -73,7 +74,7 @@ let get_step book uuid =
     let n = Hashtbl.find book uuid in
     n.step
   else
-    failwith "Actor_book.get_step"
+    failwith ("Actor_book.get_step " ^ uuid)
 
 
 let set_step book uuid step =
@@ -81,4 +82,4 @@ let set_step book uuid step =
     let n = Hashtbl.find book uuid in
     n.step <- step
   else
-    failwith "Actor_book.set_step"
+    failwith ("Actor_book.set_step " ^ uuid)

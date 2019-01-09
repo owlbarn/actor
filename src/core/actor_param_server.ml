@@ -1,5 +1,5 @@
 (*
- * Actor - Parallel & Distributed Engine of Owl System
+ * Light Actor - Parallel & Distributed Engine of Owl System
  * Copyright (c) 2016-2019 Liang Wang <liang.wang@cl.cam.ac.uk>
  *)
 
@@ -25,11 +25,11 @@ module Make
     Owl_log.debug "Schedule %s" context.my_uuid;
     Actor_barrier_bsp.sync context.book uuid;
     let passed = Actor_barrier_bsp.pass context.book in
-    let tasks = Impl.schedule passed in
-    Array.iter (fun (uuid, task) ->
+    let tasks = Impl.schd passed in
+    Array.iter (fun (uuid, kv_pairs) ->
       Owl_log.debug ">>> %s Schedule ..." uuid;
       let addr = Actor_book.get_addr context.book uuid in
-      let s = encode_message uuid addr (PS_Schd task) in
+      let s = encode_message uuid addr (PS_Schd kv_pairs) in
       Lwt.async (fun () -> Net.send addr s)
     ) tasks
 
@@ -46,7 +46,7 @@ module Make
         Actor_book.set_addr context.book m.uuid m.addr;
         let s = encode_message my_uuid my_addr Reg_Rep in
         let%lwt () = Net.send m.addr s in
-        if Actor_param_utils.is_ready context then
+        if Actor_param_utils.is_ready context.book then
           schedule m.uuid context;
         Lwt.return ()
       )
@@ -56,14 +56,17 @@ module Make
       )
     | PS_Get -> (
         Owl_log.debug "<<< %s PS_Get" m.uuid;
+        Owl_log.error "PS_Get is not implemented";
         Lwt.return ()
       )
-    | PS_Set -> (
+    | PS_Set updates -> (
         Owl_log.debug "<<< %s PS_Set" m.uuid;
+        Impl.set updates;
         Lwt.return ()
       )
-    | PS_Push _update -> (
+    | PS_Push updates -> (
         Owl_log.debug "<<< %s Push" m.uuid;
+        Impl.pull updates |> Impl.set;
         schedule m.uuid context;
         Lwt.return ()
       )

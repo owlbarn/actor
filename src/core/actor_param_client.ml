@@ -1,5 +1,5 @@
 (*
- * Actor - Parallel & Distributed Engine of Owl System
+ * Light Actor - Parallel & Distributed Engine of Owl System
  * Copyright (c) 2016-2019 Liang Wang <liang.wang@cl.cam.ac.uk>
  *)
 
@@ -43,10 +43,10 @@ module Make
         Owl_log.debug "<<< %s Exit" m.uuid;
         Lwt.return ()
       )
-    | PS_Schd task -> (
+    | PS_Schd tasks -> (
         Owl_log.debug "<<< %s PS_Schd" m.uuid;
-        let update = Impl.push task in
-        let s = encode_message my_uuid my_addr (PS_Push update) in
+        let updates = Impl.push tasks in
+        let s = encode_message my_uuid my_addr (PS_Push updates) in
         Net.send context.server_addr s
       )
     | _ -> (

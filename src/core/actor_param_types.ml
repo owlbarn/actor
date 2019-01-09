@@ -1,5 +1,5 @@
 (*
- * Actor - Parallel & Distributed Engine of Owl System
+ * Light Actor - Parallel & Distributed Engine of Owl System
  * Copyright (c) 2016-2019 Liang Wang <liang.wang@cl.cam.ac.uk>
  *)
 
@@ -16,9 +16,9 @@ module Make
     | Exit
     (* Model parallel types *)
     | PS_Get
-    | PS_Set
-    | PS_Schd of Impl.key
-    | PS_Push of Impl.value
+    | PS_Set  of (Impl.key * Impl.value) array
+    | PS_Schd of (Impl.key * Impl.value) array
+    | PS_Push of (Impl.key * Impl.value) array
 
 
   type message = {
