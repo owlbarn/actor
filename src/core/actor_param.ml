@@ -26,9 +26,4 @@ module Make
       Client.init context
     )
 
-
-  (* interface to paramserver functions *)
-
-
-
 end

@@ -75,6 +75,3 @@ module Make
 
 
 end
-
-
-(* ends here *)

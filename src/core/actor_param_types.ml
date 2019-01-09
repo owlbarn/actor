@@ -42,6 +42,7 @@ module Make
     Marshal.to_string m []
 
 
-  let decode_message data : message = Marshal.from_string data 0
+  let decode_message data : message
+    = Marshal.from_string data 0
 
 end
